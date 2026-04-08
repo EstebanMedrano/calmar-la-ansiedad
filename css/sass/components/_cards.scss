@@ -1,0 +1,142 @@
+@use '../abstract/variables' as *;
+
+.card {
+    background: $color-surface;
+    backdrop-filter: blur(8px);
+    border-radius: $border-radius-lg;
+    padding: $space-6;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all $transition-normal;
+    
+    &:hover {
+        background: $color-surface-hover;
+        transform: translateY(-4px);
+        box-shadow: $shadow-glow;
+    }
+}
+
+.welcome-card {
+    text-align: center;
+    max-width: 500px;
+    margin: 0 auto;
+    background: $color-glass;
+    backdrop-filter: blur($blur-glass);
+    border-radius: $border-radius-xl;
+    padding: $space-8;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: $shadow-colored;
+    animation: float 6s ease-in-out infinite;
+    
+    h2 {
+        background: linear-gradient(135deg, $color-cloud, $color-mint);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        margin-bottom: $space-3;
+    }
+    
+    p {
+        color: $color-text-secondary;
+    }
+}
+
+.emojis-scale {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: $space-3;
+    margin: $space-6 0;
+}
+
+.emotion-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $space-1;
+    padding: $space-3;
+    background: $color-surface;
+    backdrop-filter: blur(4px);
+    border-radius: $border-radius-lg;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all $transition-normal;
+    min-width: 60px;
+    
+    .emotion-emoji {
+        font-size: 2rem;
+        transition: transform $transition-normal;
+    }
+    
+    .emotion-label {
+        font-size: $font-size-sm;
+        color: $color-text-secondary;
+        font-weight: $font-weight-medium;
+    }
+    
+    &:hover {
+        background: $color-surface-hover;
+        transform: scale(1.1);
+        border-color: rgba(139, 92, 246, 0.3);
+        
+        .emotion-emoji {
+            transform: scale(1.2);
+        }
+    }
+    
+    &.selected {
+        background: rgba(139, 92, 246, 0.2);
+        border-color: $color-lavender;
+        box-shadow: $shadow-glow;
+    }
+}
+
+.games-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: $space-5;
+    margin: $space-8 0;
+}
+
+.game-card {
+    background: $color-glass;
+    backdrop-filter: blur(8px);
+    border-radius: $border-radius-lg;
+    padding: $space-6;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all $transition-slow;
+    cursor: pointer;
+    
+    .game-icon {
+        font-size: 3.5rem;
+        margin-bottom: $space-4;
+        transition: transform $transition-normal;
+        filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.3));
+    }
+    
+    .game-title {
+        font-size: $font-size-xl;
+        font-weight: $font-weight-semibold;
+        color: $color-text-primary;
+        margin-bottom: $space-2;
+    }
+    
+    .game-description {
+        font-size: $font-size-sm;
+        color: $color-text-secondary;
+    }
+    
+    &:hover {
+        transform: translateY(-8px) scale(1.02);
+        background: $color-surface-hover;
+        border-color: rgba(139, 92, 246, 0.3);
+        box-shadow: $shadow-colored, $shadow-glow;
+        
+        .game-icon {
+            transform: scale(1.1) rotate(5deg);
+        }
+    }
+    
+    &:active {
+        transform: translateY(-4px);
+    }
+}

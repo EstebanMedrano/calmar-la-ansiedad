@@ -1,0 +1,79 @@
+@use '../abstract/variables' as *;
+
+.btn-primary {
+    background: linear-gradient(135deg, $color-ocean, $color-lavender);
+    color: $color-text-primary;
+    padding: $space-4 $space-7;
+    border-radius: $border-radius-pill;
+    font-weight: $font-weight-semibold;
+    font-size: $font-size-lg;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 15px rgba(30, 58, 138, 0.3);
+    transition: all $transition-normal;
+    backdrop-filter: blur(4px);
+    
+    &:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
+        // Usamos colores sólidos en lugar de lighten()
+        background: linear-gradient(135deg, #2563eb, #7c3aed);
+    }
+    
+    &:active {
+        transform: translateY(-1px);
+    }
+    
+    &:disabled {
+        opacity: 0.5;
+        transform: none;
+        box-shadow: none;
+    }
+}
+
+// Para el juego de respiración
+.breathing-game {
+    h2 {
+        background: linear-gradient(135deg, $color-mint, $color-lavender);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        margin-bottom: $space-3;
+    }
+    
+    #breathingCanvas {
+        box-shadow: 0 0 40px rgba(139, 92, 246, 0.3), $shadow-colored;
+        transition: box-shadow $transition-normal;
+        
+        &:hover {
+            box-shadow: 0 0 60px rgba(139, 92, 246, 0.5);
+        }
+    }
+    
+    #phaseText {
+        background: linear-gradient(135deg, $color-mint, $color-peach);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        font-weight: $font-weight-bold;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+    }
+}
+
+// Botones secundarios (como "Volver")
+.btn-secondary {
+    background: transparent;
+    color: $color-text-primary;
+    padding: $space-3 $space-6;
+    border-radius: $border-radius-pill;
+    font-weight: $font-weight-medium;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    transition: all $transition-normal;
+    backdrop-filter: blur(4px);
+    
+    &:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: $color-lavender;
+        transform: translateY(-2px);
+    }
+}

@@ -1,0 +1,78 @@
+@use '../abstract/variables' as *;
+
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    font-size: 16px;
+    scroll-behavior: smooth;
+}
+
+body {
+    min-height: 100vh;
+    font-family: $font-family-base;
+    font-size: $font-size-base;
+    line-height: 1.6;
+    background: linear-gradient(
+        135deg,
+        $color-deep-calm 0%,
+        #1a1a3e 25%,
+        $color-ocean 50%,
+        #2d2d6b 75%,
+        $color-deep-calm 100%
+    );
+    background-size: 400% 400%;
+    animation: gradient-shift 20s ease infinite;
+    color: $color-text-primary;
+    -webkit-font-smoothing: antialiased;
+    position: relative;
+    
+    // Efecto de "niebla" sutil
+    &::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(circle at 30% 40%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+                    radial-gradient(circle at 70% 60%, rgba(16, 185, 129, 0.05) 0%, transparent 50%);
+        pointer-events: none;
+        z-index: 0;
+    }
+}
+
+// Contenedor principal por encima del fondo
+#app {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: $space-4;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+img, picture, video, canvas, svg {
+    display: block;
+    max-width: 100%;
+}
+
+button {
+    cursor: pointer;
+    border: none;
+    background: none;
+    font: inherit;
+}
+
+:focus-visible {
+    outline: 3px solid $color-accent;
+    outline-offset: 2px;
+    border-radius: $border-radius-sm;
+}

@@ -1,0 +1,81 @@
+@use '../abstract/variables' as *;
+
+.app-header {
+    background: $color-glass;
+    backdrop-filter: blur($blur-glass);
+    -webkit-backdrop-filter: blur($blur-glass);
+    border-radius: $border-radius-lg;
+    padding: $space-4 $space-6;
+    margin-bottom: $space-6;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: $shadow-colored;
+    animation: float 6s ease-in-out infinite;
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: $space-4;
+}
+
+.app-title {
+    font-size: $font-size-2xl;
+    font-weight: $font-weight-bold;
+    background: linear-gradient(135deg, $color-cloud, $color-mint);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 0 30px rgba(16, 185, 129, 0.3);
+    letter-spacing: -0.02em;
+}
+
+.anxiety-meter {
+    flex: 1;
+    max-width: 300px;
+}
+
+.anxiety-meter__label {
+    display: flex;
+    justify-content: space-between;
+    font-size: $font-size-xs;
+    color: $color-text-secondary;
+    margin-bottom: $space-1;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.anxiety-meter__bar-container {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: $border-radius-pill;
+    height: 8px;
+    overflow: hidden;
+    backdrop-filter: blur(4px);
+}
+
+.anxiety-meter__bar {
+    height: 100%;
+    border-radius: $border-radius-pill;
+    transition: width $transition-normal;
+    box-shadow: 0 0 10px currentColor;
+}
+
+.menu-btn {
+    font-size: $font-size-xl;
+    padding: $space-2;
+    border-radius: $border-radius-round;
+    width: 44px;
+    height: 44px;
+    color: $color-text-primary;
+    background: $color-surface;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all $transition-normal;
+    
+    &:hover {
+        background: $color-surface-hover;
+        transform: scale(1.05) rotate(90deg);
+        box-shadow: $shadow-glow;
+    }
+}

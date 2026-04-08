@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="description" content="Espacio de Calma - Herramienta para manejar la ansiedad">
+    <meta name="theme-color" content="#5e63b6">
+    
+    <title>Espacio de Calma | Tu refugio personal</title>
+    
+    <!-- Favicon para PWA -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
+    
+    <!-- Fuentes (Google Fonts) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    
+    <!-- CSS compilado -->
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+    
+    <div id="app" class="app-container">
+        <!-- Header -->
+        <header class="app-header" id="appHeader">
+            <div class="header-content">
+                <h1 class="app-title">🌿 Espacio de Calma</h1>
+                <div class="anxiety-meter" id="anxietyMeter" style="display: none;">
+                    <div class="anxiety-meter__label">
+                        <span>Nivel de ansiedad</span>
+                        <span id="anxietyValue">0</span>
+                    </div>
+                    <div class="anxiety-meter__bar-container">
+                        <div id="anxietyBar" class="anxiety-meter__bar" style="width: 0%"></div>
+                    </div>
+                </div>
+                <button id="menuBtn" class="menu-btn" aria-label="Menú">☰</button>
+            </div>
+        </header>
+        
+        <!-- Contenedor de vistas -->
+        <main id="viewContainer" class="view-container">
+            <div class="loader">Cargando tu espacio seguro...</div>
+        </main>
+        
+        <!-- Footer -->
+        <footer class="app-footer">
+            <button id="toggleMusicBtn" class="footer-btn" aria-label="Activar música">
+                <span>🎵</span> Música
+            </button>
+            <button id="voiceGuideBtn" class="footer-btn" aria-label="Guía por voz">
+                <span>🗣️</span> Guía
+            </button>
+            <button id="statsBtn" class="footer-btn" aria-label="Estadísticas">
+                <span>📊</span> Progreso
+            </button>
+        </footer>
+    </div>
+    
+    <!-- Modal de estadísticas -->
+    <div id="statsModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <h2>Tu progreso</h2>
+            <div id="statsContent"></div>
+        </div>
+    </div>
+    
+    <!-- JavaScript Modules -->
+    <script type="module" src="js/engine/app.js"></script>
+</body>
+</html>

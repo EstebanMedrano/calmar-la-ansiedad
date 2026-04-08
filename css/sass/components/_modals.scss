@@ -1,0 +1,48 @@
+@use '../abstract/variables' as *;
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: $color-overlay;  // ← Ahora sí existe
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+
+.modal-content {
+    background: $color-glass;
+    backdrop-filter: blur(20px);
+    border-radius: $border-radius-xl;
+    padding: $space-7;
+    max-width: 90%;
+    width: 450px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: $shadow-colored;
+    color: $color-text-primary;
+    
+    h2 {
+        background: linear-gradient(135deg, $color-mint, $color-lavender);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        margin-bottom: $space-5;
+    }
+}
+
+.modal-close {
+    float: right;
+    font-size: $font-size-3xl;
+    cursor: pointer;
+    color: $color-text-secondary;
+    transition: all $transition-fast;
+    
+    &:hover {
+        color: $color-peach;
+        transform: rotate(90deg);
+    }
+}

@@ -1,0 +1,19 @@
+@use '../abstract/variables' as *;
+
+h1, .h1 {
+    font-size: $font-size-4xl;
+    font-weight: $font-weight-bold;
+}
+
+h2, .h2 {
+    font-size: $font-size-3xl;
+    font-weight: $font-weight-semibold;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.text-primary {
+    color: $color-primary;
+}

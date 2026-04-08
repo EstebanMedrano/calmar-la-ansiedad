@@ -1,0 +1,789 @@
+@use '../abstract/variables' as *;
+
+.affirmation-toast {
+    position: fixed;
+    bottom: $space-8;
+    left: 50%;
+    transform: translateX(-50%);
+    background: $color-glass;
+    backdrop-filter: blur(20px);
+    color: $color-text-primary;
+    padding: $space-4 $space-7;
+    border-radius: $border-radius-pill;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-medium;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    box-shadow: $shadow-colored, $shadow-glow;
+    z-index: 100;
+    animation: slideUpFade 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), 
+               fadeOut 0.3s ease 2.7s forwards;
+    white-space: nowrap;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes slideUpFade {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+@keyframes fadeOut {
+    to {
+        opacity: 0;
+        visibility: hidden;
+    }
+}
+
+// Modal mejorado
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.8);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+
+.modal-content {
+    background: $color-glass;
+    backdrop-filter: blur(20px);
+    border-radius: $border-radius-xl;
+    padding: $space-7;
+    max-width: 90%;
+    width: 450px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: $shadow-colored;
+    color: $color-text-primary;
+    
+    h2 {
+        background: linear-gradient(135deg, $color-mint, $color-lavender);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        margin-bottom: $space-5;
+    }
+}
+
+.modal-close {
+    float: right;
+    font-size: $font-size-3xl;
+    cursor: pointer;
+    color: $color-text-secondary;
+    transition: all $transition-fast;
+    
+    &:hover {
+        color: $color-peach;
+        transform: rotate(90deg);
+    }
+}
+
+// =============================================
+// GROUNDING 5-4-3-2-1 - ESTILOS COMPLETOS
+// =============================================
+
+.grounding-game {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+// Indicadores de pasos
+.grounding-steps-indicators {
+    .steps-row {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+    }
+    
+    .step-indicator {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: $space-1;
+        opacity: 0.4;
+        transition: all 0.3s ease;
+        position: relative;
+        
+        .step-icon {
+            font-size: 1.8rem;
+        }
+        
+        .step-number {
+            font-size: $font-size-sm;
+            font-weight: $font-weight-bold;
+            color: $color-text-secondary;
+        }
+        
+        .step-check {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: $color-mint;
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        &.active {
+            opacity: 1;
+            
+            .step-icon {
+                animation: pulse-glow 2s ease-in-out infinite;
+                filter: drop-shadow(0 0 8px $color-mint);
+            }
+            
+            .step-number {
+                color: $color-mint;
+            }
+        }
+        
+        &.completed {
+            opacity: 0.8;
+            
+            .step-icon {
+                filter: drop-shadow(0 0 5px $color-lavender);
+            }
+            
+            .step-number {
+                color: $color-lavender;
+            }
+        }
+    }
+}
+
+// Barra de progreso total
+.total-progress-bar {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: $border-radius-pill;
+    overflow: hidden;
+}
+
+.total-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, $color-ocean, $color-lavender, $color-mint);
+    border-radius: $border-radius-pill;
+    transition: width 0.5s ease;
+    box-shadow: 0 0 15px $color-lavender;
+}
+
+// Contenedor del paso actual
+.current-step-container {
+    background: $color-surface;
+    backdrop-filter: blur(8px);
+    border-radius: $border-radius-lg;
+    padding: $space-6;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.step-header {
+    display: flex;
+    align-items: center;
+    gap: $space-3;
+    margin-bottom: $space-3;
+    
+    .step-main-icon {
+        font-size: 2.5rem;
+        filter: drop-shadow(0 0 10px $color-lavender);
+    }
+    
+    h3 {
+        flex: 1;
+        font-size: $font-size-lg;
+        font-weight: $font-weight-semibold;
+        color: $color-text-primary;
+        letter-spacing: 0.05em;
+    }
+    
+    .step-counter {
+        font-size: $font-size-2xl;
+        font-weight: $font-weight-bold;
+        background: linear-gradient(135deg, $color-mint, $color-lavender);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
+}
+
+// Barra de progreso individual
+.step-progress-bar {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: $border-radius-pill;
+    margin-bottom: $space-4;
+    overflow: hidden;
+}
+
+.step-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, $color-mint, $color-lavender);
+    border-radius: $border-radius-pill;
+    transition: width 0.3s ease;
+    box-shadow: 0 0 10px $color-mint;
+}
+
+.step-description {
+    color: $color-text-secondary;
+    margin-bottom: $space-5;
+    font-style: italic;
+}
+
+.items-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $space-2;
+    margin-bottom: $space-5;
+    min-height: 40px;
+}
+
+.item-pill {
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    padding: $space-2 $space-4;
+    border-radius: $border-radius-pill;
+    font-size: $font-size-sm;
+    color: $color-mint;
+    display: flex;
+    align-items: center;
+    gap: $space-1;
+    animation: slideIn 0.3s ease;
+    
+    span {
+        font-weight: $font-weight-bold;
+    }
+}
+
+// ✅ ESTOS SON LOS ESTILOS QUE FALTABAN
+.input-group {
+    display: flex;
+    gap: $space-2;
+    margin-top: $space-4;
+}
+
+.grounding-input {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: $border-radius-pill;
+    padding: $space-4 $space-5;
+    color: $color-text-primary;
+    font-size: $font-size-base;
+    transition: all $transition-normal;
+    
+    &:focus {
+        outline: none;
+        border-color: $color-mint;
+        box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+        background: rgba(255, 255, 255, 0.08);
+    }
+    
+    &::placeholder {
+        color: $color-text-muted;
+        font-style: italic;
+    }
+}
+
+.btn-add {
+    background: linear-gradient(135deg, $color-mint, #059669);
+    color: white;
+    padding: $space-4 $space-6;
+    border-radius: $border-radius-pill;
+    font-weight: $font-weight-semibold;
+    display: flex;
+    align-items: center;
+    gap: $space-2;
+    transition: all $transition-normal;
+    border: none;
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+    
+    &:hover:not(:disabled) {
+        transform: scale(1.05);
+        box-shadow: 0 6px 25px rgba(16, 185, 129, 0.5);
+        background: linear-gradient(135deg, #10b981, #047857);
+    }
+    
+    &:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        box-shadow: none;
+        transform: none;
+    }
+    
+    span {
+        font-size: $font-size-xl;
+        font-weight: bold;
+    }
+}
+
+.step-completed-message {
+    text-align: center;
+    padding: $space-5;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(139, 92, 246, 0.2));
+    border-radius: $border-radius-md;
+    color: white;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-medium;
+    border: 2px solid rgba(16, 185, 129, 0.5);
+    box-shadow: 0 0 30px rgba(16, 185, 129, 0.2);
+    margin-bottom: $space-4;
+    
+    span {
+        font-size: $font-size-2xl;
+    }
+}
+
+// Toasts
+.grounding-toast-success {
+    position: fixed;
+    bottom: $space-8;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    padding: $space-4 $space-7;
+    border-radius: $border-radius-pill;
+    font-size: $font-size-base;
+    font-weight: $font-weight-medium;
+    box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4);
+    z-index: 100;
+    animation: slideUpFade 0.4s ease;
+    white-space: nowrap;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.grounding-toast-info {
+    position: fixed;
+    bottom: $space-8;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+    padding: $space-4 $space-7;
+    border-radius: $border-radius-pill;
+    font-size: $font-size-base;
+    font-weight: $font-weight-medium;
+    box-shadow: 0 10px 30px rgba(245, 158, 11, 0.4);
+    z-index: 100;
+    animation: slideUpFade 0.4s ease;
+    white-space: nowrap;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+// Celebración final
+.completion-celebration {
+    text-align: center;
+    
+    .celebration-emoji {
+        font-size: 5rem;
+        animation: float 3s ease-in-out infinite;
+    }
+    
+    h3 {
+        font-size: $font-size-3xl;
+        background: linear-gradient(135deg, $color-mint, $color-lavender);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        margin: $space-4 0;
+    }
+    
+    p {
+        color: $color-text-secondary;
+        margin-bottom: $space-5;
+    }
+    
+    .completion-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        gap: $space-3;
+        margin: $space-5 0;
+        
+        .summary-step {
+            background: $color-surface;
+            padding: $space-3;
+            border-radius: $border-radius-md;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: $space-1;
+            
+            span:first-child {
+                font-size: 1.5rem;
+            }
+            
+            span:last-child {
+                font-size: $font-size-xs;
+                color: $color-text-secondary;
+            }
+        }
+    }
+}
+
+// Animaciones
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes pulse-glow {
+    0%, 100% {
+        opacity: 0.8;
+        filter: drop-shadow(0 0 5px $color-mint);
+    }
+    50% {
+        opacity: 1;
+        filter: drop-shadow(0 0 15px $color-mint);
+    }
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+// =============================================
+// MEMORAMA - ESTILOS
+// =============================================
+
+.memory-game {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.memory-stats {
+    display: flex;
+    justify-content: center;
+    gap: $space-8;
+    margin-bottom: $space-6;
+    
+    .stat-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: $space-1;
+        
+        .stat-icon {
+            font-size: 1.5rem;
+        }
+        
+        .stat-label {
+            font-size: $font-size-xs;
+            color: $color-text-muted;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .stat-value {
+            font-size: $font-size-2xl;
+            font-weight: $font-weight-bold;
+            color: $color-mint;
+        }
+    }
+}
+
+.memory-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: $space-3;
+    perspective: 1000px;
+}
+
+.memory-card {
+    aspect-ratio: 1;
+    position: relative;
+    cursor: pointer;
+    transform-style: preserve-3d;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    &.flipped {
+        transform: rotateY(180deg);
+    }
+    
+    &.matched {
+        .card-front {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1));
+            border-color: $color-mint;
+        }
+        
+        .card-back {
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+        }
+    }
+    
+    .card-front, .card-back {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        backface-visibility: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: $border-radius-lg;
+        font-size: 2.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .card-front {
+        background: $color-surface;
+        backdrop-filter: blur(8px);
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        color: $color-text-secondary;
+        transform: rotateY(0deg);
+        
+        &:hover {
+            background: $color-surface-hover;
+            border-color: rgba(139, 92, 246, 0.3);
+            transform: scale(0.95);
+        }
+    }
+    
+    .card-back {
+        background: linear-gradient(135deg, $color-ocean, $color-lavender);
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        transform: rotateY(180deg);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    &:hover:not(.flipped):not(.matched) {
+        .card-front {
+            transform: scale(0.95);
+            border-color: $color-lavender;
+        }
+    }
+}
+
+.memory-completion {
+    margin-top: $space-6;
+    text-align: center;
+    animation: slideIn 0.5s ease;
+    
+    .completion-message {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(139, 92, 246, 0.2));
+        border-radius: $border-radius-lg;
+        padding: $space-5;
+        border: 2px solid rgba(16, 185, 129, 0.5);
+        
+        .completion-emoji {
+            font-size: 3rem;
+            display: block;
+            margin-bottom: $space-3;
+        }
+        
+        h3 {
+            font-size: $font-size-2xl;
+            color: $color-mint;
+            margin-bottom: $space-2;
+        }
+        
+        p {
+            color: $color-text-secondary;
+        }
+    }
+}
+
+// Responsive para memorama
+@media (max-width: $breakpoint-md) {
+    .memory-card {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: $breakpoint-sm) {
+    .memory-card {
+        font-size: 1.5rem;
+    }
+    
+    .memory-stats {
+        gap: $space-4;
+    }
+}
+// =============================================
+// LAGO DE CALMA - ESTILO RAINBOWHUNT
+// =============================================
+
+.lake-calm-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9999;
+    
+    #lakeCanvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        cursor: crosshair;
+        display: block;
+    }
+    
+    .color-palette-lake {
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 12px;
+        padding: 12px 20px;
+        background: rgba(10, 18, 28, 0.5);
+        backdrop-filter: blur(30px);
+        border-radius: 60px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        z-index: 10000;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+        
+        .color-btn-lake {
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            
+            .color-emoji {
+                font-size: 28px;
+                filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+            }
+            
+            &.rainbow-btn {
+                background: linear-gradient(135deg, 
+                    #3b82f6, #10b981, #8b5cf6, #fbbf24, #f472b6, #fb923c);
+            }
+            
+            &.selected {
+                transform: scale(1.2);
+                border-color: white;
+                box-shadow: 0 0 40px currentColor, 0 10px 30px rgba(0,0,0,0.4);
+            }
+            
+            &:hover {
+                transform: scale(1.1);
+                border-color: rgba(255, 255, 255, 0.6);
+            }
+        }
+    }
+    
+    .lake-controls {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        display: flex;
+        gap: 12px;
+        z-index: 10000;
+        
+        .lake-btn {
+            background: rgba(10, 18, 28, 0.5);
+            backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            
+            &:hover {
+                background: rgba(30, 50, 70, 0.7);
+                transform: translateY(-2px);
+                box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+                border-color: rgba(255, 255, 255, 0.3);
+            }
+        }
+    }
+    
+    .lake-hint {
+        position: fixed;
+        top: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(10, 18, 28, 0.6);
+        backdrop-filter: blur(30px);
+        padding: 12px 28px;
+        border-radius: 60px;
+        color: white;
+        font-size: 15px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        z-index: 10000;
+        transition: opacity 1.2s ease;
+        pointer-events: none;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        white-space: nowrap;
+        
+        span {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+    }
+}
+
+// Responsive
+@media (max-width: 768px) {
+    .lake-calm-container {
+        .color-palette-lake {
+            bottom: 20px;
+            padding: 10px 15px;
+            gap: 8px;
+            
+            .color-btn-lake {
+                width: 45px;
+                height: 45px;
+                
+                .color-emoji {
+                    font-size: 22px;
+                }
+            }
+        }
+        
+        .lake-controls {
+            top: 15px;
+            right: 15px;
+            
+            .lake-btn {
+                padding: 8px 16px;
+                font-size: 12px;
+            }
+        }
+        
+        .lake-hint {
+            top: 20px;
+            font-size: 13px;
+            padding: 10px 20px;
+        }
+    }
+}

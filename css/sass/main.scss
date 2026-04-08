@@ -1,0 +1,14 @@
+// Importar variables primero
+@use 'abstract/variables' as *;
+
+// Luego los estilos base
+@use 'base/reset';
+@use 'base/typography';
+@use 'layout/header';
+@use 'layout/footer';
+@use 'layout/game-area';
+@use 'layout/responsive';  
+@use 'components/buttons';
+@use 'components/cards';
+@use 'components/modals';
+@use 'pages/views';

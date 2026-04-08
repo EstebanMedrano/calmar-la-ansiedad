@@ -1,0 +1,52 @@
+@use '../abstract/variables' as *;
+
+.app-footer {
+    background: $color-glass;
+    backdrop-filter: blur($blur-glass);
+    -webkit-backdrop-filter: blur($blur-glass);
+    border-radius: $border-radius-lg;
+    padding: $space-3 $space-6;
+    margin-top: $space-6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $space-8;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: $shadow-colored;
+}
+
+.footer-btn {
+    display: flex;
+    align-items: center;
+    gap: $space-2;
+    padding: $space-3 $space-5;
+    border-radius: $border-radius-pill;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-text-secondary;
+    background: $color-surface;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all $transition-normal;
+    
+    span {
+        font-size: $font-size-xl;
+        transition: transform $transition-normal;
+    }
+    
+    &:hover {
+        background: $color-surface-hover;
+        color: $color-cloud;
+        transform: translateY(-3px);
+        box-shadow: $shadow-glow;
+        border-color: rgba(139, 92, 246, 0.3);
+        
+        span {
+            transform: scale(1.2);
+        }
+    }
+    
+    &:active {
+        transform: translateY(0);
+    }
+}

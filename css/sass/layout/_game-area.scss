@@ -1,0 +1,43 @@
+@use '../abstract/variables' as *;
+
+.view-container {
+    flex: 1;
+    min-height: 500px;
+    background: $color-glass;
+    backdrop-filter: blur($blur-glass);
+    -webkit-backdrop-filter: blur($blur-glass);
+    border-radius: $border-radius-xl;
+    padding: $space-8;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: $shadow-colored;
+    transition: all $transition-normal;
+    
+    &:hover {
+        box-shadow: $shadow-colored, $shadow-glow;
+    }
+}
+
+.loader {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    color: $color-text-secondary;
+    font-size: $font-size-lg;
+    
+    &::after {
+        content: '';
+        width: 40px;
+        height: 40px;
+        margin-left: $space-4;
+        border: 3px solid rgba(139, 92, 246, 0.3);
+        border-top-color: $color-lavender;
+        border-right-color: $color-mint;
+        border-radius: $border-radius-round;
+        animation: spin 1s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
+    }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
