@@ -121,6 +121,16 @@ export class Router {
                         <div class="game-title">Huracán</div>
                         <div class="game-description">Destruye pensamientos negativos</div>
                     </div>
+                    <div class="game-card" data-game="ritual">
+                        <div class="game-icon">🔥</div>
+                        <div class="game-title">Ritual de Soltar</div>
+                        <div class="game-description">Escribe, guarda, quema</div>
+                    </div>
+                    <div class="game-card" data-game="reverse">
+                        <div class="game-icon">🔄</div>
+                        <div class="game-title">Texto al Revés</div>
+                        <div class="game-description">Descifra frases positivas</div>
+                    </div>
                 </div>
                 <div class="text-center" style="margin-top: 32px;">
                     <button id="backToWelcome" class="btn-primary" style="background: #6c7a89;">Volver al inicio</button>
@@ -230,6 +240,28 @@ export class Router {
                     })
                     .catch(err => {
                         console.error('Error cargando huracán:', err);
+                        this.container.innerHTML = `<div class="text-center"><h2>Error</h2><p>No se pudo cargar.</p><button id="backToGames" class="btn-primary">← Volver</button></div>`;
+                        document.getElementById('backToGames')?.addEventListener('click', () => this.showGamesView());
+                    });
+                break;
+            case 'ritual':
+                import('../games/ritualFire.js')
+                    .then(module => {
+                        module.initRitualFire(this.container);
+                    })
+                    .catch(err => {
+                        console.error('Error cargando ritual:', err);
+                        this.container.innerHTML = `<div class="text-center"><h2>Error</h2><p>No se pudo cargar.</p><button id="backToGames" class="btn-primary">← Volver</button></div>`;
+                        document.getElementById('backToGames')?.addEventListener('click', () => this.showGamesView());
+                    });
+                break;
+            case 'reverse':
+                import('../games/reverseText.js')
+                    .then(module => {
+                        module.initReverseText(this.container);
+                    })
+                    .catch(err => {
+                        console.error('Error cargando texto al revés:', err);
                         this.container.innerHTML = `<div class="text-center"><h2>Error</h2><p>No se pudo cargar.</p><button id="backToGames" class="btn-primary">← Volver</button></div>`;
                         document.getElementById('backToGames')?.addEventListener('click', () => this.showGamesView());
                     });

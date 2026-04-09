@@ -48,7 +48,16 @@ class App {
         
         if (voiceBtn) {
             voiceBtn.addEventListener('click', () => {
-                console.log('🗣️ Guía por voz próximamente');
+                import('./speechManager.js').then(module => {
+                    const speech = module.getSpeechManager();
+                    const isEnabled = speech.toggle();
+                    
+                    const toast = document.createElement('div');
+                    toast.className = 'affirmation-toast';
+                    toast.innerText = isEnabled ? '🗣️ Guía por voz activada' : '🔇 Guía por voz desactivada';
+                    document.body.appendChild(toast);
+                    setTimeout(() => toast.remove(), 2000);
+                });
             });
         }
         

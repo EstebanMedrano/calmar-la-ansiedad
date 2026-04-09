@@ -875,3 +875,684 @@
         }
     }
 }
+
+// =============================================
+// RITUAL DE FUEGO - ESTILOS
+// =============================================
+
+.ritual-fire-container {
+    max-width: 600px;
+    margin: 0 auto;
+    
+    .letter-writing-area {
+        margin-bottom: $space-6;
+        
+        .paper-card {
+            position: relative;
+            background: #f5f0e0;
+            border-radius: $border-radius-md;
+            padding: $space-5;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), inset 0 0 30px rgba(0, 0, 0, 0.05);
+            margin-bottom: $space-3;
+            
+            &.large {
+                min-height: 200px;
+            }
+            
+            .paper-texture {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.8"/></filter><rect width="100" height="100" filter="url(%23noise)" opacity="0.05"/></svg>');
+                pointer-events: none;
+                border-radius: $border-radius-md;
+            }
+            
+            .letter-textarea {
+                width: 100%;
+                min-height: 160px;
+                background: transparent;
+                border: none;
+                font-family: 'Georgia', serif;
+                font-size: 16px;
+                line-height: 24px;
+                color: #2c1810;
+                resize: vertical;
+                
+                &:focus {
+                    outline: none;
+                }
+                
+                &::placeholder {
+                    color: #8b7355;
+                    font-style: italic;
+                }
+            }
+            
+            .paper-lines {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: repeating-linear-gradient(transparent, transparent 23px, rgba(139, 69, 19, 0.1) 23px, rgba(139, 69, 19, 0.1) 24px);
+                pointer-events: none;
+                border-radius: $border-radius-md;
+            }
+        }
+        
+        .writing-controls {
+            display: flex;
+            align-items: center;
+            gap: $space-3;
+            
+            .voice-btn {
+                background: $color-surface;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                color: $color-text-primary;
+                padding: $space-2 $space-4;
+                border-radius: $border-radius-pill;
+                display: flex;
+                align-items: center;
+                gap: $space-2;
+                transition: all $transition-fast;
+                
+                &:hover {
+                    background: $color-surface-hover;
+                }
+            }
+            
+            .char-count {
+                flex: 1;
+                color: $color-text-muted;
+                font-size: $font-size-sm;
+            }
+            
+            .finish-btn {
+                background: linear-gradient(135deg, #8b5cf6, #6366f1);
+                color: white;
+                padding: $space-3 $space-5;
+                border-radius: $border-radius-pill;
+                font-weight: $font-weight-semibold;
+                display: flex;
+                align-items: center;
+                gap: $space-2;
+                border: none;
+                box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+                transition: all $transition-normal;
+                
+                &:hover:not(:disabled) {
+                    transform: scale(1.05);
+                }
+                
+                &:disabled {
+                    opacity: 0.4;
+                    cursor: not-allowed;
+                }
+            }
+        }
+        
+        .recording-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: $space-2;
+            margin-top: $space-3;
+            color: #ef4444;
+            
+            .pulse {
+                width: 10px;
+                height: 10px;
+                background: #ef4444;
+                border-radius: 50%;
+                animation: pulse 1s infinite;
+            }
+        }
+    }
+    
+    .shelf-area {
+        margin-bottom: $space-5;
+        
+        .shelf {
+            position: relative;
+            
+            .shelf-wood {
+                height: 15px;
+                background: linear-gradient(90deg, #5c3a21, #8b5e3c, #5c3a21);
+                border-radius: $border-radius-sm $border-radius-sm 0 0;
+                box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3), inset 0 2px 5px rgba(255, 255, 255, 0.1);
+            }
+            
+            .letters-on-shelf {
+                min-height: 80px;
+                display: flex;
+                justify-content: center;
+                align-items: flex-end;
+                gap: 5px;
+                padding: $space-3;
+                background: rgba(0, 0, 0, 0.2);
+                border-radius: 0 0 $border-radius-md $border-radius-md;
+                position: relative;
+                
+                .empty-shelf-message {
+                    color: $color-text-muted;
+                    font-style: italic;
+                }
+            }
+        }
+        
+        .envelope {
+            width: 50px;
+            height: 35px;
+            position: relative;
+            transition: all 0.3s ease;
+            
+            .envelope-flap {
+                position: absolute;
+                top: -10px;
+                left: 0;
+                width: 0;
+                height: 0;
+                border-left: 25px solid transparent;
+                border-right: 25px solid transparent;
+                border-bottom: 15px solid #d4c5a9;
+                z-index: 1;
+            }
+            
+            .envelope-body {
+                width: 100%;
+                height: 100%;
+                background: #e8dcc8;
+                border-radius: 3px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: inset 0 -2px 5px rgba(0, 0, 0, 0.1);
+                
+                .envelope-icon {
+                    font-size: 20px;
+                }
+            }
+        }
+        
+        .shelf-lever-container {
+            margin-top: $space-4;
+            
+            .lever-track {
+                width: 100%;
+                height: 8px;
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: $border-radius-pill;
+                position: relative;
+                
+                .lever-handle {
+                    position: absolute;
+                    top: -12px;
+                    width: 30px;
+                    height: 30px;
+                    background: linear-gradient(135deg, #f59e0b, #d97706);
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: grab;
+                    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+                    transition: left 0.3s ease;
+                    transform: translateX(-50%);
+                    
+                    &:active {
+                        cursor: grabbing;
+                    }
+                    
+                    span {
+                        font-size: 16px;
+                    }
+                }
+            }
+            
+            .lever-hint {
+                text-align: center;
+                color: $color-text-muted;
+                font-size: $font-size-xs;
+                margin-top: $space-2;
+            }
+        }
+    }
+    
+    .fire-pit-area {
+        margin-top: 10px;
+        
+        .fire-pit {
+            position: relative;
+            height: 120px;
+            width: 100%;
+            max-width: 350px;
+            margin: 0 auto;
+            border-radius: $border-radius-lg $border-radius-lg 0 0;
+            overflow: hidden;
+            
+            canvas {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                width: 100% !important;
+                height: 100% !important;
+                display: block;
+            }
+            
+            #logsCanvas {
+                z-index: 2;
+            }
+            
+            #fireShaderCanvas {
+                z-index: 1;
+                mix-blend-mode: screen;
+            }
+            
+            .fire-glow {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                height: 50px;
+                background: radial-gradient(circle at center, rgba(255, 100, 0, 0.4), transparent);
+                pointer-events: none;
+                z-index: 3;
+            }
+            
+            .ash-particles {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                pointer-events: none;
+                overflow: hidden;
+                z-index: 4;
+            }
+        }
+    }
+    
+    .flying-letter {
+        position: fixed;
+        font-size: 2rem;
+        transition: all 1s cubic-bezier(0.4, 0, 0.2, 1);
+        pointer-events: none;
+        z-index: 1000;
+        filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.3));
+    }
+    
+    .ash-floating {
+        position: absolute;
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        animation: ashRise 3s ease-out forwards;
+    }
+}
+
+@keyframes burnAway {
+    0% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    50% {
+        opacity: 0.5;
+        filter: blur(2px);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(50px);
+    }
+}
+
+@keyframes ashRise {
+    0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 0.6;
+    }
+    100% {
+        transform: translateY(-100px) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.5;
+        transform: scale(1.5);
+    }
+}
+
+// CARTA DOBLÁNDOSE
+.folding-letter {
+    position: fixed;
+    width: 200px;
+    height: 120px;
+    transform: translate(-50%, -50%);
+    transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    z-index: 1000;
+    perspective: 1000px;
+    
+    .folding-paper {
+        width: 100%;
+        height: 100%;
+        background: #f5f0e0;
+        border-radius: 5px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        position: relative;
+        transform-style: preserve-3d;
+        transition: all 0.5s ease;
+    }
+    
+    &.folding .folding-paper {
+        animation: foldPaper 0.8s ease forwards;
+    }
+}
+
+@keyframes foldPaper {
+    0% { transform: rotateY(0); }
+    30% { transform: rotateY(-30deg) scale(0.9); }
+    60% { transform: rotateY(-60deg) scale(0.7); }
+    100% { transform: rotateY(-90deg) scale(0.3); }
+}
+
+// HUMO
+.smoke-particle {
+    position: absolute;
+    bottom: 30px;
+    background: radial-gradient(circle, rgba(150, 150, 150, 0.4), rgba(100, 100, 100, 0.1));
+    border-radius: 50%;
+    animation: smokeRise 4s ease-out forwards;
+    filter: blur(8px);
+}
+
+@keyframes smokeRise {
+    0% {
+        transform: translateY(0) scale(1);
+        opacity: 0.6;
+    }
+    100% {
+        transform: translateY(-120px) scale(3);
+        opacity: 0;
+    }
+}
+
+// FUEGO SHADER CANVAS
+#fireShaderCanvas {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: auto;
+    mix-blend-mode: screen;
+    pointer-events: none;
+}
+
+#logsCanvas {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: auto;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.fire-pit {
+    position: relative;
+    height: 150px;
+    
+    canvas {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+    }
+}
+
+.recording-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $space-3;
+    margin-top: $space-3;
+    padding: $space-3;
+    background: rgba(239, 68, 68, 0.2);
+    border: 2px solid #ef4444;
+    border-radius: $border-radius-pill;
+    color: #ef4444;
+    font-weight: $font-weight-medium;
+    animation: pulse-border 1.5s infinite;
+    
+    .pulse {
+        width: 12px;
+        height: 12px;
+        background: #ef4444;
+        border-radius: 50%;
+        animation: pulse 1s infinite;
+    }
+}
+
+@keyframes pulse-border {
+    0%, 100% {
+        border-color: #ef4444;
+        box-shadow: 0 0 10px #ef4444;
+    }
+    50% {
+        border-color: #fca5a5;
+        box-shadow: 0 0 20px #ef4444;
+    }
+}
+
+// =============================================
+// TEXTO AL REVÉS - ESTILOS (ROTADO 180°)
+// =============================================
+
+.reverse-game {
+    max-width: 500px;
+    margin: 0 auto;
+    
+    .reverse-progress {
+        margin-bottom: $space-6;
+        
+        .progress-bar-bg {
+            background: rgba(255, 255, 255, 0.1);
+            height: 6px;
+            border-radius: $border-radius-pill;
+            overflow: hidden;
+            
+            .progress-bar-fill {
+                height: 100%;
+                background: linear-gradient(90deg, #06b6d4, #8b5cf6);
+                border-radius: $border-radius-pill;
+                transition: width 0.5s ease;
+            }
+        }
+    }
+    
+    // NUEVO: Contenedor para frase rotada 180°
+    .rotated-phrase-container {
+        text-align: center;
+        margin-bottom: $space-5;
+        padding: $space-6;
+        background: rgba(6, 182, 212, 0.05);
+        border-radius: $border-radius-lg;
+        border: 2px dashed rgba(6, 182, 212, 0.3);
+        
+        .rotated-phrase {
+            font-size: 2.5rem;
+            font-weight: $font-weight-bold;
+            color: $color-text-primary;
+            text-shadow: 0 0 20px rgba(6, 182, 212, 0.5);
+            margin-bottom: $space-4;
+            word-break: break-word;
+            transform: rotate(180deg);
+            display: inline-block;
+        }
+        
+        .hint-text {
+            color: $color-text-muted;
+            font-size: $font-size-sm;
+            font-style: italic;
+        }
+    }
+    
+    .reverse-input-area {
+        display: flex;
+        gap: $space-3;
+        margin-bottom: $space-3;
+        
+        .reverse-input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: $border-radius-pill;
+            padding: $space-4 $space-5;
+            color: $color-text-primary;
+            font-size: $font-size-lg;
+            transition: all $transition-normal;
+            
+            &:focus {
+                outline: none;
+                border-color: #06b6d4;
+                box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+                background: rgba(255, 255, 255, 0.08);
+            }
+            
+            &::placeholder {
+                color: $color-text-muted;
+            }
+        }
+        
+        .btn-check {
+            background: linear-gradient(135deg, #06b6d4, #0891b2);
+            color: white;
+            padding: $space-4 $space-6;
+            border-radius: $border-radius-pill;
+            font-weight: $font-weight-semibold;
+            display: flex;
+            align-items: center;
+            gap: $space-2;
+            border: none;
+            box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);
+            transition: all $transition-normal;
+            
+            &:hover:not(:disabled) {
+                transform: scale(1.05);
+                box-shadow: 0 6px 25px rgba(6, 182, 212, 0.5);
+            }
+            
+            &:disabled {
+                opacity: 0.4;
+                cursor: not-allowed;
+            }
+        }
+    }
+    
+    .feedback-message {
+        min-height: 30px;
+        text-align: center;
+        font-size: $font-size-lg;
+        margin-bottom: $space-4;
+        
+        &.success {
+            color: #10b981;
+        }
+        
+        &.error {
+            color: #ef4444;
+        }
+    }
+    
+    .hint-area {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: $space-3;
+        margin-top: $space-2;
+        
+        .hint-btn {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: $color-text-secondary;
+            padding: $space-2 $space-4;
+            border-radius: $border-radius-pill;
+            display: flex;
+            align-items: center;
+            gap: $space-2;
+            transition: all $transition-fast;
+            
+            &:hover {
+                background: rgba(255, 255, 255, 0.05);
+                border-color: #06b6d4;
+            }
+        }
+        
+        .hint-text {
+            color: #06b6d4;
+            font-size: $font-size-sm;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+    }
+    
+    .completed-phrases {
+        margin-top: $space-5;
+        text-align: left;
+        
+        .phrase-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: $space-3;
+            padding: $space-2;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            
+            .reversed-small {
+                font-family: 'Courier New', monospace;
+                color: $color-text-muted;
+                font-size: $font-size-sm;
+            }
+            
+            .arrow {
+                color: #06b6d4;
+            }
+            
+            .original-small {
+                color: $color-text-primary;
+                font-weight: $font-weight-medium;
+            }
+        }
+    }
+}
+
+// Responsive
+@media (max-width: $breakpoint-sm) {
+    .reverse-game {
+        .rotated-phrase {
+            font-size: 1.8rem !important;
+        }
+        
+        .reverse-input-area {
+            flex-direction: column;
+            
+            .btn-check {
+                justify-content: center;
+            }
+        }
+    }
+}
+
+.rotated-small {
+    transform: rotate(180deg);
+    display: inline-block;
+    font-size: $font-size-sm;
+    color: $color-text-muted;
+}

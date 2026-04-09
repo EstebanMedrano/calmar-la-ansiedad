@@ -35,6 +35,20 @@ export class AnxietyState {
         return this.currentLevel;
     }
     
+    speakAffirmation() {
+        import('./speechManager.js').then(module => {
+            const speech = module.getSpeechManager();
+            
+            if (this.currentLevel === 0) {
+                speech.speakAffirmation('victory');
+            } else {
+                speech.speakAffirmation('general');
+            }
+        }).catch(err => {
+            console.warn('🎤 SpeechManager no disponible');
+        });
+    }
+
     getLevel() {
         return this.currentLevel;
     }

@@ -1717,4 +1717,842 @@ h2, .h2 {
     text-align: center;
     width: 90%;
   }
+}
+.ritual-fire-container {
+  max-width: 600px;
+  margin: 0 auto;
+}
+.ritual-fire-container .letter-writing-area {
+  margin-bottom: 24px;
+}
+.ritual-fire-container .letter-writing-area .paper-card {
+  position: relative;
+  background: #f5f0e0;
+  border-radius: 20px;
+  padding: 20px;
+  -webkit-box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), inset 0 0 30px rgba(0, 0, 0, 0.05);
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), inset 0 0 30px rgba(0, 0, 0, 0.05);
+  margin-bottom: 12px;
+}
+.ritual-fire-container .letter-writing-area .paper-card.large {
+  min-height: 200px;
+}
+.ritual-fire-container .letter-writing-area .paper-card .paper-texture {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><filter id="noise"><feTurbulence type="fractalNoise" baseFrequency="0.8"/></filter><rect width="100" height="100" filter="url(%23noise)" opacity="0.05"/></svg>');
+  pointer-events: none;
+  border-radius: 20px;
+}
+.ritual-fire-container .letter-writing-area .paper-card .letter-textarea {
+  width: 100%;
+  min-height: 160px;
+  background: transparent;
+  border: none;
+  font-family: "Georgia", serif;
+  font-size: 16px;
+  line-height: 24px;
+  color: #2c1810;
+  resize: vertical;
+}
+.ritual-fire-container .letter-writing-area .paper-card .letter-textarea:focus {
+  outline: none;
+}
+.ritual-fire-container .letter-writing-area .paper-card .letter-textarea::-webkit-input-placeholder {
+  color: #8b7355;
+  font-style: italic;
+}
+.ritual-fire-container .letter-writing-area .paper-card .letter-textarea::-moz-placeholder {
+  color: #8b7355;
+  font-style: italic;
+}
+.ritual-fire-container .letter-writing-area .paper-card .letter-textarea:-ms-input-placeholder {
+  color: #8b7355;
+  font-style: italic;
+}
+.ritual-fire-container .letter-writing-area .paper-card .letter-textarea::-ms-input-placeholder {
+  color: #8b7355;
+  font-style: italic;
+}
+.ritual-fire-container .letter-writing-area .paper-card .letter-textarea::placeholder {
+  color: #8b7355;
+  font-style: italic;
+}
+.ritual-fire-container .letter-writing-area .paper-card .paper-lines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(transparent, transparent 23px, rgba(139, 69, 19, 0.1) 23px, rgba(139, 69, 19, 0.1) 24px);
+  pointer-events: none;
+  border-radius: 20px;
+}
+.ritual-fire-container .letter-writing-area .writing-controls {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  gap: 12px;
+}
+.ritual-fire-container .letter-writing-area .writing-controls .voice-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
+  padding: 8px 16px;
+  border-radius: 9999px;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  gap: 8px;
+  -webkit-transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.ritual-fire-container .letter-writing-area .writing-controls .voice-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.ritual-fire-container .letter-writing-area .writing-controls .char-count {
+  -webkit-box-flex: 1;
+      -ms-flex: 1;
+          flex: 1;
+  color: rgba(248, 250, 252, 0.5);
+  font-size: 0.875rem;
+}
+.ritual-fire-container .letter-writing-area .writing-controls .finish-btn {
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 9999px;
+  font-weight: 600;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  gap: 8px;
+  border: none;
+  -webkit-box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+          box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+  -webkit-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.ritual-fire-container .letter-writing-area .writing-controls .finish-btn:hover:not(:disabled) {
+  -webkit-transform: scale(1.05);
+          transform: scale(1.05);
+}
+.ritual-fire-container .letter-writing-area .writing-controls .finish-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.ritual-fire-container .letter-writing-area .recording-indicator {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+  color: #ef4444;
+}
+.ritual-fire-container .letter-writing-area .recording-indicator .pulse {
+  width: 10px;
+  height: 10px;
+  background: #ef4444;
+  border-radius: 50%;
+  -webkit-animation: pulse 1s infinite;
+          animation: pulse 1s infinite;
+}
+.ritual-fire-container .shelf-area {
+  margin-bottom: 20px;
+}
+.ritual-fire-container .shelf-area .shelf {
+  position: relative;
+}
+.ritual-fire-container .shelf-area .shelf .shelf-wood {
+  height: 15px;
+  background: -webkit-gradient(linear, left top, right top, from(#5c3a21), color-stop(#8b5e3c), to(#5c3a21));
+  background: linear-gradient(90deg, #5c3a21, #8b5e3c, #5c3a21);
+  border-radius: 12px 12px 0 0;
+  -webkit-box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3), inset 0 2px 5px rgba(255, 255, 255, 0.1);
+          box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3), inset 0 2px 5px rgba(255, 255, 255, 0.1);
+}
+.ritual-fire-container .shelf-area .shelf .letters-on-shelf {
+  min-height: 80px;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  -webkit-box-align: end;
+      -ms-flex-align: end;
+          align-items: flex-end;
+  gap: 5px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 0 0 20px 20px;
+  position: relative;
+}
+.ritual-fire-container .shelf-area .shelf .letters-on-shelf .empty-shelf-message {
+  color: rgba(248, 250, 252, 0.5);
+  font-style: italic;
+}
+.ritual-fire-container .shelf-area .envelope {
+  width: 50px;
+  height: 35px;
+  position: relative;
+  -webkit-transition: all 0.3s ease;
+  transition: all 0.3s ease;
+}
+.ritual-fire-container .shelf-area .envelope .envelope-flap {
+  position: absolute;
+  top: -10px;
+  left: 0;
+  width: 0;
+  height: 0;
+  border-left: 25px solid transparent;
+  border-right: 25px solid transparent;
+  border-bottom: 15px solid #d4c5a9;
+  z-index: 1;
+}
+.ritual-fire-container .shelf-area .envelope .envelope-body {
+  width: 100%;
+  height: 100%;
+  background: #e8dcc8;
+  border-radius: 3px;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  -webkit-box-shadow: inset 0 -2px 5px rgba(0, 0, 0, 0.1);
+          box-shadow: inset 0 -2px 5px rgba(0, 0, 0, 0.1);
+}
+.ritual-fire-container .shelf-area .envelope .envelope-body .envelope-icon {
+  font-size: 20px;
+}
+.ritual-fire-container .shelf-area .shelf-lever-container {
+  margin-top: 16px;
+}
+.ritual-fire-container .shelf-area .shelf-lever-container .lever-track {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  position: relative;
+}
+.ritual-fire-container .shelf-area .shelf-lever-container .lever-track .lever-handle {
+  position: absolute;
+  top: -12px;
+  width: 30px;
+  height: 30px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border-radius: 50%;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  cursor: -webkit-grab;
+  cursor: grab;
+  -webkit-box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  -webkit-transition: left 0.3s ease;
+  transition: left 0.3s ease;
+  -webkit-transform: translateX(-50%);
+          transform: translateX(-50%);
+}
+.ritual-fire-container .shelf-area .shelf-lever-container .lever-track .lever-handle:active {
+  cursor: -webkit-grabbing;
+  cursor: grabbing;
+}
+.ritual-fire-container .shelf-area .shelf-lever-container .lever-track .lever-handle span {
+  font-size: 16px;
+}
+.ritual-fire-container .shelf-area .shelf-lever-container .lever-hint {
+  text-align: center;
+  color: rgba(248, 250, 252, 0.5);
+  font-size: 0.75rem;
+  margin-top: 8px;
+}
+.ritual-fire-container .fire-pit-area {
+  margin-top: 10px;
+}
+.ritual-fire-container .fire-pit-area .fire-pit {
+  position: relative;
+  height: 120px;
+  width: 100%;
+  max-width: 350px;
+  margin: 0 auto;
+  border-radius: 32px 32px 0 0;
+  overflow: hidden;
+}
+.ritual-fire-container .fire-pit-area .fire-pit canvas {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+.ritual-fire-container .fire-pit-area .fire-pit #logsCanvas {
+  z-index: 2;
+}
+.ritual-fire-container .fire-pit-area .fire-pit #fireShaderCanvas {
+  z-index: 1;
+  mix-blend-mode: screen;
+}
+.ritual-fire-container .fire-pit-area .fire-pit .fire-glow {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50px;
+  background: radial-gradient(circle at center, rgba(255, 100, 0, 0.4), transparent);
+  pointer-events: none;
+  z-index: 3;
+}
+.ritual-fire-container .fire-pit-area .fire-pit .ash-particles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 4;
+}
+.ritual-fire-container .flying-letter {
+  position: fixed;
+  font-size: 2rem;
+  -webkit-transition: all 1s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 1s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  z-index: 1000;
+  -webkit-filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.3));
+          filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.3));
+}
+.ritual-fire-container .ash-floating {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  -webkit-animation: ashRise 3s ease-out forwards;
+          animation: ashRise 3s ease-out forwards;
+}
+
+@-webkit-keyframes burnAway {
+  0% {
+    opacity: 1;
+    -webkit-transform: translateY(0);
+            transform: translateY(0);
+  }
+  50% {
+    opacity: 0.5;
+    -webkit-filter: blur(2px);
+            filter: blur(2px);
+  }
+  100% {
+    opacity: 0;
+    -webkit-transform: translateY(50px);
+            transform: translateY(50px);
+  }
+}
+
+@keyframes burnAway {
+  0% {
+    opacity: 1;
+    -webkit-transform: translateY(0);
+            transform: translateY(0);
+  }
+  50% {
+    opacity: 0.5;
+    -webkit-filter: blur(2px);
+            filter: blur(2px);
+  }
+  100% {
+    opacity: 0;
+    -webkit-transform: translateY(50px);
+            transform: translateY(50px);
+  }
+}
+@-webkit-keyframes ashRise {
+  0% {
+    -webkit-transform: translateY(0) rotate(0deg);
+            transform: translateY(0) rotate(0deg);
+    opacity: 0.6;
+  }
+  100% {
+    -webkit-transform: translateY(-100px) rotate(360deg);
+            transform: translateY(-100px) rotate(360deg);
+    opacity: 0;
+  }
+}
+@keyframes ashRise {
+  0% {
+    -webkit-transform: translateY(0) rotate(0deg);
+            transform: translateY(0) rotate(0deg);
+    opacity: 0.6;
+  }
+  100% {
+    -webkit-transform: translateY(-100px) rotate(360deg);
+            transform: translateY(-100px) rotate(360deg);
+    opacity: 0;
+  }
+}
+@-webkit-keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    -webkit-transform: scale(1);
+            transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    -webkit-transform: scale(1.5);
+            transform: scale(1.5);
+  }
+}
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    -webkit-transform: scale(1);
+            transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    -webkit-transform: scale(1.5);
+            transform: scale(1.5);
+  }
+}
+.folding-letter {
+  position: fixed;
+  width: 200px;
+  height: 120px;
+  -webkit-transform: translate(-50%, -50%);
+          transform: translate(-50%, -50%);
+  -webkit-transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  z-index: 1000;
+  -webkit-perspective: 1000px;
+          perspective: 1000px;
+}
+.folding-letter .folding-paper {
+  width: 100%;
+  height: 100%;
+  background: #f5f0e0;
+  border-radius: 5px;
+  -webkit-box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  position: relative;
+  -webkit-transform-style: preserve-3d;
+          transform-style: preserve-3d;
+  -webkit-transition: all 0.5s ease;
+  transition: all 0.5s ease;
+}
+.folding-letter.folding .folding-paper {
+  -webkit-animation: foldPaper 0.8s ease forwards;
+          animation: foldPaper 0.8s ease forwards;
+}
+
+@-webkit-keyframes foldPaper {
+  0% {
+    -webkit-transform: rotateY(0);
+            transform: rotateY(0);
+  }
+  30% {
+    -webkit-transform: rotateY(-30deg) scale(0.9);
+            transform: rotateY(-30deg) scale(0.9);
+  }
+  60% {
+    -webkit-transform: rotateY(-60deg) scale(0.7);
+            transform: rotateY(-60deg) scale(0.7);
+  }
+  100% {
+    -webkit-transform: rotateY(-90deg) scale(0.3);
+            transform: rotateY(-90deg) scale(0.3);
+  }
+}
+
+@keyframes foldPaper {
+  0% {
+    -webkit-transform: rotateY(0);
+            transform: rotateY(0);
+  }
+  30% {
+    -webkit-transform: rotateY(-30deg) scale(0.9);
+            transform: rotateY(-30deg) scale(0.9);
+  }
+  60% {
+    -webkit-transform: rotateY(-60deg) scale(0.7);
+            transform: rotateY(-60deg) scale(0.7);
+  }
+  100% {
+    -webkit-transform: rotateY(-90deg) scale(0.3);
+            transform: rotateY(-90deg) scale(0.3);
+  }
+}
+.smoke-particle {
+  position: absolute;
+  bottom: 30px;
+  background: radial-gradient(circle, rgba(150, 150, 150, 0.4), rgba(100, 100, 100, 0.1));
+  border-radius: 50%;
+  -webkit-animation: smokeRise 4s ease-out forwards;
+          animation: smokeRise 4s ease-out forwards;
+  -webkit-filter: blur(8px);
+          filter: blur(8px);
+}
+
+@-webkit-keyframes smokeRise {
+  0% {
+    -webkit-transform: translateY(0) scale(1);
+            transform: translateY(0) scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    -webkit-transform: translateY(-120px) scale(3);
+            transform: translateY(-120px) scale(3);
+    opacity: 0;
+  }
+}
+
+@keyframes smokeRise {
+  0% {
+    -webkit-transform: translateY(0) scale(1);
+            transform: translateY(0) scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    -webkit-transform: translateY(-120px) scale(3);
+            transform: translateY(-120px) scale(3);
+    opacity: 0;
+  }
+}
+#fireShaderCanvas {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: auto;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+#logsCanvas {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.fire-pit {
+  position: relative;
+  height: 150px;
+}
+.fire-pit canvas {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+}
+
+.recording-indicator {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(239, 68, 68, 0.2);
+  border: 2px solid #ef4444;
+  border-radius: 9999px;
+  color: #ef4444;
+  font-weight: 500;
+  -webkit-animation: pulse-border 1.5s infinite;
+          animation: pulse-border 1.5s infinite;
+}
+.recording-indicator .pulse {
+  width: 12px;
+  height: 12px;
+  background: #ef4444;
+  border-radius: 50%;
+  -webkit-animation: pulse 1s infinite;
+          animation: pulse 1s infinite;
+}
+
+@-webkit-keyframes pulse-border {
+  0%, 100% {
+    border-color: #ef4444;
+    -webkit-box-shadow: 0 0 10px #ef4444;
+            box-shadow: 0 0 10px #ef4444;
+  }
+  50% {
+    border-color: #fca5a5;
+    -webkit-box-shadow: 0 0 20px #ef4444;
+            box-shadow: 0 0 20px #ef4444;
+  }
+}
+
+@keyframes pulse-border {
+  0%, 100% {
+    border-color: #ef4444;
+    -webkit-box-shadow: 0 0 10px #ef4444;
+            box-shadow: 0 0 10px #ef4444;
+  }
+  50% {
+    border-color: #fca5a5;
+    -webkit-box-shadow: 0 0 20px #ef4444;
+            box-shadow: 0 0 20px #ef4444;
+  }
+}
+.reverse-game {
+  max-width: 500px;
+  margin: 0 auto;
+}
+.reverse-game .reverse-progress {
+  margin-bottom: 24px;
+}
+.reverse-game .reverse-progress .progress-bar-bg {
+  background: rgba(255, 255, 255, 0.1);
+  height: 6px;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+.reverse-game .reverse-progress .progress-bar-bg .progress-bar-fill {
+  height: 100%;
+  background: -webkit-gradient(linear, left top, right top, from(#06b6d4), to(#8b5cf6));
+  background: linear-gradient(90deg, #06b6d4, #8b5cf6);
+  border-radius: 9999px;
+  -webkit-transition: width 0.5s ease;
+  transition: width 0.5s ease;
+}
+.reverse-game .rotated-phrase-container {
+  text-align: center;
+  margin-bottom: 20px;
+  padding: 24px;
+  background: rgba(6, 182, 212, 0.05);
+  border-radius: 32px;
+  border: 2px dashed rgba(6, 182, 212, 0.3);
+}
+.reverse-game .rotated-phrase-container .rotated-phrase {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #f8fafc;
+  text-shadow: 0 0 20px rgba(6, 182, 212, 0.5);
+  margin-bottom: 16px;
+  word-break: break-word;
+  -webkit-transform: rotate(180deg);
+          transform: rotate(180deg);
+  display: inline-block;
+}
+.reverse-game .rotated-phrase-container .hint-text {
+  color: rgba(248, 250, 252, 0.5);
+  font-size: 0.875rem;
+  font-style: italic;
+}
+.reverse-game .reverse-input-area {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.reverse-game .reverse-input-area .reverse-input {
+  -webkit-box-flex: 1;
+      -ms-flex: 1;
+          flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  padding: 16px 20px;
+  color: #f8fafc;
+  font-size: 1.125rem;
+  -webkit-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.reverse-game .reverse-input-area .reverse-input:focus {
+  outline: none;
+  border-color: #06b6d4;
+  -webkit-box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+          box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+  background: rgba(255, 255, 255, 0.08);
+}
+.reverse-game .reverse-input-area .reverse-input::-webkit-input-placeholder {
+  color: rgba(248, 250, 252, 0.5);
+}
+.reverse-game .reverse-input-area .reverse-input::-moz-placeholder {
+  color: rgba(248, 250, 252, 0.5);
+}
+.reverse-game .reverse-input-area .reverse-input:-ms-input-placeholder {
+  color: rgba(248, 250, 252, 0.5);
+}
+.reverse-game .reverse-input-area .reverse-input::-ms-input-placeholder {
+  color: rgba(248, 250, 252, 0.5);
+}
+.reverse-game .reverse-input-area .reverse-input::placeholder {
+  color: rgba(248, 250, 252, 0.5);
+}
+.reverse-game .reverse-input-area .btn-check {
+  background: linear-gradient(135deg, #06b6d4, #0891b2);
+  color: white;
+  padding: 16px 24px;
+  border-radius: 9999px;
+  font-weight: 600;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  gap: 8px;
+  border: none;
+  -webkit-box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);
+          box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);
+  -webkit-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.reverse-game .reverse-input-area .btn-check:hover:not(:disabled) {
+  -webkit-transform: scale(1.05);
+          transform: scale(1.05);
+  -webkit-box-shadow: 0 6px 25px rgba(6, 182, 212, 0.5);
+          box-shadow: 0 6px 25px rgba(6, 182, 212, 0.5);
+}
+.reverse-game .reverse-input-area .btn-check:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.reverse-game .feedback-message {
+  min-height: 30px;
+  text-align: center;
+  font-size: 1.125rem;
+  margin-bottom: 16px;
+}
+.reverse-game .feedback-message.success {
+  color: #10b981;
+}
+.reverse-game .feedback-message.error {
+  color: #ef4444;
+}
+.reverse-game .hint-area {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+.reverse-game .hint-area .hint-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(248, 250, 252, 0.8);
+  padding: 8px 16px;
+  border-radius: 9999px;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  gap: 8px;
+  -webkit-transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.reverse-game .hint-area .hint-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: #06b6d4;
+}
+.reverse-game .hint-area .hint-text {
+  color: #06b6d4;
+  font-size: 0.875rem;
+  opacity: 0;
+  -webkit-transition: opacity 0.3s ease;
+  transition: opacity 0.3s ease;
+}
+.reverse-game .completed-phrases {
+  margin-top: 20px;
+  text-align: left;
+}
+.reverse-game .completed-phrases .phrase-item {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  gap: 12px;
+  padding: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.reverse-game .completed-phrases .phrase-item .reversed-small {
+  font-family: "Courier New", monospace;
+  color: rgba(248, 250, 252, 0.5);
+  font-size: 0.875rem;
+}
+.reverse-game .completed-phrases .phrase-item .arrow {
+  color: #06b6d4;
+}
+.reverse-game .completed-phrases .phrase-item .original-small {
+  color: #f8fafc;
+  font-weight: 500;
+}
+
+@media (max-width: 640px) {
+  .reverse-game .rotated-phrase {
+    font-size: 1.8rem !important;
+  }
+  .reverse-game .reverse-input-area {
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+        -ms-flex-direction: column;
+            flex-direction: column;
+  }
+  .reverse-game .reverse-input-area .btn-check {
+    -webkit-box-pack: center;
+        -ms-flex-pack: center;
+            justify-content: center;
+  }
+}
+.rotated-small {
+  -webkit-transform: rotate(180deg);
+          transform: rotate(180deg);
+  display: inline-block;
+  font-size: 0.875rem;
+  color: rgba(248, 250, 252, 0.5);
 }/*# sourceMappingURL=main.css.map */

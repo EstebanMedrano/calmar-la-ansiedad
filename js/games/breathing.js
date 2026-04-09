@@ -259,7 +259,9 @@ export class BreathingGame {
         // Reducir nivel de ansiedad
         if (window.app && window.app.anxietyState) {
             const newLevel = window.app.anxietyState.reduceLevel();
-            
+            import('../engine/speechManager.js').then(module => {
+                module.getSpeechManager().speakAffirmation('breathing');
+            });
             // Mostrar toast de éxito
             const toast = document.createElement('div');
             toast.className = 'affirmation-toast';
