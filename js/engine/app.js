@@ -26,53 +26,61 @@ class App {
         const voiceBtn = document.getElementById('voiceGuideBtn');
         const statsBtn = document.getElementById('statsBtn');
         
+        // Inicializar SoundManager
+        if (!this.soundManager) {
+            import('./soundManager.js').then(module => {
+                this.soundManager = module.getSoundManager();
+            });
+        }
+        
         if (musicBtn) {
             musicBtn.addEventListener('click', () => {
-                console.log('Música - próximamente');
-                const toast = document.createElement('div');
-                toast.className = 'affirmation-toast';
-                toast.innerText = '🎵 Música relajante próximamente';
-                document.body.appendChild(toast);
-                setTimeout(() => toast.remove(), 2000);
+                if (!this.soundManager) {
+                    import('./soundManager.js').then(module => {
+                        this.soundManager = module.getSoundManager();
+                        this.soundManager.toggleMusic();
+                    });
+                } else {
+                    this.soundManager.toggleMusic();
+                }
             });
         }
         
         if (voiceBtn) {
             voiceBtn.addEventListener('click', () => {
-                console.log('Guía por voz');
-                const toast = document.createElement('div');
-                toast.className = 'affirmation-toast';
-                toast.innerText = '🗣️ La guía por voz estará disponible pronto';
-                document.body.appendChild(toast);
-                setTimeout(() => toast.remove(), 2000);
+                console.log('🗣️ Guía por voz próximamente');
             });
         }
         
         if (statsBtn) {
             statsBtn.addEventListener('click', () => {
-                const modal = document.getElementById('statsModal');
-                const statsContent = document.getElementById('statsContent');
-                
-                if (statsContent) {
-                    const historial = JSON.parse(localStorage.getItem('calma_historial') || '[]');
-                    if (historial.length === 0) {
-                        statsContent.innerHTML = '<p>Aún no hay estadísticas. Completa algunos ejercicios primero.</p>';
-                    } else {
-                        const ultimaSesion = historial[historial.length - 1];
-                        statsContent.innerHTML = `
-                            <p><strong>Última sesión:</strong></p>
-                            <p>Nivel inicial: ${ultimaSesion.nivelInicial || '?'}</p>
-                            <p>Nivel final: ${ultimaSesion.nivelFinal || '?'}</p>
-                            <p>Mejora: ${(ultimaSesion.nivelInicial - ultimaSesion.nivelFinal) || 0} puntos</p>
-                            <hr>
-                            <p><strong>Total de sesiones:</strong> ${historial.length}</p>
-                        `;
-                    }
-                }
-                
-                if (modal) modal.style.display = 'flex';
+                this.showStatsModal();
             });
         }
+    }
+
+    showStatsModal() {
+        const modal = document.getElementById('statsModal');
+        const statsContent = document.getElementById('statsContent');
+        
+        if (statsContent) {
+            const historial = JSON.parse(localStorage.getItem('calma_historial') || '[]');
+            if (historial.length === 0) {
+                statsContent.innerHTML = '<p>Aún no hay estadísticas. Completa algunos ejercicios primero.</p>';
+            } else {
+                const ultima = historial[historial.length - 1];
+                statsContent.innerHTML = `
+                    <p><strong>Última sesión:</strong></p>
+                    <p>Nivel inicial: ${ultima.nivelInicial || '?'}</p>
+                    <p>Nivel final: ${ultima.nivelFinal || '?'}</p>
+                    <p>Mejora: ${(ultima.nivelInicial - ultima.nivelFinal) || 0} puntos</p>
+                    <hr>
+                    <p><strong>Total sesiones:</strong> ${historial.length}</p>
+                `;
+            }
+        }
+        
+        if (modal) modal.style.display = 'flex';
     }
     
     setupStatsModal() {

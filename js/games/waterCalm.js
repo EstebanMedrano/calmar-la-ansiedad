@@ -2,6 +2,7 @@
 // Lago de Calma - Efecto agua fotorrealista estilo RainbowHunt
 // Con gotas de color que revelan claridad
 
+import { getSoundManager } from '../engine/soundManager.js';
 export class WaterCalm {
     constructor(container) {
         this.container = container;
@@ -32,8 +33,19 @@ export class WaterCalm {
         
         // Para el efecto de agua base
         this.waterOffset = 0;
+
+        this.soundManager = null;
+        this.initSoundManager();
     }
     
+    initSoundManager() {
+        try {
+            this.soundManager = getSoundManager();
+        } catch (e) {
+            console.warn('💧 SoundManager no disponible aún');
+        }
+    }
+
     render() {
         this.container.innerHTML = `
             <div class="lake-calm-container">
@@ -166,6 +178,10 @@ export class WaterCalm {
         // Limitar cantidad de ondas
         if (this.ripples.length > this.maxRipples) {
             this.ripples.shift();
+        }
+
+        if (this.soundManager) {
+            this.soundManager.playWaterDrop();
         }
     }
     
