@@ -11,12 +11,16 @@ export class Router {
                 <h2>Hola, ¿cómo te sientes?</h2>
                 <p>Este es tu espacio seguro. Sin prisas. Sin juicios.</p>
                 <div class="emojis-scale" id="emojisScale"></div>
-                <button id="startBtn" class="btn-primary">Comenzar</button>
+                <button id="startBtn" class="btn-primary" disabled style="opacity: 0.5;">Comenzar</button>
+                <p id="selectHint" style="color: #94a3b8; font-size: 0.875rem; margin-top: 12px; min-height: 20px;"></p>
             </div>
         `;
         
         // Generar emojis del 1 al 10
         const scaleContainer = document.getElementById('emojisScale');
+        const startBtn = document.getElementById('startBtn');
+        const selectHint = document.getElementById('selectHint');
+        
         if (scaleContainer) {
             for (let i = 1; i <= 10; i++) {
                 let emoji = i <= 3 ? '😊' : (i <= 7 ? '😟' : '😰');
@@ -25,12 +29,26 @@ export class Router {
                 const btn = document.createElement('button');
                 btn.className = 'emotion-btn';
                 btn.innerHTML = `<span class="emotion-emoji">${emoji}</span><span class="emotion-label">${i}</span>`;
-                btn.addEventListener('click', () => this.selectLevel(i));
+                
+                btn.addEventListener('click', () => {
+                    this.selectLevel(i);
+                    
+                    // Habilitar botón de comenzar
+                    if (startBtn) {
+                        startBtn.disabled = false;
+                        startBtn.style.opacity = '1';
+                    }
+                    
+                    // Ocultar hint
+                    if (selectHint) {
+                        selectHint.textContent = '';
+                    }
+                });
+                
                 scaleContainer.appendChild(btn);
             }
         }
         
-        const startBtn = document.getElementById('startBtn');
         if (startBtn) {
             startBtn.addEventListener('click', () => {
                 // Verificar si se seleccionó un nivel
@@ -39,7 +57,10 @@ export class Router {
                     if (level > 0) {
                         this.showGamesView();
                     } else {
-                        alert('Por favor, selecciona cómo te sientes primero');
+                        if (selectHint) {
+                            selectHint.textContent = '⭐ Por favor, selecciona cómo te sientes primero';
+                            selectHint.style.color = '#f59e0b';
+                        }
                     }
                 } else {
                     this.showGamesView();
@@ -58,6 +79,11 @@ export class Router {
             allBtns.forEach(btn => {
                 btn.style.opacity = '0.5';
             });
+             // Agregar 'selected' al clickeado
+            const clickedBtn = event.target.closest('.emotion-btn');
+            if (clickedBtn) {
+                clickedBtn.classList.add('selected');
+            }
             event.target.closest('.emotion-btn').style.opacity = '1';
             event.target.closest('.emotion-btn').style.transform = 'scale(1.05)';
         }
@@ -89,6 +115,11 @@ export class Router {
                         <div class="game-icon">🌊</div>
                         <div class="game-title">Lago de Calma</div>
                         <div class="game-description">Ondas de agua con colores</div>
+                    </div>
+                    <div class="game-card" data-game="hurricane">
+                        <div class="game-icon">🌀</div>
+                        <div class="game-title">Huracán</div>
+                        <div class="game-description">Destruye pensamientos negativos</div>
                     </div>
                 </div>
                 <div class="text-center" style="margin-top: 32px;">
@@ -188,6 +219,17 @@ export class Router {
                     })
                     .catch(err => {
                         console.error('Error cargando lago:', err);
+                        this.container.innerHTML = `<div class="text-center"><h2>Error</h2><p>No se pudo cargar.</p><button id="backToGames" class="btn-primary">← Volver</button></div>`;
+                        document.getElementById('backToGames')?.addEventListener('click', () => this.showGamesView());
+                    });
+                break;
+            case 'hurricane':
+                import('../games/hurricane.js')
+                    .then(module => {
+                        module.initHurricane(this.container);
+                    })
+                    .catch(err => {
+                        console.error('Error cargando huracán:', err);
                         this.container.innerHTML = `<div class="text-center"><h2>Error</h2><p>No se pudo cargar.</p><button id="backToGames" class="btn-primary">← Volver</button></div>`;
                         document.getElementById('backToGames')?.addEventListener('click', () => this.showGamesView());
                     });

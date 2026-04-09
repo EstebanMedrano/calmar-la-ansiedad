@@ -73,6 +73,14 @@ $font-size-5xl: 3rem;
 $font-weight-normal: 400;  $font-weight-medium: 500;
 $font-weight-semibold: 600; $font-weight-bold: 700;
 
+// SOMBRAS
+$shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+$shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+$shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+$shadow-xl: 0 12px 32px rgba(0, 0, 0, 0.15);
+$shadow-colored: 0 20px 40px rgba(139, 92, 246, 0.15), 0 8px 20px rgba(16, 185, 129, 0.1);
+$shadow-glow: 0 0 30px rgba(139, 92, 246, 0.3);
+
 // Animaciones
 @keyframes float {
     0%, 100% { transform: translateY(0px); }
