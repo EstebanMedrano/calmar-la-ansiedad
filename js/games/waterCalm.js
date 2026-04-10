@@ -1,8 +1,7 @@
 // js/games/waterCalm.js
-// Lago de Calma - Persigue a Tito y Lia
-// Experiencia hipnótica con ondas de color
-
-import { getSoundManager } from '../engine/soundManager.js';
+// Lago de Calma - ¡Escapa de Tito y Lia!
+// Evita que te atrapen mientras creas ondas de color
+// Sonido con Audio nativo (FUNCIONAL)
 
 export class WaterCalm {
     constructor(container) {
@@ -31,30 +30,31 @@ export class WaterCalm {
         this.originalBodyBg = document.body.style.background;
         
         this.isPressed = false;
-        this.mouseX = 0;
-        this.mouseY = 0;
+        this.mouseX = this.width / 2;
+        this.mouseY = this.height / 2;
         this.rippleInterval = null;
         this.soundInterval = null;
-        this.frameCount = 0;
         
-        this.tito = { x: 0, y: 0, vx: 0, vy: 0, size: 60, img: null };
-        this.lia = { x: 0, y: 0, vx: 0, vy: 0, size: 50, img: null };
+        // Perros
+        this.tito = { x: 100, y: 100, vx: 0, vy: 0, size: 60, img: null };
+        this.lia = { x: this.width - 100, y: 100, vx: 0, vy: 0, size: 50, img: null };
         this.dogsLoaded = false;
         
+        // Contador de atrapadas
+        this.catchCount = 0;
+        this.maxCatches = 10;
+        this.gameActive = true;
+        this.lastCatchTime = 0;
+        this.catchCooldown = 800;
+        
         this.isAnimating = true;
-        this.soundManager = null;
         this.paletteElement = null;
         
-        this.initSoundManager();
+        // Sonido nativo
+        this.waterSound = new Audio('assets/sounds/water-drop.mp3');
+        this.waterSound.volume = 0.25;
+        
         this.loadDogs();
-    }
-    
-    initSoundManager() {
-        try {
-            this.soundManager = getSoundManager();
-        } catch (e) {
-            console.warn('💧 SoundManager no disponible aún');
-        }
     }
     
     loadDogs() {
@@ -68,7 +68,6 @@ export class WaterCalm {
             loaded++;
             if (loaded === 2) {
                 this.dogsLoaded = true;
-                this.initDogPositions();
             }
         };
         
@@ -76,30 +75,20 @@ export class WaterCalm {
         this.lia.img.onload = onLoad;
     }
     
-    initDogPositions() {
-        this.tito.x = this.width * 0.3;
-        this.tito.y = this.height * 0.5;
-        this.tito.vx = (Math.random() - 0.5) * 2;
-        this.tito.vy = (Math.random() - 0.5) * 2;
-        
-        this.lia.x = this.width * 0.7;
-        this.lia.y = this.height * 0.5;
-        this.lia.vx = (Math.random() - 0.5) * 2;
-        this.lia.vy = (Math.random() - 0.5) * 2;
-    }
-    
     render() {
         this.container.innerHTML = `
             <div class="lake-calm-container">
                 <canvas id="lakeCanvas"></canvas>
-                
-                <div class="lake-controls">
-                    <button id="clearLake" class="lake-btn">🧹 Limpiar</button>
-                    <button id="backFromLake" class="lake-btn">← Volver</button>
+                <button id="backFromLake" class="lake-back-btn">← Volver</button>
+                <div class="catch-counter">
+                    <span>🦊</span>
+                    <span id="catchCount">0</span>
+                    <span>/</span>
+                    <span>${this.maxCatches}</span>
+                    <span>🤍</span>
                 </div>
-                
                 <div class="lake-hint">
-                    <span>🎨 Selecciona un color, mantén pulsado y persigue a Tito y Lia</span>
+                    <span>🎨 ¡Escapa de Tito y Lia! Mantén pulsado y huye</span>
                 </div>
             </div>
         `;
@@ -143,14 +132,8 @@ export class WaterCalm {
         this.height = window.innerHeight;
         this.canvas.width = this.width;
         this.canvas.height = this.height;
-        
-        // Reposicionar perros si se salen
-        if (this.dogsLoaded) {
-            this.tito.x = Math.min(this.tito.x, this.width - 60);
-            this.tito.y = Math.min(this.tito.y, this.height - 60);
-            this.lia.x = Math.min(this.lia.x, this.width - 60);
-            this.lia.y = Math.min(this.lia.y, this.height - 60);
-        }
+        this.mouseX = this.width / 2;
+        this.mouseY = this.height / 2;
     }
     
     attachEvents() {
@@ -164,12 +147,14 @@ export class WaterCalm {
             document.querySelectorAll('.color-btn-lake').forEach(b => b.classList.remove('selected'));
             btn.classList.add('selected');
             
-            if (this.soundManager) {
-                this.soundManager.playWaterDrop();
-            }
+            // Sonido al seleccionar color
+            const selectSound = new Audio('assets/sounds/water-drop.mp3');
+            selectSound.volume = 0.2;
+            selectSound.play().catch(() => {});
         });
         
         this.canvas.addEventListener('mousedown', (e) => {
+            if (!this.gameActive) return;
             this.isPressed = true;
             this.mouseX = e.clientX;
             this.mouseY = e.clientY;
@@ -199,6 +184,7 @@ export class WaterCalm {
         
         this.canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
+            if (!this.gameActive) return;
             this.isPressed = true;
             const touch = e.touches[0];
             this.mouseX = touch.clientX;
@@ -223,10 +209,6 @@ export class WaterCalm {
             this.resetBodyBackground();
         });
         
-        document.getElementById('clearLake')?.addEventListener('click', () => {
-            this.ripples = [];
-        });
-        
         document.getElementById('backFromLake')?.addEventListener('click', () => {
             this.cleanup();
             if (window.app && window.app.router) {
@@ -236,13 +218,13 @@ export class WaterCalm {
         
         setTimeout(() => {
             document.querySelector('.lake-hint')?.style.setProperty('opacity', '0');
-        }, 5000);
+        }, 4000);
     }
     
     startRippleStream() {
         this.stopRippleStream();
         this.rippleInterval = setInterval(() => {
-            if (this.isPressed) {
+            if (this.isPressed && this.gameActive) {
                 this.createRipple(this.mouseX, this.mouseY);
             }
         }, 30);
@@ -258,10 +240,11 @@ export class WaterCalm {
     startSoundStream() {
         this.stopSoundStream();
         this.soundInterval = setInterval(() => {
-            if (this.isPressed && this.soundManager) {
-                this.soundManager.playWaterDrop();
+            if (this.isPressed && this.gameActive) {
+                const sound = this.waterSound.cloneNode();
+                sound.play().catch(() => {});
             }
-        }, 120);
+        }, 150);
     }
     
     stopSoundStream() {
@@ -323,81 +306,182 @@ export class WaterCalm {
         if (this.ripples.length > this.maxRipples) {
             this.ripples.shift();
         }
-        
-        this.frameCount++;
-        if (this.frameCount % 50 === 0) {
-            if (window.app && window.app.anxietyState) {
-                // SIN VOZ - solo reduce ansiedad
-                window.app.anxietyState.currentLevel = Math.max(0, window.app.anxietyState.currentLevel - 1);
-                window.app.anxietyState.updateUI();
-            }
-        }
     }
     
     updateDogs() {
-        if (!this.dogsLoaded) return;
+        if (!this.dogsLoaded || !this.gameActive) return;
         
-        // Movimiento aleatorio siempre
-        this.tito.vx += (Math.random() - 0.5) * 0.8;
-        this.tito.vy += (Math.random() - 0.5) * 0.8;
-        this.lia.vx += (Math.random() - 0.5) * 0.8;
-        this.lia.vy += (Math.random() - 0.5) * 0.8;
+        const baseSpeed = this.isPressed ? 3.5 : 2.0;
         
-        // Huir del cursor si está presionado
-        if (this.isPressed) {
-            const dxTito = this.tito.x - this.mouseX;
-            const dyTito = this.tito.y - this.mouseY;
-            const distTito = Math.sqrt(dxTito * dxTito + dyTito * dyTito);
-            if (distTito < 200) {
-                const angle = Math.atan2(dyTito, dxTito);
-                this.tito.vx += Math.cos(angle) * 3;
-                this.tito.vy += Math.sin(angle) * 3;
-            }
-            
-            const dxLia = this.lia.x - this.mouseX;
-            const dyLia = this.lia.y - this.mouseY;
-            const distLia = Math.sqrt(dxLia * dxLia + dyLia * dyLia);
-            if (distLia < 200) {
-                const angle = Math.atan2(dyLia, dxLia);
-                this.lia.vx += Math.cos(angle) * 3;
-                this.lia.vy += Math.sin(angle) * 3;
-            }
+        const dxTito = this.mouseX - this.tito.x;
+        const dyTito = this.mouseY - this.tito.y;
+        const distTito = Math.sqrt(dxTito * dxTito + dyTito * dyTito);
+        
+        if (distTito > 5) {
+            this.tito.vx = (dxTito / distTito) * baseSpeed;
+            this.tito.vy = (dyTito / distTito) * baseSpeed;
         }
         
-        // Aplicar velocidad
+        const dxLia = this.mouseX - this.lia.x;
+        const dyLia = this.mouseY - this.lia.y;
+        const distLia = Math.sqrt(dxLia * dxLia + dyLia * dyLia);
+        
+        if (distLia > 5) {
+            this.lia.vx = (dxLia / distLia) * baseSpeed;
+            this.lia.vy = (dyLia / distLia) * baseSpeed;
+        }
+        
+        this.tito.vx += (Math.random() - 0.5) * 0.6;
+        this.tito.vy += (Math.random() - 0.5) * 0.6;
+        this.lia.vx += (Math.random() - 0.5) * 0.6;
+        this.lia.vy += (Math.random() - 0.5) * 0.6;
+        
         this.tito.x += this.tito.vx;
         this.tito.y += this.tito.vy;
         this.lia.x += this.lia.vx;
         this.lia.y += this.lia.vy;
         
-        // Frenar
-        this.tito.vx *= 0.95;
-        this.tito.vy *= 0.95;
-        this.lia.vx *= 0.95;
-        this.lia.vy *= 0.95;
+        const margin = 50;
+        const midX = this.width / 2;
         
-        // Límites
-        const margin = 60;
-        this.tito.x = Math.max(margin, Math.min(this.width - margin, this.tito.x));
+        this.tito.x = Math.max(margin, Math.min(midX - 20, this.tito.x));
         this.tito.y = Math.max(margin, Math.min(this.height - margin - 100, this.tito.y));
-        this.lia.x = Math.max(margin, Math.min(this.width - margin, this.lia.x));
+        
+        this.lia.x = Math.max(midX + 20, Math.min(this.width - margin, this.lia.x));
         this.lia.y = Math.max(margin, Math.min(this.height - margin - 100, this.lia.y));
+        
+        this.checkCatch();
+    }
+    
+    checkCatch() {
+        if (!this.isPressed) return;
+        
+        const now = Date.now();
+        if (now - this.lastCatchTime < this.catchCooldown) return;
+        
+        const distToTito = Math.sqrt(
+            Math.pow(this.mouseX - this.tito.x, 2) + 
+            Math.pow(this.mouseY - this.tito.y, 2)
+        );
+        
+        if (distToTito < 50) {
+            this.catchCount++;
+            this.lastCatchTime = now;
+            this.updateCatchDisplay();
+            this.tito.vx = (this.tito.x - this.mouseX) * 0.5;
+            this.tito.vy = (this.tito.y - this.mouseY) * 0.5;
+            
+            if (this.catchCount >= this.maxCatches) {
+                this.gameOver('tito');
+            }
+        }
+        
+        const distToLia = Math.sqrt(
+            Math.pow(this.mouseX - this.lia.x, 2) + 
+            Math.pow(this.mouseY - this.lia.y, 2)
+        );
+        
+        if (distToLia < 45) {
+            this.catchCount++;
+            this.lastCatchTime = now;
+            this.updateCatchDisplay();
+            this.lia.vx = (this.lia.x - this.mouseX) * 0.5;
+            this.lia.vy = (this.lia.y - this.mouseY) * 0.5;
+            
+            if (this.catchCount >= this.maxCatches) {
+                this.gameOver('lia');
+            }
+        }
+    }
+    
+    updateCatchDisplay() {
+        const counter = document.getElementById('catchCount');
+        if (counter) counter.textContent = this.catchCount;
+    }
+    
+    gameOver(winner) {
+        if (!this.gameActive) return;
+        
+        this.gameActive = false;
+        this.isPressed = false;
+        this.stopRippleStream();
+        this.stopSoundStream();
+        this.resetBodyBackground();
+        
+        const winnerName = winner === 'tito' ? 'Tito 🦊' : 'Lia 🤍';
+        const winnerImg = winner === 'tito' ? this.tito.img : this.lia.img;
+        
+        const oldGameOver = this.container.querySelector('.catch-gameover');
+        if (oldGameOver) oldGameOver.remove();
+        
+        const gameOverDiv = document.createElement('div');
+        gameOverDiv.className = 'catch-gameover';
+        gameOverDiv.innerHTML = `
+            <div class="gameover-content">
+                <img src="${winnerImg.src}" class="gameover-dog" alt="${winnerName}">
+                <div class="gameover-bubble">
+                    <p>¡Te atrapé! ¿Jugamos otra vez?</p>
+                </div>
+                <div class="gameover-buttons">
+                    <button id="playAgain" class="gameover-btn yes">¡Sí! 🎮</button>
+                    <button id="backToGames" class="gameover-btn no">← Volver</button>
+                </div>
+            </div>
+        `;
+        
+        this.container.appendChild(gameOverDiv);
+        
+        requestAnimationFrame(() => {
+            document.getElementById('playAgain')?.addEventListener('click', () => this.resetGame());
+            document.getElementById('backToGames')?.addEventListener('click', () => {
+                this.cleanup();
+                if (window.app && window.app.router) {
+                    window.app.router.showGamesView();
+                }
+            });
+        });
+    }
+    
+    resetGame() {
+        this.catchCount = 0;
+        this.gameActive = true;
+        this.lastCatchTime = 0;
+        this.updateCatchDisplay();
+        
+        this.tito.x = 100;
+        this.tito.y = 100;
+        this.lia.x = this.width - 100;
+        this.lia.y = 100;
+        
+        const gameOverDiv = this.container.querySelector('.catch-gameover');
+        if (gameOverDiv) gameOverDiv.remove();
+        
+        if (window.app && window.app.anxietyState) {
+            window.app.anxietyState.currentLevel = Math.max(0, window.app.anxietyState.currentLevel - 1);
+            window.app.anxietyState.updateUI();
+        }
     }
     
     animate() {
         if (!this.isAnimating) return;
         
-        // Actualizar posición de perros
-        this.updateDogs();
+        if (this.gameActive) this.updateDogs();
         
-        // Dibujar
         this.ctx.fillStyle = '#0a1220';
         this.ctx.fillRect(0, 0, this.width, this.height);
         
+        // Línea divisoria
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.width / 2, 0);
+        this.ctx.lineTo(this.width / 2, this.height);
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+        this.ctx.lineWidth = 2;
+        this.ctx.setLineDash([10, 20]);
+        this.ctx.stroke();
+        this.ctx.setLineDash([]);
+        
         this.drawRipples();
-        if (this.dogsLoaded) {
-            this.drawDogs();
-        }
+        if (this.dogsLoaded) this.drawDogs();
         this.updateRipples();
         
         requestAnimationFrame(() => this.animate());
