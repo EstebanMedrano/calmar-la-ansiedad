@@ -786,6 +786,74 @@
             padding: 10px 20px;
         }
     }
+
+    .color-palette-lake {
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 12px;
+        padding: 12px 20px;
+        background: rgba(10, 18, 28, 0.6);
+        backdrop-filter: blur(30px);
+        border-radius: 60px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        z-index: 10001; // Por encima del canvas
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+        
+        .color-btn-lake {
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            
+            .color-emoji {
+                font-size: 28px;
+                filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+            }
+            
+            &.rainbow-btn {
+                background: linear-gradient(135deg, 
+                    #3b82f6, #10b981, #8b5cf6, #fbbf24, #f472b6, #fb923c);
+            }
+            
+            &.selected {
+                transform: scale(1.2);
+                border-color: white;
+                box-shadow: 0 0 40px currentColor;
+            }
+            
+            &:hover {
+                transform: scale(1.1);
+                border-color: rgba(255, 255, 255, 0.6);
+            }
+        }
+    }
+
+    // Asegurar que el canvas no tape la paleta
+    .lake-calm-container {
+        #lakeCanvas {
+            pointer-events: auto;
+        }
+    }
+
+    // Animación del fondo
+    body {
+        transition: background 0.5s ease;
+    }
+
+    @keyframes gradient-shift {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
 }
 
 // =============================================
