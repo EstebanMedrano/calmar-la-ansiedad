@@ -52,6 +52,7 @@ export class WaterCalm {
         
         // Sonido nativo
         this.waterSound = new Audio('assets/sounds/water-drop.mp3');
+        this.waterSound.loop = true;
         this.waterSound.volume = 0.25;
         
         this.loadDogs();
@@ -146,11 +147,6 @@ export class WaterCalm {
             
             document.querySelectorAll('.color-btn-lake').forEach(b => b.classList.remove('selected'));
             btn.classList.add('selected');
-            
-            // Sonido al seleccionar color
-            const selectSound = new Audio('assets/sounds/water-drop.mp3');
-            selectSound.volume = 0.2;
-            selectSound.play().catch(() => {});
         });
         
         this.canvas.addEventListener('mousedown', (e) => {
@@ -238,20 +234,15 @@ export class WaterCalm {
     }
     
     startSoundStream() {
-        this.stopSoundStream();
-        this.soundInterval = setInterval(() => {
-            if (this.isPressed && this.gameActive) {
-                const sound = this.waterSound.cloneNode();
-                sound.play().catch(() => {});
-            }
-        }, 150);
-    }
-    
-    stopSoundStream() {
-        if (this.soundInterval) {
-            clearInterval(this.soundInterval);
-            this.soundInterval = null;
+        if (this.gameActive) {
+            this.waterSound.currentTime = 0;
+            this.waterSound.play().catch(e => {});
         }
+    }
+
+    stopSoundStream() {
+        this.waterSound.pause();
+        this.waterSound.currentTime = 0;
     }
     
     applyBodyBackground() {

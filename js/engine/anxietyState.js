@@ -105,12 +105,12 @@ export class AnxietyState {
     
     showAffirmation() {
         const messages = [
-            "✨ ¡Vas increíble! Cada pequeño paso cuenta.",
-            "💪 La ansiedad no te define. Estás retomando el control.",
-            "🌼 Permítete sentir, pero recuerda que esto pasará.",
-            "🌟 Respira. Este momento es solo tuyo.",
-            "🌸 Has recorrido un largo camino hoy. Estoy orgullosa de ti.",
-            "🍃 Suelta el control. Solo concéntrate en el ahora."
+            "¡Vas increíble Lu! Cada pequeño paso cuenta.",
+            "Estás retomando el control mi Lu",
+            "Estoy orgulloso de ti",
+            "sabia que lo lograrias y tu tambien",
+            "Ves que eres increible? y todavia te preguntas porque sigo aqui",
+            "yo si te veo capaz de cumplir tus sueños, confia en ti como yo lo hago en ti"
         ];
         
         const randomMsg = messages[Math.floor(Math.random() * messages.length)];

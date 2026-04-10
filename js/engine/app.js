@@ -87,12 +87,10 @@ class App {
                     </div>
                 `;
             } else {
-                // Calcular estadísticas
                 const totalSesiones = historial.length;
                 const mejoraTotal = historial.reduce((sum, s) => sum + (s.mejora || 0), 0);
                 const nivelPromedio = (historial.reduce((sum, s) => sum + s.nivelInicial, 0) / totalSesiones).toFixed(1);
                 
-                // Juego más usado
                 const juegoCount = {};
                 historial.forEach(s => {
                     const juego = s.juego || 'general';
@@ -100,7 +98,6 @@ class App {
                 });
                 const juegoMasUsado = Object.entries(juegoCount).sort((a, b) => b[1] - a[1])[0];
                 
-                // Última sesión
                 const ultima = historial[historial.length - 1];
                 const fechaUltima = new Date(ultima.fecha).toLocaleDateString('es-ES', {
                     day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
@@ -140,12 +137,18 @@ class App {
                     </button>
                 `;
                 
-                document.getElementById('clearStats')?.addEventListener('click', () => {
-                    if (confirm('¿Borrar todo el historial de estadísticas?')) {
-                        localStorage.removeItem('calma_historial');
-                        this.showStatsModal();
+                // ✅ CORRECCIÓN: Esperar a que el DOM se actualice
+                setTimeout(() => {
+                    const clearBtn = document.getElementById('clearStats');
+                    if (clearBtn) {
+                        clearBtn.addEventListener('click', () => {
+                            if (confirm('¿Borrar todo el historial de estadísticas?')) {
+                                localStorage.removeItem('calma_historial');
+                                this.showStatsModal();
+                            }
+                        });
                     }
-                });
+                }, 50);
             }
         }
         
@@ -228,7 +231,22 @@ class App {
             });
             
             document.getElementById('menuAbout').addEventListener('click', () => {
-                alert('🌿 Espacio de Calma v1.0\n\nCreado con 💜 para Lu\n\nUn refugio interactivo para manejar la ansiedad con técnicas neurocientíficas.');
+                const modal = document.getElementById('statsModal');
+                const content = document.getElementById('statsContent');
+                
+                content.innerHTML = `
+                    <div style="text-align: center; padding: 20px;">
+                        <span style="font-size: 4rem; display: block; margin-bottom: 16px;">🏡</span>
+                        <h3 style="color: #10b981; margin-bottom: 16px;">Un Refugio para mi Lu</h3>
+                        <p style="color: #94a3b8; margin-bottom: 8px;">Versión 1.0</p>
+                        <p style="color: #e5e7eb; margin-bottom: 16px;">🦊 Tito y 🐩 Lia te acompañan</p>
+                        <p style="color: #fbbf24; font-style: italic;">"Cada paso es un acto de valentía y yo estoy muy orgulloso de ti mi Lu"</p>
+                        <hr style="margin: 20px 0; border-color: rgba(255,255,255,0.1);">
+                        <p style="color: #94a3b8; font-size: 0.875rem;">Hecho con amor y cariño, especialmente para ti mi Lu, ojala te guste :)</p>
+                    </div>
+                `;
+                
+                modal.style.display = 'flex';
                 menu.remove();
             });
             

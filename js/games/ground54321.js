@@ -121,10 +121,10 @@ export class GroundingGame {
     
     getDescription(stepId, remaining) {
         const descriptions = {
-            see: `Observa detenidamente tu entorno. Te quedan ${remaining} por encontrar.`,
-            touch: `Siente las texturas a tu alcance. Te quedan ${remaining} por identificar.`,
-            hear: `Cierra los ojos un momento. Escucha con atención. Te quedan ${remaining}.`,
-            smell: `Inhala profundamente. ¿Qué aromas percibes? Te quedan ${remaining}.`,
+            see: `Observa detenidamente tu entorno. Te quedan ${remaining} por encontrar. (anota 1 a la vez)`,
+            touch: `Siente las texturas a tu alcance. Te quedan ${remaining} por identificar. (anota 1 a la vez)`,
+            hear: `Cierra los ojos un momento. Escucha con atención. Te quedan ${remaining}. (anota 1 a la vez)`,
+            smell: `Inhala profundamente. ¿Qué aromas percibes? Te quedan ${remaining}. (anota 1 a la vez)`,
             taste: `¿Hay algún sabor en tu boca? Tómate un momento para notarlo.`
         };
         return descriptions[stepId] || '';

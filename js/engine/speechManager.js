@@ -133,26 +133,24 @@ export class SpeechManager {
     speakAffirmation(type = 'general') {
         const affirmations = {
             general: [
-                '✨ Vas increíble. Cada pequeño paso cuenta.',
-                '💪 La ansiedad no te define. Estás retomando el control.',
-                '🌼 Permítete sentir, pero recuerda que esto pasará.',
-                '🌟 Respira. Este momento es solo tuyo.',
-                '🌸 Has recorrido un largo camino. Estoy orgullosa de ti.',
-                '🍃 Suelta el control. Concéntrate en el ahora.',
-                '🕊️ Estás a salvo. Todo está bien.',
-                '🌊 Como las olas, la ansiedad viene y se va.'
+                "¡Vas increíble Lu! Cada pequeño paso cuenta.",
+                "Estás retomando el control mi Lu",
+                "Estoy orgulloso de ti",
+                "sabia que lo lograrias y tu tambien",
+                "Ves que eres increible? y todavia te preguntas porque sigo aqui",
+                "yo si te veo capaz de cumplir tus sueños, confia en ti, como yo lo hago en ti"
             ],
             breathing: [
-                'Tu respiración es tu ancla. Inhala calma, exhala tensión.',
-                'Cuatro, siete, ocho. Tu cuerpo se relaja con cada ciclo.'
+                'hasta en respirar te voy a acompañar',
+                'eres increinle, sabia que podrias Lu'
             ],
             grounding: [
-                'Cinco, cuatro, tres, dos, uno. Estás aquí, estás presente.',
-                'Tus sentidos te anclan al momento presente.'
+                'quiero que te sientas segura donde sea que estes',
+                'yo me hubiera tardado mucho mas, pero tu, tu eres increible Lu'
             ],
             victory: [
-                '¡Lo lograste! Has calmado tu mente. Estoy muy orgullosa de ti.',
-                'Has reducido tu ansiedad a cero. Eres fuerte, eres capaz.'
+                'Muy bien, lo haces como una profesional, o solamente eres increible',
+                'ves lo increible que eres? solo necesitas una mano a ratos y yo te daré la mia'
             ]
         };
         

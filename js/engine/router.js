@@ -8,8 +8,8 @@ export class Router {
         
         this.container.innerHTML = `
             <div class="welcome-card">
-                <h2>Hola, ¿cómo te sientes?</h2>
-                <p>Este es tu espacio seguro. Sin prisas. Sin juicios.</p>
+                <h2>Hola mi Luuu, ¿cómo te sientes?</h2>
+                <p>Este es tu espacio seguro. Sin prisas. Sacalo todo mi Lu, no estaras sola :).</p>
                 <div class="emojis-scale" id="emojisScale"></div>
                 <button id="startBtn" class="btn-primary" disabled style="opacity: 0.5;">Comenzar</button>
                 <p id="selectHint" style="color: #94a3b8; font-size: 0.875rem; margin-top: 12px; min-height: 20px;"></p>
@@ -99,27 +99,27 @@ export class Router {
                     <div class="game-card" data-game="breathing">
                         <div class="game-icon">🌬️</div>
                         <div class="game-title">Respirar</div>
-                        <div class="game-description">Técnica 4-7-8</div>
+                        <div class="game-description">Respiremos juntos Lu, te ayudaré</div>
                     </div>
                     <div class="game-card" data-game="grounding">
                         <div class="game-icon">🫂</div>
                         <div class="game-title">Sentirme segura</div>
-                        <div class="game-description">Técnica 5-4-3-2-1</div>
+                        <div class="game-description">vamos a familiarizarte con tu entorno</div>
                     </div>
                     <div class="game-card" data-game="memory">
                         <div class="game-icon">🎴</div>
                         <div class="game-title">Memorama</div>
-                        <div class="game-description">Encuentra los pares</div>
+                        <div class="game-description">Encuentra los pareeeees</div>
                     </div>
                     <div class="game-card" data-game="water">
                         <div class="game-icon">🌊</div>
                         <div class="game-title">Lago de Calma</div>
-                        <div class="game-description">Ondas de agua con colores</div>
+                        <div class="game-description">Tito? Lia?</div>
                     </div>
                     <div class="game-card" data-game="hurricane">
                         <div class="game-icon">🌀</div>
                         <div class="game-title">Huracán</div>
-                        <div class="game-description">Destruye pensamientos negativos</div>
+                        <div class="game-description">Destruye esos pensamientos Lu</div>
                     </div>
                     <div class="game-card" data-game="ritual">
                         <div class="game-icon">🔥</div>
@@ -129,12 +129,12 @@ export class Router {
                     <div class="game-card" data-game="reverse">
                         <div class="game-icon">🔄</div>
                         <div class="game-title">Texto al Revés</div>
-                        <div class="game-description">Descifra frases positivas</div>
+                        <div class="game-description">Aver decifra la frase</div>
                     </div>
                     <div class="game-card" data-game="rompecabezas">
                         <div class="game-icon">🧩</div>
                         <div class="game-title">Rompecabezas</div>
-                        <div class="game-description">Una misio nque se arma</div>
+                        <div class="game-description">Una mision que se arma</div>
                     </div>
                 </div>
                 <div class="text-center" style="margin-top: 32px;">
