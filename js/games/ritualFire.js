@@ -745,7 +745,7 @@ export class RitualFire {
             
             if (window.app && window.app.anxietyState) {
                 for (let i = 0; i < Math.min(burnedCount, 3); i++) {
-                    window.app.anxietyState.reduceLevel();
+                    window.app.anxietyState.reduceLevel('🔥 Ritual de Soltar');
                 }
                 
                 this.showToast(`🔥 ${burnedCount} preocupaciones convertidas en cenizas`, 'success');

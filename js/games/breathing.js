@@ -258,7 +258,7 @@ export class BreathingGame {
         
         // Reducir nivel de ansiedad
         if (window.app && window.app.anxietyState) {
-            const newLevel = window.app.anxietyState.reduceLevel();
+            const newLevel = window.app.anxietyState.reduceLevel('Respiración 4-7-8');
             import('../engine/speechManager.js').then(module => {
                 module.getSpeechManager().speakAffirmation('breathing');
             });

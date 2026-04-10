@@ -131,6 +131,11 @@ export class Router {
                         <div class="game-title">Texto al Revés</div>
                         <div class="game-description">Descifra frases positivas</div>
                     </div>
+                    <div class="game-card" data-game="rompecabezas">
+                        <div class="game-icon">🧩</div>
+                        <div class="game-title">Rompecabezas</div>
+                        <div class="game-description">Una misio nque se arma</div>
+                    </div>
                 </div>
                 <div class="text-center" style="margin-top: 32px;">
                     <button id="backToWelcome" class="btn-primary" style="background: #6c7a89;">Volver al inicio</button>
@@ -262,6 +267,15 @@ export class Router {
                     })
                     .catch(err => {
                         console.error('Error cargando texto al revés:', err);
+                        this.container.innerHTML = `<div class="text-center"><h2>Error</h2><p>No se pudo cargar.</p><button id="backToGames" class="btn-primary">← Volver</button></div>`;
+                        document.getElementById('backToGames')?.addEventListener('click', () => this.showGamesView());
+                    });
+                break;
+            case 'rompecabezas':
+                import('../games/rompecabezasDeLu.js')
+                    .then(module => module.initRompecabezasDeLu(this.container))
+                    .catch(err => {
+                        console.error('Error cargando rompecabezas:', err);
                         this.container.innerHTML = `<div class="text-center"><h2>Error</h2><p>No se pudo cargar.</p><button id="backToGames" class="btn-primary">← Volver</button></div>`;
                         document.getElementById('backToGames')?.addEventListener('click', () => this.showGamesView());
                     });

@@ -202,7 +202,7 @@ export class ReverseText {
         
         // Reducir ansiedad
         if (window.app && window.app.anxietyState) {
-            const newLevel = window.app.anxietyState.reduceLevel();
+            const newLevel = window.app.anxietyState.reduceLevel('Texto al Revés');
             
             this.showToast('🧠 ¡Ejercicio completado! Tu mente está más clara.', 'success');
             

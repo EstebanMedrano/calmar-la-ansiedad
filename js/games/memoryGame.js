@@ -237,7 +237,7 @@ export class MemoryGame {
             
             // Reducir nivel de ansiedad
             if (window.app && window.app.anxietyState) {
-                const newLevel = window.app.anxietyState.reduceLevel();
+                const newLevel = window.app.anxietyState.reduceLevel('Memorama');
                 
                 this.showToast('🎴 ¡Memorama completado! Tu mente está más tranquila.', 'success');
                 

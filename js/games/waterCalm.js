@@ -155,7 +155,7 @@ export class WaterCalm {
         }, 4000);
     }
     
-    createRipple(x, y) {
+   createRipple(x, y) {
         let color;
         if (this.selectedColor === 'rainbow') {
             const hue = (Date.now() / 10) % 360;
@@ -179,9 +179,22 @@ export class WaterCalm {
         if (this.ripples.length > this.maxRipples) {
             this.ripples.shift();
         }
-
+        
+        // Reproducir sonido de gota
         if (this.soundManager) {
             this.soundManager.playWaterDrop();
+        }
+        
+        // 🆕 Reducir ansiedad cada 5 ondas (para no saturar las estadísticas)
+        if (this.ripples.length > 0 && this.ripples.length % 5 === 0) {
+            if (window.app && window.app.anxietyState) {
+                const newLevel = window.app.anxietyState.reduceLevel('🌊 Lago de Calma');
+                
+                // Mostrar mensaje sutil
+                if (newLevel > 0) {
+                    this.showToast(`🌊 La calma te envuelve... Nivel ${newLevel}`, 'success');
+                }
+            }
         }
     }
     

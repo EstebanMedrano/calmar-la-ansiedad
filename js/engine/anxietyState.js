@@ -14,6 +14,7 @@ export class AnxietyState {
     setLevel(level) {
         this.currentLevel = Math.min(10, Math.max(0, level));
         localStorage.setItem('calma_last_level', this.currentLevel);
+        localStorage.setItem('calma_session_start', this.currentLevel);
         this.updateUI();
         
         // Mostrar el medidor si el nivel es mayor a 0
@@ -25,14 +26,35 @@ export class AnxietyState {
         return this.currentLevel;
     }
     
-    reduceLevel() {
+    reduceLevel(gameName = 'general') {
         if (this.currentLevel > 0) {
             this.currentLevel--;
             localStorage.setItem('calma_last_level', this.currentLevel);
             this.updateUI();
             this.showAffirmation();
+            this.speakAffirmation();
+            
+            this.logSession(gameName);
         }
         return this.currentLevel;
+    }
+
+    // 🆕 Nuevo método para guardar sesión detallada
+    logSession(gameName) {
+        const historial = JSON.parse(localStorage.getItem('calma_historial') || '[]');
+        const sessionStart = parseInt(localStorage.getItem('calma_session_start') || this.currentLevel + 1);
+        
+        historial.push({
+            fecha: new Date().toISOString(),
+            nivelInicial: sessionStart,
+            nivelFinal: this.currentLevel,
+            mejora: sessionStart - this.currentLevel,
+            juego: gameName
+        });
+        
+        // Guardar solo últimas 30 sesiones
+        if (historial.length > 30) historial.shift();
+        localStorage.setItem('calma_historial', JSON.stringify(historial));
     }
     
     speakAffirmation() {

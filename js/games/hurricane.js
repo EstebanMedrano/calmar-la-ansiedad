@@ -515,7 +515,7 @@ export class HurricaneGame {
         `;
         
         if (window.app && window.app.anxietyState) {
-            const newLevel = window.app.anxietyState.reduceLevel();
+            const newLevel = window.app.anxietyState.reduceLevel('Huracán');
             this.showToast('🌈 ¡Tormenta calmada, Lu! Has recuperado el control.', 'success');
             
             if (newLevel === 0) {

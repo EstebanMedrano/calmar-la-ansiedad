@@ -247,7 +247,7 @@ export class GroundingGame {
         `;
         
         if (window.app && window.app.anxietyState) {
-            const newLevel = window.app.anxietyState.reduceLevel();
+            const newLevel = window.app.anxietyState.reduceLevel('Grounding 5-4-3-2-1');
             
             const toast = document.createElement('div');
             toast.className = 'grounding-toast-success';
