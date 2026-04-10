@@ -624,8 +624,9 @@
         gap: $space-4;
     }
 }
+
 // =============================================
-// LAGO DE CALMA - ESTILO RAINBOWHUNT
+// LAGO DE CALMA - ESTILO CORREGIDO
 // =============================================
 
 .lake-calm-container {
@@ -645,57 +646,7 @@
         cursor: crosshair;
         display: block;
     }
-    
-    .color-palette-lake {
-        position: fixed;
-        bottom: 30px;
-        left: 50%;
-        transform: translateX(-50%);
-        display: flex;
-        gap: 12px;
-        padding: 12px 20px;
-        background: rgba(10, 18, 28, 0.5);
-        backdrop-filter: blur(30px);
-        border-radius: 60px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        z-index: 10000;
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
-        
-        .color-btn-lake {
-            width: 55px;
-            height: 55px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 3px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-            
-            .color-emoji {
-                font-size: 28px;
-                filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-            }
-            
-            &.rainbow-btn {
-                background: linear-gradient(135deg, 
-                    #3b82f6, #10b981, #8b5cf6, #fbbf24, #f472b6, #fb923c);
-            }
-            
-            &.selected {
-                transform: scale(1.2);
-                border-color: white;
-                box-shadow: 0 0 40px currentColor, 0 10px 30px rgba(0,0,0,0.4);
-            }
-            
-            &:hover {
-                transform: scale(1.1);
-                border-color: rgba(255, 255, 255, 0.6);
-            }
-        }
-    }
-    
+
     .lake-controls {
         position: fixed;
         top: 20px;
@@ -752,24 +703,85 @@
     }
 }
 
-// Responsive
-@media (max-width: 768px) {
-    .lake-calm-container {
-        .color-palette-lake {
-            bottom: 20px;
-            padding: 10px 15px;
-            gap: 8px;
-            
-            .color-btn-lake {
-                width: 45px;
-                height: 45px;
-                
-                .color-emoji {
-                    font-size: 22px;
-                }
-            }
+// Paleta de colores (FUERA del container)
+.color-palette-lake {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 12px;
+    padding: 12px 20px;
+    background: rgba(10, 18, 28, 0.6);
+    backdrop-filter: blur(30px);
+    border-radius: 60px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    z-index: 10001;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+    
+    .color-btn-lake {
+        width: 55px;
+        height: 55px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        border: 3px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        
+        .color-emoji {
+            font-size: 28px;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
         }
         
+        &.rainbow-btn {
+            background: linear-gradient(135deg, 
+                #3b82f6, #10b981, #8b5cf6, #fbbf24, #f472b6, #fb923c);
+        }
+        
+        &.selected {
+            transform: scale(1.2);
+            border-color: white;
+            box-shadow: 0 0 40px currentColor;
+        }
+        
+        &:hover {
+            transform: scale(1.1);
+            border-color: rgba(255, 255, 255, 0.6);
+        }
+    }
+}
+
+body {
+    transition: background 0.3s ease;
+}
+
+@keyframes gradient-shift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+// Responsive Lago de Calma
+@media (max-width: 768px) {
+    .color-palette-lake {
+        bottom: 20px;
+        padding: 10px 15px;
+        gap: 8px;
+        
+        .color-btn-lake {
+            width: 45px;
+            height: 45px;
+            
+            .color-emoji {
+                font-size: 22px;
+            }
+        }
+    }
+    
+    .lake-calm-container {
         .lake-controls {
             top: 15px;
             right: 15px;
@@ -785,74 +797,6 @@
             font-size: 13px;
             padding: 10px 20px;
         }
-    }
-
-    .color-palette-lake {
-        position: fixed;
-        bottom: 30px;
-        left: 50%;
-        transform: translateX(-50%);
-        display: flex;
-        gap: 12px;
-        padding: 12px 20px;
-        background: rgba(10, 18, 28, 0.6);
-        backdrop-filter: blur(30px);
-        border-radius: 60px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        z-index: 10001; // Por encima del canvas
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
-        
-        .color-btn-lake {
-            width: 55px;
-            height: 55px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.25s ease;
-            border: 3px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-            
-            .color-emoji {
-                font-size: 28px;
-                filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-            }
-            
-            &.rainbow-btn {
-                background: linear-gradient(135deg, 
-                    #3b82f6, #10b981, #8b5cf6, #fbbf24, #f472b6, #fb923c);
-            }
-            
-            &.selected {
-                transform: scale(1.2);
-                border-color: white;
-                box-shadow: 0 0 40px currentColor;
-            }
-            
-            &:hover {
-                transform: scale(1.1);
-                border-color: rgba(255, 255, 255, 0.6);
-            }
-        }
-    }
-
-    // Asegurar que el canvas no tape la paleta
-    .lake-calm-container {
-        #lakeCanvas {
-            pointer-events: auto;
-        }
-    }
-
-    // Animación del fondo
-    body {
-        transition: background 0.5s ease;
-    }
-
-    @keyframes gradient-shift {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
     }
 }
 
