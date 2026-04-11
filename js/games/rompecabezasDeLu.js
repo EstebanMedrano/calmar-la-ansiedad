@@ -16,12 +16,12 @@ export class RompecabezasDeLu {
         
         // SOLO las imágenes que existen en tu carpeta
         this.puzzles = [
-            { name: 'Tu refugio', src: 'assets/img/refugio/exterior-casa.jpg', message: '🏡 Este es tu lugar seguro' },
-            { name: 'Tulipanes', src: 'assets/img/refugio/jardin-tulipanes.jpg', message: '🌷 Floreces con cada respiración' },
-            { name: 'Noche estrellada', src: 'assets/img/refugio/noche-estrellas.jpg', message: '✨ El universo conspira a tu favor' },
-            { name: 'Patio con piscina', src: 'assets/img/refugio/patio-piscina.jpg', message: '🌊 Fluye con la calma del agua' },
-            { name: 'Fuente de colores', src: 'assets/img/refugio/fuente-colores.jpg', message: '🌈 La magia está en ti' },
-            { name: 'Interior sala', src: 'assets/img/refugio/interior-sala.jpg', message: '🛋️ Tu rincón de paz' }
+            { name: 'Tu refugio', src: 'assets/img/refugio-webp/exterior-casa.webp', message: '🏡 Este es tu lugar seguro' },
+            { name: 'Tulipanes', src: 'assets/img/refugio-webp/jardin-tulipanes.webp', message: '🌷 Floreces con cada respiración' },
+            { name: 'Noche estrellada', src: 'assets/img/refugio-webp/noche-estrellas.webp', message: '✨ El universo conspira a tu favor' },
+            { name: 'Patio con piscina', src: 'assets/img/refugio-webp/patio-piscina.webp', message: '🌊 Fluye con la calma del agua' },
+            { name: 'Fuente de colores', src: 'assets/img/refugio-webp/fuente-colores.webp', message: '🌈 La magia está en ti' },
+            { name: 'Interior sala', src: 'assets/img/refugio-webp/interior-sala.webp', message: '🛋️ Tu rincón de paz' }
         ];
         
         // Revolver y seleccionar 3 puzzles aleatorios
