@@ -10,17 +10,9 @@ class App {
     
     init() {
         console.log('🌿 Espacio de Calma iniciado');
-        
-        // Mostrar la vista de bienvenida
         this.router.showWelcomeView();
-        
-        // Configurar botones del footer
         this.setupFooterButtons();
-        
-        // Configurar modal de estadísticas
         this.setupStatsModal();
-
-        // 🍔 NUEVO: Configurar menú hamburguesa
         this.setupMenu();
     }
     
@@ -29,7 +21,6 @@ class App {
         const voiceBtn = document.getElementById('voiceGuideBtn');
         const statsBtn = document.getElementById('statsBtn');
         
-        // Inicializar SoundManager
         if (!this.soundManager) {
             import('./soundManager.js').then(module => {
                 this.soundManager = module.getSoundManager();
@@ -129,26 +120,7 @@ class App {
                     <p style="margin-bottom: 8px;"><strong>🕐 Última sesión:</strong></p>
                     <p style="color: #94a3b8; font-size: 0.875rem;">${fechaUltima}</p>
                     <p style="color: #94a3b8; font-size: 0.875rem;">${ultima.juego || 'general'} • Mejora: ${ultima.mejora || 0} pts</p>
-                    
-                    <hr style="margin: 16px 0; border-color: rgba(255,255,255,0.1);">
-                    
-                    <button id="clearStats" class="btn-secondary" style="width: 100%; padding: 8px; font-size: 0.75rem;">
-                        🗑️ Reiniciar estadísticas
-                    </button>
                 `;
-                
-                // ✅ CORRECCIÓN: Esperar a que el DOM se actualice
-                setTimeout(() => {
-                    const clearBtn = document.getElementById('clearStats');
-                    if (clearBtn) {
-                        clearBtn.addEventListener('click', () => {
-                            if (confirm('¿Borrar todo el historial de estadísticas?')) {
-                                localStorage.removeItem('calma_historial');
-                                this.showStatsModal();
-                            }
-                        });
-                    }
-                }, 50);
             }
         }
         
@@ -167,7 +139,9 @@ class App {
         
         if (modal) {
             modal.addEventListener('click', (e) => {
-                if (e.target === modal) modal.style.display = 'none';
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
             });
         }
     }
@@ -181,7 +155,6 @@ class App {
             mejora: initialLevel - finalLevel
         });
         
-        // Guardar solo últimas 20 sesiones
         if (historial.length > 20) historial.shift();
         localStorage.setItem('calma_historial', JSON.stringify(historial));
     }
@@ -191,7 +164,6 @@ class App {
         if (!menuBtn) return;
         
         menuBtn.addEventListener('click', () => {
-            // Crear menú flotante
             const menu = document.createElement('div');
             menu.className = 'floating-menu';
             menu.innerHTML = `
@@ -216,11 +188,8 @@ class App {
             
             document.body.appendChild(menu);
             
-            // Event listeners
             document.getElementById('menuReset').addEventListener('click', () => {
-                if (this.anxietyState) {
-                    this.anxietyState.setLevel(0);
-                }
+                if (this.anxietyState) this.anxietyState.setLevel(0);
                 this.router.showWelcomeView();
                 menu.remove();
             });
@@ -250,18 +219,12 @@ class App {
                 menu.remove();
             });
             
-            document.getElementById('menuClose').addEventListener('click', () => {
-                menu.remove();
-            });
-            
-            document.querySelector('.menu-overlay').addEventListener('click', () => {
-                menu.remove();
-            });
+            document.getElementById('menuClose').addEventListener('click', () => menu.remove());
+            document.querySelector('.menu-overlay').addEventListener('click', () => menu.remove());
         });
     }
 }
 
-// Inicializar la app cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {
     window.app = new App();
 });

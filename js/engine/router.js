@@ -136,6 +136,11 @@ export class Router {
                         <div class="game-title">Rompecabezas</div>
                         <div class="game-description">Una mision que se arma</div>
                     </div>
+                    <div class="game-card" data-game="carta">
+                        <div class="game-icon">💌</div>
+                        <div class="game-title">¿Una carta?</div>
+                        <div class="game-description">Tambien aqui te escribi una carta</div>
+                    </div>
                 </div>
                 <div class="text-center" style="margin-top: 32px;">
                     <button id="backToWelcome" class="btn-primary" style="background: #6c7a89;">Volver al inicio</button>
@@ -276,6 +281,17 @@ export class Router {
                     .then(module => module.initRompecabezasDeLu(this.container))
                     .catch(err => {
                         console.error('Error cargando rompecabezas:', err);
+                        this.container.innerHTML = `<div class="text-center"><h2>Error</h2><p>No se pudo cargar.</p><button id="backToGames" class="btn-primary">← Volver</button></div>`;
+                        document.getElementById('backToGames')?.addEventListener('click', () => this.showGamesView());
+                    });
+                break;
+            case 'carta':
+                import('../games/cartaParaLu.js')
+                    .then(module => {
+                        module.initCartaParaLu(this.container);
+                    })
+                    .catch(err => {
+                        console.error('Error cargando carta:', err);
                         this.container.innerHTML = `<div class="text-center"><h2>Error</h2><p>No se pudo cargar.</p><button id="backToGames" class="btn-primary">← Volver</button></div>`;
                         document.getElementById('backToGames')?.addEventListener('click', () => this.showGamesView());
                     });

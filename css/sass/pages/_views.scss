@@ -1909,3 +1909,81 @@ body {
         margin: $space-2 0;
     }
 }
+
+// =============================================
+// CARTA MÁGICA - ESTILOS
+// =============================================
+
+.carta-magica-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9999;
+    
+    canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+        cursor: pointer;
+    }
+    
+    .carta-hint {
+        position: fixed;
+        bottom: 40px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(15px);
+        padding: 15px 30px;
+        border-radius: 60px;
+        color: white;
+        font-size: 18px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        z-index: 10000;
+        pointer-events: none;
+        animation: pulseHint 2s infinite;
+        
+        span {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+    }
+    
+    .carta-back-btn {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 40px;
+        font-size: 14px;
+        cursor: pointer;
+        z-index: 10000;
+        transition: all 0.2s;
+        
+        &:hover {
+            background: rgba(0, 0, 0, 0.6);
+            transform: translateY(-2px);
+        }
+    }
+}
+
+@keyframes pulseHint {
+    0%, 100% {
+        opacity: 0.8;
+        transform: translateX(-50%) scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: translateX(-50%) scale(1.02);
+    }
+}
