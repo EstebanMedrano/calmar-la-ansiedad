@@ -49,6 +49,11 @@ export class CartaParaLu {
         this.typewriterIndex = 0;
         this.typewriterInterval = null;
         
+        // 🆕 Scroll para la carta
+        this.scrollOffset = 0;
+        this.isDraggingScroll = false;
+        this.lastTouchY = null;
+        
         // Carga
         this.isLoading = true;
         this.animationFrame = null;
@@ -324,16 +329,67 @@ export class CartaParaLu {
     startTypewriter() {
         this.displayedText = '';
         this.typewriterIndex = 0;
+        this.scrollOffset = 0; // Reiniciar scroll
         
         this.typewriterInterval = setInterval(() => {
             if (this.typewriterIndex < this.letterText.length) {
                 this.displayedText += this.letterText[this.typewriterIndex];
                 this.typewriterIndex++;
+                
+                // 🆕 AUTO-SCROLL: Calcular si el texto nuevo está fuera de vista
+                this.autoScrollToNewText();
             } else {
                 clearInterval(this.typewriterInterval);
                 this.typewriterInterval = null;
             }
         }, 35);
+    }
+
+    // 🆕 Nuevo método para auto-scroll
+    autoScrollToNewText() {
+        // Calcular altura total del texto actual
+        const offscreen = document.createElement('canvas').getContext('2d');
+        offscreen.font = '15px Georgia, serif';
+        
+        const paperHeight = Math.min(700, this.height - 80);
+        const maxWidth = Math.min(800, this.width - 20) - 60;
+        const lineHeight = 25;
+        
+        const paragraphs = this.displayedText.split('\n');
+        let totalLines = 0;
+        
+        paragraphs.forEach(paragraph => {
+            if (paragraph.trim() === '') {
+                totalLines++;
+                return;
+            }
+            
+            const words = paragraph.split(' ');
+            let currentLine = '';
+            
+            words.forEach(word => {
+                const testLine = currentLine + (currentLine ? ' ' : '') + word;
+                const metrics = offscreen.measureText(testLine);
+                
+                if (metrics.width > maxWidth && currentLine) {
+                    totalLines++;
+                    currentLine = word;
+                } else {
+                    currentLine = testLine;
+                }
+            });
+            
+            if (currentLine) totalLines++;
+            totalLines++; // espacio entre párrafos
+        });
+        
+        const totalHeight = totalLines * lineHeight;
+        const visibleHeight = paperHeight - 80;
+        
+        // Si el texto ya ocupa más que el papel, hacer scroll automático
+        if (totalHeight > visibleHeight) {
+            this.scrollOffset = totalHeight - visibleHeight + 20;
+        }
     }
     
     updateDog() {

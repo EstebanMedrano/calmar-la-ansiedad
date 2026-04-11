@@ -1,8 +1,9 @@
 // sw.js - Service Worker para funcionamiento offline
-const CACHE_NAME = 'calma-v1';
+const CACHE_NAME = 'calma-v2';
 const urlsToCache = [
     '/',
     '/index.html',
+    '/manifest.json',
     '/css/main.css',
     '/js/engine/app.js',
     '/js/engine/router.js',
@@ -36,11 +37,22 @@ self.addEventListener('activate', event => {
     );
 });
 
+// 🆕 CORRECCIÓN: Manejar la raíz correctamente
 self.addEventListener('fetch', event => {
     event.respondWith(
         caches.match(event.request)
             .then(response => {
-                return response || fetch(event.request);
+                if (response) {
+                    return response;
+                }
+                
+                // Si no está en caché, intentar obtener de la red
+                return fetch(event.request).catch(() => {
+                    // Si falla la red y es una navegación, devolver index.html
+                    if (event.request.mode === 'navigate') {
+                        return caches.match('/index.html');
+                    }
+                });
             })
     );
 });
