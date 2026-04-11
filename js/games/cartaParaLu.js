@@ -488,11 +488,11 @@ export class CartaParaLu {
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
         this.ctx.fillRect(0, 0, this.width, this.height);
         
-        // Papel MÁS GRANDE - ocupa casi toda la pantalla
+        // Papel grande
         const paperWidth = Math.min(800, this.width - 20);
-        const paperHeight = Math.min(750, this.height - 20);
+        const paperHeight = Math.min(700, this.height - 80);
         const paperX = (this.width - paperWidth) / 2;
-        const paperY = (this.height - paperHeight) / 2;
+        const paperY = 10;
         
         this.ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
         this.ctx.shadowBlur = 30;
@@ -504,28 +504,23 @@ export class CartaParaLu {
         this.ctx.lineWidth = 2;
         this.ctx.strokeRect(paperX + 8, paperY + 8, paperWidth - 16, paperHeight - 16);
         
-        // Fuente un poco más pequeña
-        this.ctx.font = '15px Georgia, serif';
-        this.ctx.fillStyle = '#2c1810';
-        this.ctx.textAlign = 'left';
-        this.ctx.textBaseline = 'top';
+        // Crear un "canvas virtual" para medir el texto completo
+        const offscreen = document.createElement('canvas').getContext('2d');
+        offscreen.font = '15px Georgia, serif';
         
         const startX = paperX + 30;
         const startY = paperY + 30;
         const maxWidth = paperWidth - 60;
         const lineHeight = 25;
         
+        // Calcular todas las líneas primero
         const fullText = this.displayedText;
         const paragraphs = fullText.split('\n');
-        
-        let currentY = startY;
-        const maxY = paperY + paperHeight - 45;
+        const allLines = [];
         
         paragraphs.forEach(paragraph => {
-            if (currentY > maxY) return;
-            
             if (paragraph.trim() === '') {
-                currentY += lineHeight * 0.5;
+                allLines.push('');
                 return;
             }
             
@@ -534,43 +529,73 @@ export class CartaParaLu {
             
             words.forEach(word => {
                 const testLine = currentLine + (currentLine ? ' ' : '') + word;
-                const metrics = this.ctx.measureText(testLine);
+                const metrics = offscreen.measureText(testLine);
                 
                 if (metrics.width > maxWidth && currentLine) {
-                    this.ctx.fillText(currentLine, startX, currentY);
+                    allLines.push(currentLine);
                     currentLine = word;
-                    currentY += lineHeight;
                 } else {
                     currentLine = testLine;
                 }
             });
             
             if (currentLine) {
-                this.ctx.fillText(currentLine, startX, currentY);
-                currentY += lineHeight;
+                allLines.push(currentLine);
             }
-            
-            currentY += lineHeight * 0.2;
+            allLines.push(''); // línea en blanco entre párrafos
         });
+        
+        // Calcular altura total
+        const totalHeight = allLines.length * lineHeight;
+        const maxScroll = Math.max(0, totalHeight - paperHeight + 60);
+        
+        // Simular scroll con el mouse/touch
+        if (!this.scrollOffset) this.scrollOffset = 0;
+        
+        // Dibujar solo las líneas visibles
+        this.ctx.save();
+        this.ctx.beginPath();
+        this.ctx.rect(paperX, paperY, paperWidth, paperHeight);
+        this.ctx.clip();
+        
+        this.ctx.font = '15px Georgia, serif';
+        this.ctx.fillStyle = '#2c1810';
+        this.ctx.textAlign = 'left';
+        this.ctx.textBaseline = 'top';
+        
+        let currentY = startY - this.scrollOffset;
+        
+        allLines.forEach(line => {
+            if (currentY + lineHeight > paperY && currentY < paperY + paperHeight) {
+                this.ctx.fillText(line, startX, currentY);
+            }
+            currentY += lineHeight;
+        });
+        
+        this.ctx.restore();
+        
+        // Barra de scroll visual
+        if (maxScroll > 0) {
+            const scrollBarX = paperX + paperWidth - 12;
+            const scrollBarHeight = paperHeight - 20;
+            const scrollThumbHeight = Math.max(30, (paperHeight / totalHeight) * scrollBarHeight);
+            const scrollThumbY = paperY + 10 + (this.scrollOffset / maxScroll) * (scrollBarHeight - scrollThumbHeight);
+            
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+            this.ctx.fillRect(scrollBarX, paperY + 10, 6, scrollBarHeight);
+            
+            this.ctx.fillStyle = 'rgba(139, 92, 246, 0.5)';
+            this.ctx.fillRect(scrollBarX, scrollThumbY, 6, scrollThumbHeight);
+        }
         
         // Cursor parpadeante
         if (this.typewriterInterval) {
-            const lastLineY = currentY - lineHeight;
-            const lastParagraph = paragraphs[paragraphs.length - 1] || '';
-            const words = lastParagraph.split(' ');
-            let lastDisplayedLine = '';
-            
-            words.forEach(word => {
-                const testLine = lastDisplayedLine + (lastDisplayedLine ? ' ' : '') + word;
-                if (this.ctx.measureText(testLine).width > maxWidth) {
-                    lastDisplayedLine = word;
-                } else {
-                    lastDisplayedLine = testLine;
-                }
-            });
-            
-            this.ctx.fillStyle = '#2c1810';
-            this.ctx.fillRect(startX + this.ctx.measureText(lastDisplayedLine).width, lastLineY, 2, 20);
+            const lastLineY = startY + (allLines.length - 1) * lineHeight - this.scrollOffset;
+            if (lastLineY > paperY && lastLineY < paperY + paperHeight) {
+                const lastLine = allLines[allLines.length - 1] || '';
+                this.ctx.fillStyle = '#2c1810';
+                this.ctx.fillRect(startX + offscreen.measureText(lastLine).width, lastLineY, 2, 20);
+            }
         }
         
         // Mensaje final
@@ -578,7 +603,7 @@ export class CartaParaLu {
             this.ctx.font = '13px Inter, sans-serif';
             this.ctx.fillStyle = '#8b5cf6';
             this.ctx.textAlign = 'center';
-            this.ctx.fillText('✨ Toca para volver ✨', this.width / 2, paperY + paperHeight - 20);
+            this.ctx.fillText('✨ Toca para volver ✨', this.width / 2, this.height - 30);
         }
     }
     

@@ -8,11 +8,11 @@ export class ReverseText {
         
         // Frases positivas (se mostrarán rotadas 180°)
         this.phrases = [
-            'todo pasa',
-            'estoy a salvo',
-            'respira profundo',
-            'confío en mí',
-            'soy suficiente'
+            'este tebs cree que no pueo escribir txtos al reves se equivoca',
+            'como me encanta la coca zero la tomo todo el tiempo',
+            'me antoje ir a comer sushi quiero un sushi',
+            'que capa que escribiendo textos al reves xd',
+            'si puedo escribir este texto bien al reves significa que merezco un premio por lo bien que lo hago y el tebs me invitara lo que yo quiera es un comodin'
         ];
         
         this.currentIndex = 0;
