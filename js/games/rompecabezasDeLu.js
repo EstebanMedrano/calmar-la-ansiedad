@@ -8,8 +8,8 @@ export class RompecabezasDeLu {
         this.canvas = null;
         this.ctx = null;
         
-        this.width = 750;
-        this.height = 550;
+        this.width = Math.min(750, window.innerWidth - 20);
+        this.height = Math.min(550, window.innerHeight * 0.65);
         
         this.state = 'intro';
         this.currentPuzzle = 0;
@@ -57,6 +57,13 @@ export class RompecabezasDeLu {
         this.dogSequence = ['tito', 'lia', 'tito'];
         this.dogIndex = 0;
     }
+
+    resizeCanvas() {
+        this.width = Math.min(750, window.innerWidth - 20);
+        this.height = Math.min(550, window.innerHeight * 0.65);
+        this.canvas.width = this.width;
+        this.canvas.height = this.height;
+    }
     
     shufflePuzzles() {
         const shuffled = [...this.puzzles].sort(() => Math.random() - 0.5);
@@ -98,6 +105,8 @@ export class RompecabezasDeLu {
     initCanvas() {
         this.canvas = document.getElementById('puzzleCanvas');
         this.ctx = this.canvas.getContext('2d');
+        this.resizeCanvas = this.resizeCanvas.bind(this);
+        window.addEventListener('resize', this.resizeCanvas);
     }
     
     loadAssets() {

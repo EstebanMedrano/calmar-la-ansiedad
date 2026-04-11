@@ -1987,3 +1987,89 @@ body {
         transform: translateX(-50%) scale(1.02);
     }
 }
+
+// =============================================
+// CORRECCIONES RESPONSIVE PARA MÓVIL
+// =============================================
+
+@media (max-width: 600px) {
+    // Grounding - Botón Añadir más compacto
+    .grounding-game {
+        .input-group {
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .grounding-input {
+            flex: 1 1 100%;
+            padding: 12px 15px;
+        }
+        
+        .btn-add {
+            flex: 1;
+            justify-content: center;
+            padding: 12px 15px;
+        }
+    }
+    
+    // Lago de Calma - Botón volver fuera del área
+    .lake-back-btn {
+        top: 15px !important;
+        left: 15px !important;
+        padding: 8px 16px !important;
+        font-size: 13px !important;
+    }
+    
+    .catch-counter {
+        top: 15px !important;
+        padding: 8px 20px !important;
+        font-size: 14px !important;
+        
+        #catchCount {
+            font-size: 20px !important;
+        }
+    }
+    
+    // Huracán - Canvas más grande
+    .hurricane-game {
+        .hurricane-canvas-container {
+            canvas {
+                min-height: 400px;
+            }
+        }
+    }
+    
+    // Rompecabezas - Canvas responsive
+    .puzzle-game {
+        canvas {
+            width: 100% !important;
+            height: auto !important;
+            min-height: 350px;
+        }
+        
+        .puzzle-controls {
+            bottom: 15px !important;
+            right: 15px !important;
+        }
+    }
+    
+    // Carta - Botón volver abajo
+    .carta-back-btn {
+        top: auto !important;
+        bottom: 15px !important;
+        left: 15px !important;
+        background: rgba(0, 0, 0, 0.6) !important;
+    }
+    
+    .carta-hint {
+        bottom: 80px !important;
+        font-size: 14px !important;
+        padding: 12px 20px !important;
+    }
+}
+
+.btn-add .btn-text {
+    @media (max-width: 400px) {
+        display: none;
+    }
+}

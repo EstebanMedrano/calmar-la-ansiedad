@@ -8,8 +8,8 @@ export class HurricaneGame {
         this.canvas = null;
         this.ctx = null;
         
-        this.width = 800;
-        this.height = 500;
+        this.width = Math.min(800, window.innerWidth - 20);
+        this.height = Math.min(550, window.innerHeight * 0.6);
         
         // Pensamientos negativos predefinidos
         this.thoughts = [
@@ -35,6 +35,13 @@ export class HurricaneGame {
         // Control de interacción
         this.canInteract = true;
         this.isFinalSequence = false;
+    }
+
+    resizeCanvas() {
+        this.width = Math.min(800, window.innerWidth - 20);
+        this.height = Math.min(550, window.innerHeight * 0.6);
+        this.canvas.width = this.width;
+        this.canvas.height = this.height;
     }
     
     render() {
@@ -83,6 +90,8 @@ export class HurricaneGame {
     initCanvas() {
         this.canvas = document.getElementById('hurricaneCanvas');
         this.ctx = this.canvas.getContext('2d');
+        this.resizeCanvas = this.resizeCanvas.bind(this);
+        window.addEventListener('resize', this.resizeCanvas);
         
         const container = this.canvas.parentElement;
         const containerWidth = container.clientWidth;

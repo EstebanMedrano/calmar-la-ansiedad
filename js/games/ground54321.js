@@ -83,7 +83,7 @@ export class GroundingGame {
                                 autocomplete="off"
                             >
                             <button id="addItemBtn" class="btn-add" disabled>
-                                <span>✚</span> Añadir
+                                <span>✚</span> <span class="btn-text">Añadir</span>
                             </button>
                         </div>
                     ` : `
