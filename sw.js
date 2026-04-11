@@ -1,16 +1,18 @@
-// sw.js - Service Worker para funcionamiento offline
-const CACHE_NAME = 'calma-v2';
+// sw.js - Service Worker para GitHub Pages
+const CACHE_NAME = 'calma-v3';
+const BASE = '/calmar-la-ansiedad';
+
 const urlsToCache = [
-    '/',
-    '/index.html',
-    '/manifest.json',
-    '/css/main.css',
-    '/js/engine/app.js',
-    '/js/engine/router.js',
-    '/js/engine/anxietyState.js',
-    '/js/engine/soundManager.js',
-    '/js/engine/speechManager.js',
-    '/js/engine/pwaManager.js'
+    BASE + '/',
+    BASE + '/index.html',
+    BASE + '/manifest.json',
+    BASE + '/css/main.css',
+    BASE + '/js/engine/app.js',
+    BASE + '/js/engine/router.js',
+    BASE + '/js/engine/anxietyState.js',
+    BASE + '/js/engine/soundManager.js',
+    BASE + '/js/engine/speechManager.js',
+    BASE + '/js/engine/pwaManager.js'
 ];
 
 self.addEventListener('install', event => {
@@ -37,8 +39,10 @@ self.addEventListener('activate', event => {
     );
 });
 
-// 🆕 CORRECCIÓN: Manejar la raíz correctamente
 self.addEventListener('fetch', event => {
+    // Si la URL no incluye el BASE, lo agregamos
+    let requestUrl = event.request.url;
+    
     event.respondWith(
         caches.match(event.request)
             .then(response => {
@@ -46,11 +50,10 @@ self.addEventListener('fetch', event => {
                     return response;
                 }
                 
-                // Si no está en caché, intentar obtener de la red
                 return fetch(event.request).catch(() => {
                     // Si falla la red y es una navegación, devolver index.html
                     if (event.request.mode === 'navigate') {
-                        return caches.match('/index.html');
+                        return caches.match(BASE + '/index.html');
                     }
                 });
             })
