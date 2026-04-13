@@ -2,7 +2,7 @@
 // Logger silencioso para el Diario de Lu
 // Ella no ve nada, los datos van directo a Google Sheets
 
-const API_URL = 'https://script.google.com/macros/s/AKfycb...TU_URL_AQUI.../exec'; // ← Pega tu URL aquí
+const API_URL = 'https://script.google.com/macros/s/AKfycbx5yyi489MxM7WmpM-4LEYRt6MvzQ4skH-cLrnF-iF7c9_VxOdUofdayP7tfAapA6Mg/exec'; // ← Pega tu URL aquí
 
 export class Logger {
     static async send(type, data) {
