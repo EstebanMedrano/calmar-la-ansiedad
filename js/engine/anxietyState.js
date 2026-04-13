@@ -12,6 +12,9 @@ export class AnxietyState {
     }
     
     setLevel(level) {
+        import('./logger.js').then(module => {
+            module.Logger.logSession(level);
+        });
         this.currentLevel = Math.min(10, Math.max(0, level));
         localStorage.setItem('calma_last_level', this.currentLevel);
         localStorage.setItem('calma_session_start', this.currentLevel);
@@ -33,8 +36,14 @@ export class AnxietyState {
             this.updateUI();
             this.showAffirmation();
             this.speakAffirmation();
-            
             this.logSession(gameName);
+            
+            // ✅ SOLO cuando llega a 0
+            if (this.currentLevel === 0) {
+                import('./logger.js').then(module => {
+                    module.Logger.logSessionEnd(0, 'completado');
+                });
+            }
         }
         return this.currentLevel;
     }

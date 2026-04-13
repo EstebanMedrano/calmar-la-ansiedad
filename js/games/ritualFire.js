@@ -651,6 +651,9 @@ export class RitualFire {
         };
         
         this.letters.push(letter);
+        import('../engine/logger.js').then(module => {
+            module.Logger.logText('Ritual de Soltar', text);
+        });
         this.saveLetters();
         
         // Animación de carta doblándose

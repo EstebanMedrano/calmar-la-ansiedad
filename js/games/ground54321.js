@@ -203,6 +203,9 @@ export class GroundingGame {
         step.items.push(value);
         
         if (step.items.length === step.number) {
+            import('../engine/logger.js').then(module => {
+                module.Logger.logGrounding(step.label, step.items.join(' | '));
+            });
             this.showToast(`🎉 ¡Excelente! Completaste este paso`, 'success');
         }
         
