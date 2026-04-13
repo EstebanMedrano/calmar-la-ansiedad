@@ -1,18 +1,11 @@
 // js/games/memoryGame.js
 // Juego de Memorama - Ayuda a desviar la atención y ejercitar la memoria
-// 8 pares de emojis calmantes
 
 export class MemoryGame {
     constructor(container) {
         this.container = container;
         
-        // Emojis terapéuticos y calmantes
-        this.emojis = [
-            '🌿', '🌸', '🦋', '🌙',  // Naturaleza y calma
-            '⭐', '☁️', '🌈', '🕊️'   // Paz y serenidad
-        ];
-        
-        // Duplicar para crear pares
+        this.emojis = ['🌿', '🌸', '🦋', '🌙', '⭐', '☁️', '🌈', '🕊️'];
         this.cards = [...this.emojis, ...this.emojis];
         
         this.flippedCards = [];
@@ -20,10 +13,18 @@ export class MemoryGame {
         this.moves = 0;
         this.canFlip = true;
         this.gameCompleted = false;
+        
+        // 🆕 Logger
+        this.gameName = 'Memorama';
+        this.startTime = Date.now();
     }
     
     render() {
-        // Barajar cartas
+        // 🆕 Registrar entrada
+        import('../engine/logger.js').then(module => {
+            module.Logger.logGameVisit(this.gameName);
+        });
+        
         this.shuffleCards();
         
         this.container.innerHTML = `
@@ -37,7 +38,6 @@ export class MemoryGame {
                     Encuentra los pares. Tómate tu tiempo.
                 </p>
                 
-                <!-- Panel de estadísticas -->
                 <div class="memory-stats">
                     <div class="stat-item">
                         <span class="stat-icon">🎯</span>
@@ -51,7 +51,6 @@ export class MemoryGame {
                     </div>
                 </div>
                 
-                <!-- Grid del memorama -->
                 <div class="memory-grid" id="memoryGrid">
                     ${this.cards.map((emoji, index) => `
                         <div class="memory-card" data-index="${index}" data-emoji="${emoji}">
@@ -61,14 +60,9 @@ export class MemoryGame {
                     `).join('')}
                 </div>
                 
-                <!-- Botones de control -->
                 <div style="display: flex; gap: 16px; justify-content: center; margin-top: 32px;">
-                    <button id="resetMemory" class="btn-secondary">
-                        🔄 Reiniciar
-                    </button>
-                    <button id="backFromMemory" class="btn-secondary">
-                        ← Volver
-                    </button>
+                    <button id="resetMemory" class="btn-secondary">🔄 Reiniciar</button>
+                    <button id="backFromMemory" class="btn-secondary">← Volver</button>
                 </div>
             </div>
         `;
@@ -77,7 +71,6 @@ export class MemoryGame {
     }
     
     shuffleCards() {
-        // Algoritmo Fisher-Yates
         for (let i = this.cards.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [this.cards[i], this.cards[j]] = [this.cards[j], this.cards[i]];
@@ -96,11 +89,9 @@ export class MemoryGame {
             });
         });
         
-        resetBtn?.addEventListener('click', () => {
-            this.resetGame();
-        });
-        
+        resetBtn?.addEventListener('click', () => this.resetGame());
         backBtn?.addEventListener('click', () => {
+            this.cleanup();
             if (window.app && window.app.router) {
                 window.app.router.showGamesView();
             }
@@ -108,28 +99,20 @@ export class MemoryGame {
     }
     
     flipCard(card, index) {
-        // Validaciones
         if (!this.canFlip || this.gameCompleted) return;
         if (card.classList.contains('flipped')) return;
         if (card.classList.contains('matched')) return;
         if (this.flippedCards.length >= 2) return;
         
-        // Voltear carta
         card.classList.add('flipped');
         this.flippedCards.push({ card, index });
+        console.log('🎴 Flip!');
         
-        // Reproducir sonido suave (opcional - placeholder)
-        this.playFlipSound();
-        
-        // Si hay 2 cartas volteadas, verificar par
         if (this.flippedCards.length === 2) {
             this.canFlip = false;
             this.moves++;
             this.updateStats();
-            
-            setTimeout(() => {
-                this.checkMatch();
-            }, 600);
+            setTimeout(() => this.checkMatch(), 600);
         }
     }
     
@@ -141,86 +124,51 @@ export class MemoryGame {
         const index2 = card2.index;
         
         if (emoji1 === emoji2 && index1 !== index2) {
-            // ¡Es un par!
             card1.card.classList.add('matched');
             card2.card.classList.add('matched');
             this.matchedPairs++;
-            
-            // Efecto visual de éxito
             this.showMatchEffect(card1.card);
             this.showMatchEffect(card2.card);
-            
             this.updateStats();
-            
-            // Verificar si completó el juego
             if (this.matchedPairs === this.emojis.length) {
                 this.completeGame();
             }
         } else {
-            // No es par, voltear de vuelta
             setTimeout(() => {
                 card1.card.classList.remove('flipped');
                 card2.card.classList.remove('flipped');
             }, 200);
         }
         
-        // Limpiar array de cartas volteadas
         this.flippedCards = [];
-        
-        // Permitir voltear de nuevo
-        setTimeout(() => {
-            this.canFlip = true;
-        }, 600);
+        setTimeout(() => { this.canFlip = true; }, 600);
     }
     
     showMatchEffect(card) {
-        // Efecto de brillo temporal
         card.style.boxShadow = '0 0 30px #10b981';
-        setTimeout(() => {
-            card.style.boxShadow = '';
-        }, 500);
-    }
-    
-    playFlipSound() {
-        // Placeholder para sonido (se implementará con Howler.js)
-        // Por ahora solo un console.log suave
-        console.log('🎴 Flip!');
+        setTimeout(() => { card.style.boxShadow = ''; }, 500);
     }
     
     updateStats() {
         const movesEl = document.getElementById('movesCount');
         const pairsEl = document.getElementById('pairsCount');
-        
-        if (movesEl) {
-            movesEl.textContent = this.moves;
-        }
-        
-        if (pairsEl) {
-            pairsEl.textContent = `${this.matchedPairs}/${this.emojis.length}`;
-        }
+        if (movesEl) movesEl.textContent = this.moves;
+        if (pairsEl) pairsEl.textContent = `${this.matchedPairs}/${this.emojis.length}`;
     }
     
     resetGame() {
-        // Resetear estado
         this.flippedCards = [];
         this.matchedPairs = 0;
         this.moves = 0;
         this.canFlip = true;
         this.gameCompleted = false;
-        
-        // Volver a barajar
         this.shuffleCards();
-        
-        // Re-renderizar
         this.render();
-        
         this.showToast('🔄 Juego reiniciado', 'info');
     }
     
     completeGame() {
         this.gameCompleted = true;
-        
-        // Mostrar mensaje de victoria
         setTimeout(() => {
             const grid = document.getElementById('memoryGrid');
             if (grid) {
@@ -235,12 +183,9 @@ export class MemoryGame {
                 `);
             }
             
-            // Reducir nivel de ansiedad
             if (window.app && window.app.anxietyState) {
-                const newLevel = window.app.anxietyState.reduceLevel('Memorama');
-                
+                const newLevel = window.app.anxietyState.reduceLevel(this.gameName);
                 this.showToast('🎴 ¡Memorama completado! Tu mente está más tranquila.', 'success');
-                
                 if (newLevel === 0) {
                     setTimeout(() => {
                         if (window.app && window.app.router) {
@@ -257,11 +202,15 @@ export class MemoryGame {
         toast.className = type === 'success' ? 'grounding-toast-success' : 'grounding-toast-info';
         toast.innerText = message;
         document.body.appendChild(toast);
-        
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            setTimeout(() => toast.remove(), 300);
-        }, 2500);
+        setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 2500);
+    }
+    
+    cleanup() {
+        // 🆕 Registrar salida con duración
+        const duration = Math.round((Date.now() - this.startTime) / 1000);
+        import('../engine/logger.js').then(module => {
+            module.Logger.logGameVisit(this.gameName, duration);
+        });
     }
 }
 

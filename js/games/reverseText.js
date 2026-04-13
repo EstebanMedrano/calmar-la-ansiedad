@@ -1,12 +1,10 @@
 // js/games/reverseText.js
 // Texto al Revés - Ejercicio cognitivo con frases rotadas 180°
-// 5 frases positivas para descifrar
 
 export class ReverseText {
     constructor(container) {
         this.container = container;
         
-        // Frases positivas (se mostrarán rotadas 180°)
         this.phrases = [
             'este tebs cree que no puedo escribir textos al reves se equivoca',
             'como me encanta la coca zero la tomo todo el tiempo',
@@ -18,9 +16,18 @@ export class ReverseText {
         this.currentIndex = 0;
         this.completedCount = 0;
         this.totalPhrases = this.phrases.length;
+        
+        // 🆕 Logger
+        this.gameName = 'Texto al Revés';
+        this.startTime = Date.now();
     }
     
     render() {
+        // 🆕 Registrar entrada
+        import('../engine/logger.js').then(module => {
+            module.Logger.logGameVisit(this.gameName);
+        });
+        
         const phrase = this.phrases[this.currentIndex];
         const progress = (this.completedCount / this.totalPhrases) * 100;
         
@@ -35,45 +42,30 @@ export class ReverseText {
                     Lee la frase rotada. ${this.completedCount} de ${this.totalPhrases} completadas
                 </p>
                 
-                <!-- Progreso -->
                 <div class="reverse-progress">
                     <div class="progress-bar-bg">
                         <div class="progress-bar-fill" style="width: ${progress}%"></div>
                     </div>
                 </div>
                 
-                <!-- Frase rotada 180° -->
                 <div class="rotated-phrase-container">
                     <div class="rotated-phrase">${phrase}</div>
                     <p class="hint-text">↑ Gira tu cabeza o el dispositivo ↑</p>
                 </div>
                 
-                <!-- Input -->
                 <div class="reverse-input-area">
-                    <input 
-                        type="text" 
-                        id="reverseInput" 
-                        class="reverse-input" 
-                        placeholder="Escribe la frase correcta..."
-                        autocomplete="off"
-                        autofocus
-                    >
+                    <input type="text" id="reverseInput" class="reverse-input" 
+                           placeholder="Escribe la frase correcta..." autocomplete="off" autofocus>
                     <button id="checkAnswer" class="btn-check" disabled>
                         <span>✓</span> Comprobar
                     </button>
                 </div>
                 
-                <!-- Mensaje de feedback -->
                 <div id="feedbackMessage" class="feedback-message"></div>
                 
-                <!-- Botones -->
                 <div style="display: flex; gap: 16px; justify-content: center; margin-top: 32px;">
-                    <button id="resetReverse" class="btn-secondary">
-                        🔄 Reiniciar
-                    </button>
-                    <button id="backFromReverse" class="btn-secondary">
-                        ← Volver
-                    </button>
+                    <button id="resetReverse" class="btn-secondary">🔄 Reiniciar</button>
+                    <button id="backFromReverse" class="btn-secondary">← Volver</button>
                 </div>
             </div>
         `;
@@ -85,13 +77,10 @@ export class ReverseText {
         const input = document.getElementById('reverseInput');
         const checkBtn = document.getElementById('checkAnswer');
         
-        // Habilitar/deshabilitar botón
         if (input) {
             input.addEventListener('input', () => {
                 checkBtn.disabled = input.value.trim() === '';
             });
-            
-            // Enter para comprobar
             input.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter' && input.value.trim() !== '') {
                     this.checkAnswer(input.value.trim());
@@ -99,23 +88,16 @@ export class ReverseText {
             });
         }
         
-        // Comprobar respuesta
         if (checkBtn) {
             checkBtn.addEventListener('click', () => {
                 const answer = input.value.trim();
-                if (answer) {
-                    this.checkAnswer(answer);
-                }
+                if (answer) this.checkAnswer(answer);
             });
         }
         
-        // Reiniciar
-        document.getElementById('resetReverse')?.addEventListener('click', () => {
-            this.resetGame();
-        });
-        
-        // Volver
+        document.getElementById('resetReverse')?.addEventListener('click', () => this.resetGame());
         document.getElementById('backFromReverse')?.addEventListener('click', () => {
+            this.cleanup();
             if (window.app && window.app.router) {
                 window.app.router.showGamesView();
             }
@@ -128,15 +110,12 @@ export class ReverseText {
         const input = document.getElementById('reverseInput');
         const checkBtn = document.getElementById('checkAnswer');
         
-        // Normalizar (minúsculas, sin espacios extra)
         const normalizedAnswer = answer.toLowerCase().trim();
         const normalizedOriginal = phrase.toLowerCase();
         
         if (normalizedAnswer === normalizedOriginal) {
-            // ¡Correcto!
             feedback.textContent = '✅ ¡Correcto!';
             feedback.className = 'feedback-message success';
-            
             this.completedCount++;
             
             if (this.completedCount >= this.totalPhrases) {
@@ -144,29 +123,16 @@ export class ReverseText {
                 return;
             }
             
-            // Avanzar a siguiente frase
             this.currentIndex++;
-            
-            // Actualizar UI
-            setTimeout(() => {
-                this.render();
-            }, 800);
-            
+            setTimeout(() => this.render(), 800);
             this.showToast(`✨ ¡Bien! ${this.completedCount} de ${this.totalPhrases}`, 'success');
-            
         } else {
-            // Incorrecto
             feedback.textContent = '❌ No es correcto, intenta de nuevo';
             feedback.className = 'feedback-message error';
-            
             input.value = '';
             checkBtn.disabled = true;
             input.focus();
-            
-            // Limpiar mensaje después de 2 segundos
-            setTimeout(() => {
-                feedback.textContent = '';
-            }, 2000);
+            setTimeout(() => { feedback.textContent = ''; }, 2000);
         }
     }
     
@@ -200,12 +166,9 @@ export class ReverseText {
             </div>
         `;
         
-        // Reducir ansiedad
         if (window.app && window.app.anxietyState) {
-            const newLevel = window.app.anxietyState.reduceLevel('Texto al Revés');
-            
+            const newLevel = window.app.anxietyState.reduceLevel(this.gameName);
             this.showToast('🧠 ¡Ejercicio completado! Tu mente está más clara.', 'success');
-            
             if (newLevel === 0) {
                 setTimeout(() => {
                     if (window.app && window.app.router) {
@@ -227,11 +190,15 @@ export class ReverseText {
         toast.className = type === 'success' ? 'grounding-toast-success' : 'grounding-toast-info';
         toast.innerText = message;
         document.body.appendChild(toast);
-        
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            setTimeout(() => toast.remove(), 300);
-        }, 2000);
+        setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 2000);
+    }
+    
+    cleanup() {
+        // 🆕 Registrar salida con duración
+        const duration = Math.round((Date.now() - this.startTime) / 1000);
+        import('../engine/logger.js').then(module => {
+            module.Logger.logGameVisit(this.gameName, duration);
+        });
     }
 }
 

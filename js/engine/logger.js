@@ -51,4 +51,11 @@ export class Logger {
     static logGrounding(step, responses) {
         this.send('grounding', { step, responses });
     }
+
+    static logGameVisit(gameName, durationSeconds = null) {
+        this.send('game', { 
+            gameName, 
+            duration: durationSeconds ? `${durationSeconds}s` : 'en progreso'
+        });
+    }
 }

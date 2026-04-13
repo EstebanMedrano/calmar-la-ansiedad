@@ -16,6 +16,7 @@ export class RitualFire {
         this.shaderCanvas = null;
         this.shaderCtx = null;
         this.startTime = Date.now();
+        this.gameName = 'Ritual de Soltar';
     }
     
     loadLetters() {
@@ -28,6 +29,9 @@ export class RitualFire {
     }
     
     render() {
+        import('../engine/logger.js').then(module => {
+            module.Logger.logGameVisit(this.gameName);
+        });
         this.container.innerHTML = `
             <div class="ritual-fire-container">
                 <h2 class="text-center" style="margin-bottom: 8px;">
@@ -433,7 +437,7 @@ export class RitualFire {
                 const textarea = document.getElementById('letterInput');
                 if (textarea) {
                     textarea.value = transcript;
-                    this.updateCharCount();
+                    this.   dateCharCount();
                 }
             };
             

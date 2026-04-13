@@ -581,6 +581,10 @@ export class HurricaneGame {
         if (this.animationFrame) {
             cancelAnimationFrame(this.animationFrame);
         }
+        const duration = Math.round((Date.now() - this.startTime) / 1000);
+        import('../engine/logger.js').then(module => {
+            module.Logger.logGameVisit(this.gameName, duration);
+        });
     }
 }
 

@@ -1,7 +1,5 @@
 // js/games/waterCalm.js
 // Lago de Calma - ¡Escapa de Tito y Lia!
-// Evita que te atrapen mientras creas ondas de color
-// Sonido con Audio nativo (FUNCIONAL)
 
 export class WaterCalm {
     constructor(container) {
@@ -35,12 +33,10 @@ export class WaterCalm {
         this.rippleInterval = null;
         this.soundInterval = null;
         
-        // Perros
         this.tito = { x: 100, y: 100, vx: 0, vy: 0, size: 60, img: null };
         this.lia = { x: this.width - 100, y: 100, vx: 0, vy: 0, size: 50, img: null };
         this.dogsLoaded = false;
         
-        // Contador de atrapadas
         this.catchCount = 0;
         this.maxCatches = 10;
         this.gameActive = true;
@@ -50,10 +46,13 @@ export class WaterCalm {
         this.isAnimating = true;
         this.paletteElement = null;
         
-        // Sonido nativo
         this.waterSound = new Audio('assets/sounds/water-drop.mp3');
         this.waterSound.loop = true;
         this.waterSound.volume = 0.25;
+        
+        // 🆕 Logger
+        this.gameName = 'Lago de Calma';
+        this.startTime = Date.now();
         
         this.loadDogs();
     }
@@ -67,9 +66,7 @@ export class WaterCalm {
         let loaded = 0;
         const onLoad = () => {
             loaded++;
-            if (loaded === 2) {
-                this.dogsLoaded = true;
-            }
+            if (loaded === 2) this.dogsLoaded = true;
         };
         
         this.tito.img.onload = onLoad;
@@ -77,16 +74,17 @@ export class WaterCalm {
     }
     
     render() {
+        // 🆕 Registrar entrada
+        import('../engine/logger.js').then(module => {
+            module.Logger.logGameVisit(this.gameName);
+        });
+        
         this.container.innerHTML = `
             <div class="lake-calm-container">
                 <canvas id="lakeCanvas"></canvas>
                 <button id="backFromLake" class="lake-back-btn">← Volver</button>
                 <div class="catch-counter">
-                    <span>🦊</span>
-                    <span id="catchCount">0</span>
-                    <span>/</span>
-                    <span>${this.maxCatches}</span>
-                    <span>🤍</span>
+                    <span>🦊</span><span id="catchCount">0</span><span>/</span><span>${this.maxCatches}</span><span>🤍</span>
                 </div>
                 <div class="lake-hint">
                     <span>🎨 ¡Escapa de Tito y Lia! Mantén pulsado y huye</span>
@@ -102,19 +100,15 @@ export class WaterCalm {
     
     createColorPalette() {
         if (this.paletteElement) this.paletteElement.remove();
-        
         this.paletteElement = document.createElement('div');
         this.paletteElement.className = 'color-palette-lake';
         this.paletteElement.innerHTML = this.colors.map((c, i) => `
             <div class="color-btn-lake ${c.color === 'rainbow' ? 'rainbow-btn' : ''}" 
-                 data-color-index="${i}" 
-                 style="${c.color !== 'rainbow' ? `background: ${c.color};` : ''}">
+                 data-color-index="${i}" style="${c.color !== 'rainbow' ? `background: ${c.color};` : ''}">
                 <span class="color-emoji">${c.emoji}</span>
             </div>
         `).join('');
-        
         document.body.appendChild(this.paletteElement);
-        
         setTimeout(() => {
             const firstBtn = this.paletteElement.querySelector('.color-btn-lake');
             if (firstBtn) firstBtn.classList.add('selected');
@@ -141,10 +135,8 @@ export class WaterCalm {
         document.body.addEventListener('click', (e) => {
             const btn = e.target.closest('.color-btn-lake');
             if (!btn) return;
-            
             const index = parseInt(btn.dataset.colorIndex);
             this.selectedColor = this.colors[index];
-            
             document.querySelectorAll('.color-btn-lake').forEach(b => b.classList.remove('selected'));
             btn.classList.add('selected');
         });
@@ -256,10 +248,8 @@ export class WaterCalm {
             const r = parseInt(color.slice(1, 3), 16);
             const g = parseInt(color.slice(3, 5), 16);
             const b = parseInt(color.slice(5, 7), 16);
-            
             const darkColor = `rgb(${Math.floor(r * 0.15)}, ${Math.floor(g * 0.15)}, ${Math.floor(b * 0.15)})`;
             const midColor = `rgb(${Math.floor(r * 0.35)}, ${Math.floor(g * 0.35)}, ${Math.floor(b * 0.35)})`;
-            
             document.body.style.background = `linear-gradient(135deg, ${darkColor}, ${midColor}, ${darkColor})`;
             document.body.style.backgroundSize = '400% 400%';
             document.body.style.animation = 'gradient-shift 15s ease infinite';
@@ -276,7 +266,6 @@ export class WaterCalm {
         if (this.selectedColor.color === 'rainbow') {
             const hue = (Date.now() / 10) % 360;
             color = `hsl(${hue}, 80%, 60%)`;
-            
             if (this.isPressed) {
                 document.body.style.background = `linear-gradient(135deg, hsl(${hue}, 40%, 12%), hsl(${(hue + 60) % 360}, 40%, 18%))`;
                 document.body.style.backgroundSize = '400% 400%';
@@ -286,17 +275,11 @@ export class WaterCalm {
         }
         
         this.ripples.push({
-            x, y,
-            radius: 10,
-            maxRadius: Math.min(this.width, this.height) * 0.5,
-            color: color,
-            speed: 4,
-            active: true
+            x, y, radius: 10, maxRadius: Math.min(this.width, this.height) * 0.5,
+            color: color, speed: 4, active: true
         });
         
-        if (this.ripples.length > this.maxRipples) {
-            this.ripples.shift();
-        }
+        if (this.ripples.length > this.maxRipples) this.ripples.shift();
     }
     
     updateDogs() {
@@ -307,7 +290,6 @@ export class WaterCalm {
         const dxTito = this.mouseX - this.tito.x;
         const dyTito = this.mouseY - this.tito.y;
         const distTito = Math.sqrt(dxTito * dxTito + dyTito * dyTito);
-        
         if (distTito > 5) {
             this.tito.vx = (dxTito / distTito) * baseSpeed;
             this.tito.vy = (dyTito / distTito) * baseSpeed;
@@ -316,7 +298,6 @@ export class WaterCalm {
         const dxLia = this.mouseX - this.lia.x;
         const dyLia = this.mouseY - this.lia.y;
         const distLia = Math.sqrt(dxLia * dxLia + dyLia * dyLia);
-        
         if (distLia > 5) {
             this.lia.vx = (dxLia / distLia) * baseSpeed;
             this.lia.vy = (dyLia / distLia) * baseSpeed;
@@ -337,7 +318,6 @@ export class WaterCalm {
         
         this.tito.x = Math.max(margin, Math.min(midX - 20, this.tito.x));
         this.tito.y = Math.max(margin, Math.min(this.height - margin - 100, this.tito.y));
-        
         this.lia.x = Math.max(midX + 20, Math.min(this.width - margin, this.lia.x));
         this.lia.y = Math.max(margin, Math.min(this.height - margin - 100, this.lia.y));
         
@@ -346,42 +326,27 @@ export class WaterCalm {
     
     checkCatch() {
         if (!this.isPressed) return;
-        
         const now = Date.now();
         if (now - this.lastCatchTime < this.catchCooldown) return;
         
-        const distToTito = Math.sqrt(
-            Math.pow(this.mouseX - this.tito.x, 2) + 
-            Math.pow(this.mouseY - this.tito.y, 2)
-        );
-        
+        const distToTito = Math.sqrt(Math.pow(this.mouseX - this.tito.x, 2) + Math.pow(this.mouseY - this.tito.y, 2));
         if (distToTito < 50) {
             this.catchCount++;
             this.lastCatchTime = now;
             this.updateCatchDisplay();
             this.tito.vx = (this.tito.x - this.mouseX) * 0.5;
             this.tito.vy = (this.tito.y - this.mouseY) * 0.5;
-            
-            if (this.catchCount >= this.maxCatches) {
-                this.gameOver('tito');
-            }
+            if (this.catchCount >= this.maxCatches) this.gameOver('tito');
         }
         
-        const distToLia = Math.sqrt(
-            Math.pow(this.mouseX - this.lia.x, 2) + 
-            Math.pow(this.mouseY - this.lia.y, 2)
-        );
-        
+        const distToLia = Math.sqrt(Math.pow(this.mouseX - this.lia.x, 2) + Math.pow(this.mouseY - this.lia.y, 2));
         if (distToLia < 45) {
             this.catchCount++;
             this.lastCatchTime = now;
             this.updateCatchDisplay();
             this.lia.vx = (this.lia.x - this.mouseX) * 0.5;
             this.lia.vy = (this.lia.y - this.mouseY) * 0.5;
-            
-            if (this.catchCount >= this.maxCatches) {
-                this.gameOver('lia');
-            }
+            if (this.catchCount >= this.maxCatches) this.gameOver('lia');
         }
     }
     
@@ -392,7 +357,6 @@ export class WaterCalm {
     
     gameOver(winner) {
         if (!this.gameActive) return;
-        
         this.gameActive = false;
         this.isPressed = false;
         this.stopRippleStream();
@@ -410,9 +374,7 @@ export class WaterCalm {
         gameOverDiv.innerHTML = `
             <div class="gameover-content">
                 <img src="${winnerImg.src}" class="gameover-dog" alt="${winnerName}">
-                <div class="gameover-bubble">
-                    <p>¡Te atrapé! ¿Jugamos otra vez?</p>
-                </div>
+                <div class="gameover-bubble"><p>¡Te atrapé! ¿Jugamos otra vez?</p></div>
                 <div class="gameover-buttons">
                     <button id="playAgain" class="gameover-btn yes">¡Sí! 🎮</button>
                     <button id="backToGames" class="gameover-btn no">← Volver</button>
@@ -426,9 +388,7 @@ export class WaterCalm {
             document.getElementById('playAgain')?.addEventListener('click', () => this.resetGame());
             document.getElementById('backToGames')?.addEventListener('click', () => {
                 this.cleanup();
-                if (window.app && window.app.router) {
-                    window.app.router.showGamesView();
-                }
+                if (window.app && window.app.router) window.app.router.showGamesView();
             });
         });
     }
@@ -438,15 +398,10 @@ export class WaterCalm {
         this.gameActive = true;
         this.lastCatchTime = 0;
         this.updateCatchDisplay();
-        
-        this.tito.x = 100;
-        this.tito.y = 100;
-        this.lia.x = this.width - 100;
-        this.lia.y = 100;
-        
+        this.tito.x = 100; this.tito.y = 100;
+        this.lia.x = this.width - 100; this.lia.y = 100;
         const gameOverDiv = this.container.querySelector('.catch-gameover');
         if (gameOverDiv) gameOverDiv.remove();
-        
         if (window.app && window.app.anxietyState) {
             window.app.anxietyState.currentLevel = Math.max(0, window.app.anxietyState.currentLevel - 1);
             window.app.anxietyState.updateUI();
@@ -455,13 +410,10 @@ export class WaterCalm {
     
     animate() {
         if (!this.isAnimating) return;
-        
         if (this.gameActive) this.updateDogs();
-        
         this.ctx.fillStyle = '#0a1220';
         this.ctx.fillRect(0, 0, this.width, this.height);
         
-        // Línea divisoria
         this.ctx.beginPath();
         this.ctx.moveTo(this.width / 2, 0);
         this.ctx.lineTo(this.width / 2, this.height);
@@ -474,7 +426,6 @@ export class WaterCalm {
         this.drawRipples();
         if (this.dogsLoaded) this.drawDogs();
         this.updateRipples();
-        
         requestAnimationFrame(() => this.animate());
     }
     
@@ -497,34 +448,24 @@ export class WaterCalm {
             this.ctx.drawImage(this.lia.img, this.lia.x - 35, this.lia.y - 35, 70, 70);
             this.ctx.fillText('🤍 Lia', this.lia.x, this.lia.y - 45);
         }
-        
         this.ctx.restore();
     }
     
     drawRipples() {
         this.ripples.forEach(ripple => {
             if (!ripple.active) return;
-            
             const progress = ripple.radius / ripple.maxRadius;
             const alpha = Math.max(0, 0.7 - progress * 0.5);
-            
-            const gradient = this.ctx.createRadialGradient(
-                ripple.x, ripple.y, 0,
-                ripple.x, ripple.y, ripple.radius
-            );
-            
+            const gradient = this.ctx.createRadialGradient(ripple.x, ripple.y, 0, ripple.x, ripple.y, ripple.radius);
             const color = this.hexToRgba(ripple.color, alpha * 0.5);
             const colorMid = this.hexToRgba(ripple.color, alpha * 0.2);
-            
             gradient.addColorStop(0, color);
             gradient.addColorStop(0.6, colorMid);
             gradient.addColorStop(1, 'transparent');
-            
             this.ctx.beginPath();
             this.ctx.arc(ripple.x, ripple.y, ripple.radius, 0, Math.PI * 2);
             this.ctx.fillStyle = gradient;
             this.ctx.fill();
-            
             for (let i = 0; i < 2; i++) {
                 const ringRadius = ripple.radius - (i * 20);
                 if (ringRadius > 5) {
@@ -532,7 +473,7 @@ export class WaterCalm {
                     this.ctx.arc(ripple.x, ripple.y, ringRadius, 0, Math.PI * 2);
                     this.ctx.strokeStyle = this.hexToRgba('#ffffff', alpha * 0.2);
                     this.ctx.lineWidth = 2;
-                    this.ctx.stroke();  
+                    this.ctx.stroke();
                 }
             }
         });
@@ -560,6 +501,12 @@ export class WaterCalm {
         if (this.paletteElement) this.paletteElement.remove();
         this.resetBodyBackground();
         window.removeEventListener('resize', this.resizeCanvas);
+        
+        // 🆕 Registrar salida con duración
+        const duration = Math.round((Date.now() - this.startTime) / 1000);
+        import('../engine/logger.js').then(module => {
+            module.Logger.logGameVisit(this.gameName, duration);
+        });
     }
 }
 

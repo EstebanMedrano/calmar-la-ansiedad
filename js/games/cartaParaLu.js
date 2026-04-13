@@ -711,6 +711,10 @@ export class CartaParaLu {
         document.body.style.background = this.originalBodyBg;
         document.body.style.animation = '';
         window.removeEventListener('resize', this.resizeCanvas);
+        const duration = Math.round((Date.now() - this.startTime) / 1000);
+        import('../engine/logger.js').then(module => {
+            module.Logger.logGameVisit(this.gameName, duration);
+        });
     }
 }
 
