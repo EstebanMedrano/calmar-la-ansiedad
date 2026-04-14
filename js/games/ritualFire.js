@@ -437,7 +437,7 @@ export class RitualFire {
                 const textarea = document.getElementById('letterInput');
                 if (textarea) {
                     textarea.value = transcript;
-                    this.   dateCharCount();
+                    this.updateCharCount(); 
                 }
             };
             
@@ -565,6 +565,7 @@ export class RitualFire {
         }
         
         document.getElementById('backFromRitual')?.addEventListener('click', () => {
+            this.cleanup();
             if (this.fireSound) this.fireSound.stop();
             if (window.app && window.app.router) {
                 window.app.router.showGamesView();
@@ -789,6 +790,17 @@ export class RitualFire {
             toast.style.opacity = '0';
             setTimeout(() => toast.remove(), 300);
         }, 2500);
+    }
+
+    cleanup() {
+        // Detener sonido
+        if (this.fireSound) this.fireSound.stop();
+        
+        // Registrar duración al salir
+        const duration = Math.round((Date.now() - this.startTime) / 1000);
+        import('../engine/logger.js').then(module => {
+            module.Logger.logGameVisit(this.gameName, duration);
+        });
     }
 }
 
