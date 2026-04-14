@@ -56,6 +56,9 @@ export class RompecabezasDeLu {
         this.animationFrame = null;
         this.dogSequence = ['tito', 'lia', 'tito'];
         this.dogIndex = 0;
+
+        this.gameName = 'Rompecabezas';
+        this.startTime = Date.now();
     }
 
     resizeCanvas() {
@@ -72,6 +75,8 @@ export class RompecabezasDeLu {
     }
     
     render() {
+        // 🆕 Registrar entrada
+        import('../engine/logger.js').then(module => module.Logger.logGameVisit(this.gameName));
         this.container.innerHTML = `
             <div class="puzzle-game">
                 <div id="puzzleLoading" class="puzzle-loading">
@@ -598,9 +603,7 @@ export class RompecabezasDeLu {
     cleanup() {
         if (this.animationFrame) cancelAnimationFrame(this.animationFrame);
         const duration = Math.round((Date.now() - this.startTime) / 1000);
-        import('../engine/logger.js').then(module => {
-            module.Logger.logGameVisit(this.gameName, duration);
-        });
+        import('../engine/logger.js').then(module => module.Logger.logGameVisit(this.gameName, duration));
     }
 }
 

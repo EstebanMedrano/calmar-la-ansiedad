@@ -35,6 +35,10 @@ export class HurricaneGame {
         // Control de interacción
         this.canInteract = true;
         this.isFinalSequence = false;
+        
+        // 🆕 Logger
+        this.gameName = 'Huracán';
+        this.startTime = Date.now();
     }
 
     resizeCanvas() {
@@ -45,6 +49,11 @@ export class HurricaneGame {
     }
     
     render() {
+        // 🆕 Registrar entrada al juego
+        import('../engine/logger.js').then(module => {
+            module.Logger.logGameVisit(this.gameName);
+        });
+        
         this.container.innerHTML = `
             <div class="hurricane-game">
                 <h2 class="text-center" style="margin-bottom: 8px;">
@@ -123,10 +132,9 @@ export class HurricaneGame {
             opacity: 0.8,
             active: true,
             isExploding: false,
-            // Propiedades para animación de explosión
             targetX: null,
             targetY: null,
-            explosionPhase: null // 'moving', 'shaking', 'exploding'
+            explosionPhase: null
         };
     }
     
@@ -217,7 +225,6 @@ export class HurricaneGame {
         p.originalVy = p.vy;
         p.shakeIntensity = 0;
         
-        // Detener movimiento normal
         p.vx = 0;
         p.vy = 0;
     }
@@ -229,28 +236,21 @@ export class HurricaneGame {
         const centerY = this.height / 2;
         
         if (p.explosionPhase === 'moving') {
-            // Movimiento SUAVE hacia el centro
             const dx = centerX - p.x;
             const dy = centerY - p.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
             
             if (distance > 10) {
-                // Movimiento lento y elegante (3% por frame)
                 p.x += dx * 0.03;
                 p.y += dy * 0.03;
-                // Rotación suave
-                // Rotación limitada a ±30 grados (0.52 radianes)
+                
                 if (!p.rotationDirection) {
-                    // Elegir dirección aleatoria: 1 = derecha, -1 = izquierda
                     p.rotationDirection = Math.random() > 0.5 ? 1 : -1;
-                    // Ángulo inicial aleatorio entre -10 y +10 grados
                     p.rotation = (Math.random() - 0.5) * 0.35;
                 }
-                // Mover hacia el ángulo objetivo (máximo 30 grados = 0.52 rad)
-                const targetRotation = p.rotationDirection * 0.35; // ~20 grados promedio
+                const targetRotation = p.rotationDirection * 0.35;
                 p.rotation += (targetRotation - p.rotation) * 0.05;
             } else {
-                // Llegó al centro - comenzar a temblar
                 p.explosionPhase = 'shaking';
                 p.shakeStartTime = Date.now();
                 p.x = centerX;
@@ -260,27 +260,20 @@ export class HurricaneGame {
         
         if (p.explosionPhase === 'shaking') {
             const elapsed = Date.now() - p.shakeStartTime;
-            const shakeDuration = 800; // 0.8 segundos temblando
+            const shakeDuration = 800;
             
-            // Aumentar intensidad del temblor con el tiempo
             const progress = Math.min(elapsed / shakeDuration, 1);
             p.shakeIntensity = progress * 8;
             
-            // Temblor
             p.x = centerX + (Math.random() - 0.5) * p.shakeIntensity;
             p.y = centerY + (Math.random() - 0.5) * p.shakeIntensity;
-            
-            // Aumentar tamaño (efecto globo)
             p.size = p.originalSize + progress * 25;
-            
-            // Cambiar color a más brillante
             p.opacity = 0.8 + progress * 0.4;
             
             if (progress >= 1) {
-                // ¡EXPLOTAR!
                 p.explosionPhase = 'exploding';
                 this.createDramaticExplosion(centerX, centerY, p.color, p.text);
-                return true; // Partícula debe ser eliminada
+                return true;
             }
         }
         
@@ -288,55 +281,32 @@ export class HurricaneGame {
     }
     
     createDramaticExplosion(x, y, color, text) {
-        // Fuegos artificiales principales
         for (let i = 0; i < 40; i++) {
             const angle = (Math.PI * 2 / 40) * i + Math.random() * 0.5;
             const speed = 4 + Math.random() * 10;
-            
             this.explosions.push({
-                x, y,
-                vx: Math.cos(angle) * speed,
-                vy: Math.sin(angle) * speed,
-                size: 5 + Math.random() * 12,
-                color: color,
-                opacity: 1,
-                life: 1.0,
-                gravity: 0.08,
-                isFirework: true
+                x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+                size: 5 + Math.random() * 12, color: color, opacity: 1, life: 1.0,
+                gravity: 0.08, isFirework: true
             });
         }
         
-        // Destellos blancos
         for (let i = 0; i < 20; i++) {
             const angle = Math.random() * Math.PI * 2;
             const speed = 5 + Math.random() * 15;
-            
             this.explosions.push({
-                x, y,
-                vx: Math.cos(angle) * speed,
-                vy: Math.sin(angle) * speed,
-                size: 3 + Math.random() * 8,
-                color: '#ffffff',
-                opacity: 1,
-                life: 1.0,
-                gravity: 0.06,
-                isFirework: true
+                x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+                size: 3 + Math.random() * 8, color: '#ffffff', opacity: 1, life: 1.0,
+                gravity: 0.06, isFirework: true
             });
         }
         
-        // Partículas que caen
         for (let i = 0; i < 25; i++) {
             this.explosions.push({
-                x: x + (Math.random() - 0.5) * 80,
-                y: y + (Math.random() - 0.5) * 60,
-                vx: (Math.random() - 0.5) * 4,
-                vy: Math.random() * 6 - 2,
-                size: 2 + Math.random() * 6,
-                color: color,
-                opacity: 0.9,
-                life: 1.0,
-                gravity: 0.12,
-                isFirework: false
+                x: x + (Math.random() - 0.5) * 80, y: y + (Math.random() - 0.5) * 60,
+                vx: (Math.random() - 0.5) * 4, vy: Math.random() * 6 - 2,
+                size: 2 + Math.random() * 6, color: color, opacity: 0.9, life: 1.0,
+                gravity: 0.12, isFirework: false
             });
         }
         
@@ -346,15 +316,8 @@ export class HurricaneGame {
     updateProgress() {
         const counter = document.getElementById('destroyedCounter');
         const bar = document.getElementById('hurricaneProgressBar');
-        
-        if (counter) {
-            counter.textContent = `${this.destroyedCount}/${this.targetDestroyed}`;
-        }
-        
-        if (bar) {
-            const percent = (this.destroyedCount / this.targetDestroyed) * 100;
-            bar.style.width = `${percent}%`;
-        }
+        if (counter) counter.textContent = `${this.destroyedCount}/${this.targetDestroyed}`;
+        if (bar) bar.style.width = `${(this.destroyedCount / this.targetDestroyed) * 100}%`;
     }
     
     animate() {
@@ -362,118 +325,71 @@ export class HurricaneGame {
         
         this.ctx.clearRect(0, 0, this.width, this.height);
         
-        // Fondo
-        const gradient = this.ctx.createRadialGradient(
-            this.width/2, this.height/2, 0,
-            this.width/2, this.height/2, this.width/2
-        );
-        gradient.addColorStop(0, '#1a1a2e');
-        gradient.addColorStop(0.7, '#0f0f1a');
-        gradient.addColorStop(1, '#050510');
-        
+        const gradient = this.ctx.createRadialGradient(this.width/2, this.height/2, 0, this.width/2, this.height/2, this.width/2);
+        gradient.addColorStop(0, '#1a1a2e'); gradient.addColorStop(0.7, '#0f0f1a'); gradient.addColorStop(1, '#050510');
         this.ctx.fillStyle = gradient;
         this.ctx.fillRect(0, 0, this.width, this.height);
         
-        // Procesar partículas en explosión
         const toRemove = [];
         this.particles.forEach((p, index) => {
             if (p.isExploding) {
                 const shouldRemove = this.updateExplosionSequence(p);
-                if (shouldRemove) {
-                    toRemove.push(index);
-                }
+                if (shouldRemove) toRemove.push(index);
             }
         });
         
-        // Eliminar partículas que explotaron (de atrás hacia adelante)
         for (let i = toRemove.length - 1; i >= 0; i--) {
             const index = toRemove[i];
             this.particles.splice(index, 1);
             this.destroyedCount++;
             this.updateProgress();
-            
-            // Crear nueva partícula si no es secuencia final
             if (!this.isFinalSequence && this.destroyedCount < this.targetDestroyed) {
                 this.particles.push(this.createParticle());
             }
         }
         
-        // Verificar si completó
         if (!this.isFinalSequence && this.destroyedCount >= this.targetDestroyed) {
             this.startFinalSequence();
         }
         
-        // Actualizar partículas normales
         this.particles.forEach(p => {
             if (p.isExploding) return;
-            
-            p.x += p.vx;
-            p.y += p.vy;
-            
+            p.x += p.vx; p.y += p.vy;
             if (p.x < 20 || p.x > this.width - 20) p.vx *= -0.9;
             if (p.y < 20 || p.y > this.height - 20) p.vy *= -0.9;
-            
             const maxSpeed = 1.8;
             if (Math.abs(p.vx) > maxSpeed) p.vx *= 0.98;
             if (Math.abs(p.vy) > maxSpeed) p.vy *= 0.98;
-            
-            const dx = this.width/2 - p.x;
-            const dy = this.height/2 - p.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            if (distance > 60) {
-                p.vx += dx / distance * 0.02;
-                p.vy += dy / distance * 0.02;
-            }
+            const dx = this.width/2 - p.x, dy = this.height/2 - p.y;
+            const distance = Math.sqrt(dx*dx + dy*dy);
+            if (distance > 60) { p.vx += dx / distance * 0.02; p.vy += dy / distance * 0.02; }
         });
         
-        // Dibujar explosiones
         this.explosions = this.explosions.filter(e => {
             if (e.gravity) e.vy += e.gravity;
-            e.x += e.vx;
-            e.y += e.vy;
-            e.vx *= 0.98;
+            e.x += e.vx; e.y += e.vy; e.vx *= 0.98;
             e.life -= e.isFirework ? 0.012 : 0.018;
             e.opacity = e.life;
-            
             if (e.life <= 0) return false;
-            
             this.ctx.beginPath();
             this.ctx.arc(e.x, e.y, e.size * e.life, 0, Math.PI * 2);
-            
-            if (e.isFirework) {
-                this.ctx.shadowColor = e.color;
-                this.ctx.shadowBlur = 15;
-            }
-            
+            if (e.isFirework) { this.ctx.shadowColor = e.color; this.ctx.shadowBlur = 15; }
             this.ctx.fillStyle = this.hexToRgba(e.color, e.opacity);
-            this.ctx.fill();
-            this.ctx.shadowBlur = 0;
-            
+            this.ctx.fill(); this.ctx.shadowBlur = 0;
             return true;
         });
         
-        // Dibujar partículas (palabras)
         this.particles.forEach(p => {
             this.ctx.font = `${p.size}px 'Inter', sans-serif`;
-            this.ctx.textAlign = 'center';
-            this.ctx.textBaseline = 'middle';
-            
-            this.ctx.shadowColor = p.color;
-            this.ctx.shadowBlur = p.isExploding ? 25 : 15;
-            
+            this.ctx.textAlign = 'center'; this.ctx.textBaseline = 'middle';
+            this.ctx.shadowColor = p.color; this.ctx.shadowBlur = p.isExploding ? 25 : 15;
             this.ctx.fillStyle = this.hexToRgba(p.color, p.opacity);
-            
-            // Rotación si está en fase de movimiento
             if (p.rotation) {
-                this.ctx.save();
-                this.ctx.translate(p.x, p.y);
-                this.ctx.rotate(p.rotation);
-                this.ctx.fillText(p.text, 0, 0);
-                this.ctx.restore();
+                this.ctx.save(); this.ctx.translate(p.x, p.y); this.ctx.rotate(p.rotation);
+                this.ctx.fillText(p.text, 0, 0); this.ctx.restore();
             } else {
                 this.ctx.fillText(p.text, p.x, p.y);
             }
-            
             this.ctx.shadowBlur = 0;
         });
         
@@ -483,104 +399,61 @@ export class HurricaneGame {
     startFinalSequence() {
         this.isFinalSequence = true;
         this.canInteract = false;
-        
-        // Ocultar hint
-        const hint = document.querySelector('.canvas-hint');
-        if (hint) hint.style.opacity = '0';
-        
-        // Marcar todas las partículas restantes para explotar
+        const hint = document.querySelector('.canvas-hint'); if (hint) hint.style.opacity = '0';
         const remainingParticles = this.particles.filter(p => !p.isExploding);
-        
         remainingParticles.forEach((p, index) => {
-            setTimeout(() => {
-                if (!p.isExploding) {
-                    this.startExplosionSequence(p);
-                }
-            }, index * 1000); // 1.2 seg
+            setTimeout(() => { if (!p.isExploding) this.startExplosionSequence(p); }, index * 1000);
         });
-        
-        // Esperar a que todas exploten y mostrar mensaje
         const totalTime = remainingParticles.length * 1000 + 1500;
-        setTimeout(() => {
-            this.showVictoryMessage();
-        }, totalTime);
+        setTimeout(() => this.showVictoryMessage(), totalTime);
     }
     
     showVictoryMessage() {
         this.isAnimating = false;
-        
         this.container.innerHTML = `
             <div class="completion-celebration">
                 <div class="celebration-emoji">🌈</div>
                 <h3>¡Has calmado la tormenta, Lu!</h3>
                 <p>Todos los pensamientos negativos se han disipado.</p>
-                <p style="font-size: 14px; margin-top: 16px;">Respira profundo. Estás en calma.</p>
-                <div style="margin-top: 32px;">
-                    <button id="backAfterHurricane" class="btn-primary" style="background: linear-gradient(135deg, #8b5cf6, #10b981);">
-                        ← Volver a juegos
-                    </button>
+                <p style="font-size:14px;margin-top:16px;">Respira profundo. Estás en calma.</p>
+                <div style="margin-top:32px;">
+                    <button id="backAfterHurricane" class="btn-primary" style="background:linear-gradient(135deg,#8b5cf6,#10b981);">← Volver a juegos</button>
                 </div>
             </div>
         `;
         
         if (window.app && window.app.anxietyState) {
-            const newLevel = window.app.anxietyState.reduceLevel('Huracán');
+            const newLevel = window.app.anxietyState.reduceLevel(this.gameName);
             this.showToast('🌈 ¡Tormenta calmada, Lu! Has recuperado el control.', 'success');
-            
-            if (newLevel === 0) {
-                setTimeout(() => {
-                    if (window.app && window.app.router) {
-                        window.app.router.showVictoryMessage();
-                    }
-                }, 2000);
-            }
+            if (newLevel === 0) setTimeout(() => { if (window.app && window.app.router) window.app.router.showVictoryMessage(); }, 2000);
         }
-        
-        document.getElementById('backAfterHurricane')?.addEventListener('click', () => {
-            if (window.app && window.app.router) {
-                window.app.router.showGamesView();
-            }
-        });
+        document.getElementById('backAfterHurricane')?.addEventListener('click', () => { if (window.app && window.app.router) window.app.router.showGamesView(); });
     }
     
     hexToRgba(hex, alpha) {
-        const r = parseInt(hex.slice(1, 3), 16);
-        const g = parseInt(hex.slice(3, 5), 16);
-        const b = parseInt(hex.slice(5, 7), 16);
-        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+        return `rgba(${r},${g},${b},${alpha})`;
     }
     
     resetGame() {
-        this.destroyedCount = 0;
-        this.explosions = [];
-        this.isFinalSequence = false;
-        this.canInteract = true;
-        this.initParticles();
-        this.updateProgress();
-        
-        const hint = document.querySelector('.canvas-hint');
-        if (hint) hint.style.opacity = '1';
-        
+        this.destroyedCount = 0; this.explosions = []; this.isFinalSequence = false; this.canInteract = true;
+        this.initParticles(); this.updateProgress();
+        const hint = document.querySelector('.canvas-hint'); if (hint) hint.style.opacity = '1';
         this.showToast('🔄 Tormenta reiniciada', 'info');
     }
     
     showToast(message, type = 'info') {
         const toast = document.createElement('div');
         toast.className = type === 'success' ? 'grounding-toast-success' : 'grounding-toast-info';
-        toast.innerText = message;
-        document.body.appendChild(toast);
-        
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            setTimeout(() => toast.remove(), 300);
-        }, 2000);
+        toast.innerText = message; document.body.appendChild(toast);
+        setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 2000);
     }
     
     cleanup() {
         this.isAnimating = false;
-        if (this.animationFrame) {
-            cancelAnimationFrame(this.animationFrame);
-        }
+        if (this.animationFrame) cancelAnimationFrame(this.animationFrame);
+        
+        // 🆕 Registrar duración al salir
         const duration = Math.round((Date.now() - this.startTime) / 1000);
         import('../engine/logger.js').then(module => {
             module.Logger.logGameVisit(this.gameName, duration);

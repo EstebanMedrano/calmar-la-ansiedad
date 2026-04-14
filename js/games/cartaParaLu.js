@@ -59,6 +59,9 @@ export class CartaParaLu {
         this.animationFrame = null;
         this.isAnimating = true;
         this.originalBodyBg = document.body.style.background;
+        // 🆕 Logger
+        this.gameName = 'Carta para Lu';
+        this.startTime = Date.now();
     }
     
     initLetterText() {
@@ -96,6 +99,9 @@ export class CartaParaLu {
         this.loadDog();
         this.attachEvents();
         this.animate();
+        // 🆕 Registrar duración
+        const duration = Math.round((Date.now() - this.startTime) / 1000);
+        import('../engine/logger.js').then(module => module.Logger.logGameVisit(this.gameName, duration));
     }
     
     initCanvas() {

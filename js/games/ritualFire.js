@@ -51,7 +51,7 @@ export class RitualFire {
                             id="letterInput" 
                             class="letter-textarea" 
                             placeholder="Escribe lo que quieres soltar..."
-                            maxlength="500"
+                            maxlength="2000"
                         ></textarea>
                         <div class="paper-lines"></div>
                     </div>
@@ -60,7 +60,7 @@ export class RitualFire {
                         <button id="voiceInput" class="voice-btn" title="Dictar por voz">
                             <span>🎤</span> Dictar
                         </button>
-                        <span id="letterCharCount" class="char-count">0/500</span>
+                        <span id="letterCharCount" class="char-count">0/2000</span>
                         <button id="finishLetter" class="finish-btn" disabled>
                             <span>✉️</span> Terminar
                         </button>
@@ -579,7 +579,7 @@ export class RitualFire {
         
         if (textarea && counter) {
             const length = textarea.value.length;
-            counter.textContent = `${length}/500`;
+            counter.textContent = `${length}/2000`;
             
             if (finishBtn) {
                 finishBtn.disabled = length === 0;
