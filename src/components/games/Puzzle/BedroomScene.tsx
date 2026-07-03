@@ -1,24 +1,39 @@
 import * as THREE from 'three';
-import { useRef, Suspense } from 'react';
+import { useRef, Suspense, forwardRef, useImperativeHandle } from 'react';
 import CameraRig from './CameraRig';
 import Dog3D from './Dog3D';
-import PuzzleFrame from './PuzzleFrame';
+import PuzzleFrame, { type PuzzleFrameHandle } from './PuzzleFrame'; // <-- FIX: Importado el tipo
 import type { Phase, DogType } from './Puzzle';
 
 export const FRAME_CENTER = new THREE.Vector3(0, 1.58, -4.45);
 export const FRAME_SIZE   = { w: 2.3, h: 1.7 };
 export const DOOR_POS     = new THREE.Vector3(4.3, 0, 0.8);
 export const WATCH_POS    = new THREE.Vector3(2.2, 0, -3.0);
-export const FLOAT_DEPTH  = FRAME_CENTER.z + 1.55; // z ≈ -2.9
+export const FLOAT_DEPTH  = FRAME_CENTER.z + 2.8;
 
 interface Props {
   phase: Phase; dogType: DogType; callId: number; texture: string;
   onImpact: () => void; onSettled: () => void;
   onSnap: (n: number) => void; onComplete: () => void;
+  onTimeout: () => void;
+  helpTarget: THREE.Vector3 | null;
+  onHelpComplete: () => void;
 }
 
-export default function BedroomScene({ phase, dogType, callId, texture, onImpact, onSettled, onSnap, onComplete }: Props) {
+export interface BedroomSceneHandle {
+  puzzleFrame: PuzzleFrameHandle | null;
+}
+
+const BedroomScene = forwardRef<BedroomSceneHandle, Props>(({ 
+  phase, dogType, callId, texture, onImpact, onSettled, onSnap, onComplete, 
+  onTimeout, helpTarget, onHelpComplete 
+}, ref) => {
   const dogPosRef = useRef(new THREE.Vector3());
+  const puzzleFrameRef = useRef<PuzzleFrameHandle>(null);
+
+  useImperativeHandle(ref, () => ({
+    get puzzleFrame() { return puzzleFrameRef.current; },
+  }));
 
   return (
     <>
@@ -70,7 +85,6 @@ export default function BedroomScene({ phase, dogType, callId, texture, onImpact
         <meshBasicMaterial color="#b8e0ff" toneMapped={false} />
       </mesh>
       <pointLight position={[-4.4, 1.9, -2.2]} intensity={0.55} color="#c8e8ff" distance={5} />
-      {/* Window frame bars */}
       {([
         { pos: [-4.96, 1.9, -2.2] as [number,number,number], rot: [0, Math.PI/2, Math.PI/2] as [number,number,number], args: [0.05, 1.47, 0.05] as [number,number,number] },
         { pos: [-4.96, 1.9, -2.2] as [number,number,number], rot: [0, Math.PI/2, 0]         as [number,number,number], args: [0.05, 1.92, 0.05] as [number,number,number] },
@@ -85,7 +99,6 @@ export default function BedroomScene({ phase, dogType, callId, texture, onImpact
         <planeGeometry args={[1.25, 2.2]} />
         <meshStandardMaterial color="#120a04" />
       </mesh>
-      {/* Door frame */}
       {([
         { pos: [4.96, 1.1, 0.17] as [number,number,number], args: [0.07, 2.22, 0.07] as [number,number,number] },
         { pos: [4.96, 1.1, 1.43] as [number,number,number], args: [0.07, 2.22, 0.07] as [number,number,number] },
@@ -124,7 +137,6 @@ export default function BedroomScene({ phase, dogType, callId, texture, onImpact
             <boxGeometry args={[0.06, 0.62, 0.06]} /><meshStandardMaterial color="#6b4524" />
           </mesh>
         ))}
-        {/* Desk lamp */}
         <mesh position={[0.44, 0.76, -0.2]} castShadow>
           <cylinderGeometry args={[0.042, 0.07, 0.22, 10]} /><meshStandardMaterial color="#555" />
         </mesh>
@@ -133,7 +145,6 @@ export default function BedroomScene({ phase, dogType, callId, texture, onImpact
           <meshStandardMaterial color="#ffd98a" emissive="#ffb347" emissiveIntensity={0.9} side={THREE.DoubleSide} />
         </mesh>
         <pointLight position={[0.44, 0.84, -0.2]} intensity={0.5} color="#ffcf8a" distance={2.5} />
-        {/* Books */}
         {[{ c:'#c14848',w:0.22 },{ c:'#3f7ac1',w:0.18 },{ c:'#2d8a3e',w:0.15 }].map((b,i)=>(
           <mesh key={i} position={[-0.38+i*0.2, 0.7, 0.12]} castShadow>
             <boxGeometry args={[b.w, 0.06, 0.18]} /><meshStandardMaterial color={b.c} />
@@ -159,10 +170,14 @@ export default function BedroomScene({ phase, dogType, callId, texture, onImpact
         dogType={dogType} callId={callId}
         doorPos={DOOR_POS} framePos={FRAME_CENTER} watchPos={WATCH_POS}
         onImpact={onImpact} positionRef={dogPosRef}
+        onTimeout={onTimeout}
+        helpTarget={helpTarget}
+        onHelpArrived={onHelpComplete}
       />
 
       <Suspense fallback={null}>
         <PuzzleFrame
+          ref={puzzleFrameRef}
           phase={phase} textureUrl={texture}
           center={FRAME_CENTER} size={FRAME_SIZE} floatDepth={FLOAT_DEPTH}
           onSettled={onSettled} onSnap={onSnap} onComplete={onComplete}
@@ -170,4 +185,7 @@ export default function BedroomScene({ phase, dogType, callId, texture, onImpact
       </Suspense>
     </>
   );
-}
+});
+
+BedroomScene.displayName = 'BedroomScene';
+export default BedroomScene;

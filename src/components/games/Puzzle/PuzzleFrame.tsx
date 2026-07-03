@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback, useEffect, useMemo } from 'react';
+import { useRef, useState, useCallback, useEffect, useMemo, useImperativeHandle, forwardRef } from 'react';
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { useTexture, Edges } from '@react-three/drei';
 import * as THREE from 'three';
@@ -21,29 +21,25 @@ interface PuzzleFrameProps {
   onComplete: () => void;
 }
 
-// FIX 2: genera posiciones mezcladas aleatoriamente en los costados
 function buildFloatPositions(breakTick: number): { x: number; y: number }[] {
-  void breakTick; // usamos breakTick para forzar regeneración
+  void breakTick;
   const n    = GRID * GRID;
   const half = n / 2;
   const pts: { x: number; y: number }[] = [];
 
-  // Panel izquierdo: 8 slots en 2 columnas × 4 filas
   for (let i = 0; i < half; i++) {
     pts.push({
-      x: -2.95 + (i % 2) * 0.72 + (Math.random() - 0.5) * 0.22,
-      y:  0.28 + Math.floor(i / 2) * 0.50 + (Math.random() - 0.5) * 0.14,
+      x: -2.2 + (i % 2) * 0.72 + (Math.random() - 0.5) * 0.16,
+      y:  0.28 + Math.floor(i / 2) * 0.50 + (Math.random() - 0.5) * 0.12,
     });
   }
-  // Panel derecho: 8 slots
   for (let i = 0; i < half; i++) {
     pts.push({
-      x: 1.88 + (i % 2) * 0.72 + (Math.random() - 0.5) * 0.22,
-      y: 0.28 + Math.floor(i / 2) * 0.50 + (Math.random() - 0.5) * 0.14,
+      x: 1.8 + (i % 2) * 0.72 + (Math.random() - 0.5) * 0.16,
+      y: 0.28 + Math.floor(i / 2) * 0.50 + (Math.random() - 0.5) * 0.12,
     });
   }
 
-  // Mezclar aleatoriamente (Fisher-Yates)
   for (let i = pts.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [pts[i], pts[j]] = [pts[j], pts[i]];
@@ -51,16 +47,20 @@ function buildFloatPositions(breakTick: number): { x: number; y: number }[] {
   return pts;
 }
 
-export default function PuzzleFrame({
+export interface PuzzleFrameHandle {
+  getUnplacedPiecePosition: () => THREE.Vector3 | null;
+  placeSelectedPiece: () => void;
+}
+
+const PuzzleFrame = forwardRef<PuzzleFrameHandle, PuzzleFrameProps>(({
   phase, textureUrl, center, size, floatDepth, onSettled, onSnap, onComplete,
-}: PuzzleFrameProps) {
+}, ref) => {
   const texture = useTexture(textureUrl);
   useEffect(() => { texture.colorSpace = THREE.SRGBColorSpace; texture.needsUpdate = true; }, [texture]);
 
   const snapCountRef = useRef(0);
   const [breakTick, setBreakTick] = useState(0);
 
-  // FIX 2: posiciones nuevas en cada rotura
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const floatPositions = useMemo(() => buildFloatPositions(breakTick), [breakTick]);
 
@@ -97,6 +97,38 @@ export default function PuzzleFrame({
     return arr;
   }, [center, size, pw, ph]);
 
+  const [placedStates, setPlacedStates] = useState<boolean[]>([]);
+  const piecesCount = GRID * GRID;
+
+  // 🛑 CORRECCIÓN: Usamos useRef en lugar de let para que no se pierda al renderizar
+  const selectedPieceIdx = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (phase === 'breaking' || phase === 'intro') {
+      setPlacedStates(new Array(piecesCount).fill(false));
+    }
+  }, [phase, piecesCount]);
+
+  useImperativeHandle(ref, () => ({
+    getUnplacedPiecePosition: () => {
+      const unplacedIndices = placedStates.map((p, i) => !p ? i : null).filter(v => v !== null) as number[];
+      if (unplacedIndices.length === 0) return null;
+      const randomIdx = unplacedIndices[Math.floor(Math.random() * unplacedIndices.length)];
+      selectedPieceIdx.current = randomIdx; // Actualizamos el ref
+      const fp = floatPositions[randomIdx];
+      return new THREE.Vector3(fp.x, fp.y, floatDepth);
+    },
+    placeSelectedPiece: () => {
+      if (selectedPieceIdx.current === null) return;
+      const randomIdx = selectedPieceIdx.current;
+      const newPlaced = [...placedStates];
+      newPlaced[randomIdx] = true;
+      setPlacedStates(newPlaced);
+      handleSnap();
+      selectedPieceIdx.current = null; // Limpiamos el ref
+    }
+  }), [placedStates, floatPositions, floatDepth, handleSnap]);
+
   return (
     <group>
       {/* Marco de madera */}
@@ -118,7 +150,7 @@ export default function PuzzleFrame({
         </mesh>
       </group>
 
-      {/* Imagen intacta (antes de romper) */}
+      {/* Imagen intacta */}
       {!showPieces && (
         <mesh position={[center.x, center.y, center.z + 0.018]}>
           <planeGeometry args={[size.w, size.h]} />
@@ -144,15 +176,24 @@ export default function PuzzleFrame({
           target={p.target}
           frameCenter={center}
           floatDepth={floatDepth}
-          floatPos={floatPositions[i]}   // FIX 2: posición aleatoria
+          floatPos={floatPositions[i]}
           phase={phase}
           visible={showPieces}
           onSnap={handleSnap}
+          isPlaced={placedStates[i] || false}
+          onPlacedChange={(val) => {
+            const newPlaced = [...placedStates];
+            newPlaced[i] = val;
+            setPlacedStates(newPlaced);
+          }}
         />
       ))}
     </group>
   );
-}
+});
+
+PuzzleFrame.displayName = 'PuzzleFrame';
+export default PuzzleFrame;
 
 // ── Pieza individual ──────────────────────────────────────────────────────
 interface PieceProps {
@@ -164,15 +205,17 @@ interface PieceProps {
   target:      THREE.Vector3;
   frameCenter: THREE.Vector3;
   floatDepth:  number;
-  floatPos:    { x: number; y: number };  // FIX 2
+  floatPos:    { x: number; y: number };
   phase:       Phase;
   visible:     boolean;
   onSnap:      () => void;
+  isPlaced:    boolean;
+  onPlacedChange: (val: boolean) => void;
 }
 
 type PieceSub = 'attached' | 'scatter' | 'float' | 'placed';
 
-function Piece({ texture, row, col, pieceW, pieceH, target, frameCenter, floatDepth, floatPos, phase, visible, onSnap }: PieceProps) {
+function Piece({ texture, row, col, pieceW, pieceH, target, frameCenter, floatDepth, floatPos, phase, visible, onSnap, isPlaced, onPlacedChange }: PieceProps) {
   const meshRef    = useRef<THREE.Mesh>(null);
   const sub        = useRef<PieceSub>('attached');
   const vel        = useRef(new THREE.Vector3());
@@ -180,7 +223,6 @@ function Piece({ texture, row, col, pieceW, pieceH, target, frameCenter, floatDe
   const seed       = useMemo(() => Math.random() * Math.PI * 2, []);
   const dragging   = useRef(false);
   const destRef    = useRef(new THREE.Vector3());
-  const [placed,  setPlaced]  = useState(false);
   const [snapped, setSnapped] = useState(false);
 
   const { camera, gl } = useThree();
@@ -197,12 +239,22 @@ function Piece({ texture, row, col, pieceW, pieceH, target, frameCenter, floatDe
   }, [pieceW, pieceH, row, col]);
 
   useEffect(() => {
+    if (isPlaced) {
+      sub.current = 'placed';
+      if (meshRef.current) {
+        meshRef.current.position.copy(target);
+        meshRef.current.position.z = frameCenter.z + 0.05;
+        meshRef.current.rotation.set(0, 0, 0);
+      }
+    }
+  }, [isPlaced, target, frameCenter]);
+
+  useEffect(() => {
     if (phase !== 'breaking' || sub.current !== 'attached') return;
     sub.current        = 'scatter';
     scatterClk.current = 0;
     if (meshRef.current) meshRef.current.position.copy(target);
 
-    // FIX 2: dirección de dispersión basada en floatPos asignado (aleatorio)
     const xSign = floatPos.x < 0 ? -1 : 1;
     const speed = 2.6 + Math.random() * 2.8;
     vel.current.set(
@@ -234,7 +286,6 @@ function Piece({ texture, row, col, pieceW, pieceH, target, frameCenter, floatDe
       if (scatterClk.current > SCATTER_DUR) sub.current = 'float';
 
     } else if (sub.current === 'float') {
-      // FIX 2: usa posición aleatoria asignada, con leve flotación senoidal
       destRef.current.set(
         floatPos.x + Math.sin(seed * 0.4) * 0.04,
         floatPos.y + Math.sin(seed * 1.2) * 0.04,
@@ -249,7 +300,7 @@ function Piece({ texture, row, col, pieceW, pieceH, target, frameCenter, floatDe
   });
 
   const handlePointerDown = useCallback((e: ThreeEvent<PointerEvent>) => {
-    if (phase !== 'puzzle' || placed) return;
+    if (phase !== 'puzzle' || sub.current === 'placed') return;
     e.stopPropagation();
     const m = meshRef.current;
     if (!m) return;
@@ -257,29 +308,28 @@ function Piece({ texture, row, col, pieceW, pieceH, target, frameCenter, floatDe
     dragging.current = true;
     const dragZ  = target.z + 0.015;
     m.position.z = dragZ;
-    const plane  = new THREE.Plane(new THREE.Vector3(0, 0, 1), -dragZ);
 
-    const rect = gl.domElement.getBoundingClientRect();
-    const ray  = new THREE.Raycaster();
-    const ndc  = new THREE.Vector2();
-    const hit  = new THREE.Vector3();
-    let offset = new THREE.Vector3();
-
-    ndc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-    ndc.y = -((e.clientY - rect.top)  / rect.height) * 2 + 1;
-    ray.setFromCamera(ndc, camera);
-    if (ray.ray.intersectPlane(plane, hit)) offset = hit.clone().sub(m.position);
+    const point = new THREE.Vector3(e.point.x, e.point.y, dragZ);
+    const offset = point.clone().sub(m.position);
 
     const mat = m.material as THREE.MeshStandardMaterial;
     mat.emissive.setHex(0x281400);
 
     const onMove = (ev: PointerEvent) => {
-      ndc.x = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
-      ndc.y = -((ev.clientY - rect.top)  / rect.height) * 2 + 1;
-      ray.setFromCamera(ndc, camera);
-      if (ray.ray.intersectPlane(plane, hit)) {
-        m.position.x = hit.x - offset.x;
-        m.position.y = hit.y - offset.y;
+      const rect = gl.domElement.getBoundingClientRect();
+      const ndcX = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
+      const ndcY = -((ev.clientY - rect.top) / rect.height) * 2 + 1;
+
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(new THREE.Vector2(ndcX, ndcY), camera);
+      
+      const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -dragZ);
+      const hitPoint = new THREE.Vector3();
+      raycaster.ray.intersectPlane(plane, hitPoint);
+
+      if (hitPoint) {
+        m.position.x = hitPoint.x - offset.x;
+        m.position.y = hitPoint.y - offset.y;
       }
     };
 
@@ -295,9 +345,10 @@ function Piece({ texture, row, col, pieceW, pieceH, target, frameCenter, floatDe
 
       if (dist < SNAP_DIST) {
         m.position.copy(target);
+        m.position.z = frameCenter.z + 0.05;
         m.rotation.set(0, 0, 0);
         sub.current = 'placed';
-        setPlaced(true);
+        onPlacedChange(true);
         setSnapped(true);
         onSnap();
         setTimeout(() => setSnapped(false), 700);
@@ -308,7 +359,7 @@ function Piece({ texture, row, col, pieceW, pieceH, target, frameCenter, floatDe
 
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup',   onUp);
-  }, [phase, placed, gl, camera, target, floatDepth, onSnap]);
+  }, [phase, gl, camera, target, frameCenter, floatDepth, onSnap, onPlacedChange]);
 
   return (
     <mesh
@@ -317,12 +368,12 @@ function Piece({ texture, row, col, pieceW, pieceH, target, frameCenter, floatDe
       position={target}
       visible={visible}
       onPointerDown={handlePointerDown}
-      onPointerOver={() => { if (phase === 'puzzle' && !placed) gl.domElement.style.cursor = 'grab'; }}
+      onPointerOver={() => { if (phase === 'puzzle' && sub.current !== 'placed') gl.domElement.style.cursor = 'grab'; }}
       onPointerOut={()  => { gl.domElement.style.cursor = 'default'; }}
       castShadow
     >
       <meshStandardMaterial map={texture} roughness={0.82} />
-      {placed  && <Edges color="#22e07a" lineWidth={2.5} threshold={1} />}
+      {isPlaced  && <Edges color="#22e07a" lineWidth={2.5} threshold={1} />}
       {snapped && <SnapSparkle />}
     </mesh>
   );

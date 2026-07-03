@@ -4,13 +4,13 @@ import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import type { Phase } from './Puzzle';
 
-// FIX 1: puzzle camera centrada en el cuadro
+// FIX 4: Cámara más alejada para que entre toda la habitación en móviles
 const FIXED: Partial<Record<Phase, { pos: THREE.Vector3; look: THREE.Vector3 }>> = {
-  idle:     { pos: new THREE.Vector3(0, 1.6, 4.6),    look: new THREE.Vector3(0, 1.4, -1) },
-  calling:  { pos: new THREE.Vector3(3.6, 1.8, 2.5),  look: new THREE.Vector3(4.3, 0.4, 0.8) },
-  breaking: { pos: new THREE.Vector3(0, 1.68, -1.2),  look: new THREE.Vector3(0, 1.58, -4.45) },
-  puzzle:   { pos: new THREE.Vector3(0, 1.75, 0.9),   look: new THREE.Vector3(0, 1.58, -4.45) },
-  complete: { pos: new THREE.Vector3(0, 1.72, -0.8),  look: new THREE.Vector3(0, 1.58, -4.45) },
+  idle:     { pos: new THREE.Vector3(0, 1.8, 6.0),    look: new THREE.Vector3(0, 1.4, -1) },
+  calling:  { pos: new THREE.Vector3(3.6, 1.8, 3.5),  look: new THREE.Vector3(4.3, 0.4, 0.8) },
+  breaking: { pos: new THREE.Vector3(0, 1.75, -0.5),  look: new THREE.Vector3(0, 1.58, -4.45) },
+  puzzle:   { pos: new THREE.Vector3(0, 1.8, 2.5),    look: new THREE.Vector3(0, 1.58, -4.45) },
+  complete: { pos: new THREE.Vector3(0, 1.8, 1.2),    look: new THREE.Vector3(0, 1.58, -4.45) },
 };
 
 interface Props {

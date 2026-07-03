@@ -1,294 +1,227 @@
-// WaterCalm.tsx — Lago de Calma 3D: orquestador de etapas, colores, sonido, overlays
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { AnimatePresence, motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import { Howl } from 'howler';
 import * as THREE from 'three';
-import { useAnxiety } from '../../context/AnxietyContext';
 import CliffScene from './CliffScene';
-import { LAKE_Y, LAKE_CENTER_Z, MAX_BEAMS, SHOTS_FOR_CLOSURE } from './lakeConstants';
+import Lake, { type LakeHandle, LAKE_Y, LAKE_Z_CENTER } from './Lake';
+import LaserPointer from './LaserPointer';
+import BoatDogs from './BoatDogs';
+import CustomStars from '../RitualFire/CustomStars';
+import { useAnxiety } from '../../context/AnxietyContext';
 import './WaterCalm.scss';
 
-export type Stage = 'arriving' | 'approaching' | 'seated' | 'lasering';
-
-export interface BeamSlot {
-  active: boolean;
-  from: THREE.Vector3;
-  to: THREE.Vector3;
-  color: THREE.Color;
-  startTime: number;
-}
-
-export interface LakeWorld {
-  targetPoint: THREE.Vector3;
-  handPosition: THREE.Vector3;
-  beams: BeamSlot[];
-  beamCursor: number;
-  getColor: () => THREE.Color;
-  fireShot: (x: number, z: number, color: THREE.Color) => void;
-  onShotFired?: () => void;
-}
-
-const PALETTE = [
-  { name: 'Calma',      hex: '#3b82f6' },
-  { name: 'Naturaleza', hex: '#10b981' },
-  { name: 'Serenidad',  hex: '#8b5cf6' },
-  { name: 'Alegría',    hex: '#fbbf24' },
-  { name: 'Amor',       hex: '#f472b6' },
-  { name: 'Energía',    hex: '#fb923c' },
-  { name: 'Claridad',   hex: '#e5e7eb' },
+export const LASER_COLORS = [
+  { name: 'Calma',      hex: '#3b82f6', emoji: '🔵' },
+  { name: 'Naturaleza', hex: '#10b981', emoji: '🟢' },
+  { name: 'Serenidad',  hex: '#8b5cf6', emoji: '🟣' },
+  { name: 'Alegría',    hex: '#fbbf24', emoji: '🟡' },
+  { name: 'Amor',       hex: '#f472b6', emoji: '🩷' },
+  { name: 'Energía',    hex: '#fb923c', emoji: '🟠' },
+  { name: 'Claridad',   hex: '#e5e7eb', emoji: '⚪' },
+  { name: 'Arcoíris',   hex: 'rainbow', emoji: '🌈' },
 ];
 
-export default function WaterCalm() {
-  const navigate = useNavigate();
-  const { reduceLevel } = useAnxiety();
+type WaterStage =
+  | 'approaching' | 'atEdge' | 'sitting'
+  | 'gazingLake'  | 'spotLaser'
+  | 'holdingLaser' | 'shooting';
 
-  const [stage, setStage]               = useState<Stage>('arriving');
-  const [selected, setSelected]         = useState<number[]>([0]);
-  const [rainbow, setRainbow]           = useState(false);
-  const [shotsFired, setShotsFired]     = useState(0);
-  const [closureShown, setClosureShown] = useState(false);
+// Cámara ajustada para que el borde neón del lago se vea justo al frente
+const CAMERA_POSES: Record<WaterStage, {
+  pos:    [number,number,number];
+  lookAt: [number,number,number];
+}> = {
+  approaching:  { pos: [0, 1.6, 14], lookAt: [0,  0.5,  6.0] },
+  atEdge:       { pos: [0, 1.5,  6], lookAt: [0,  0.1,  2.0] },
+  sitting:      { pos: [0, 1.4,  5], lookAt: [0,  0.6, -1.0] },
+  gazingLake:   { pos: [0, 1.8,  5], lookAt: [0,  0.0, -4.5] },
+  spotLaser:    { pos: [0, 1.4,  5], lookAt: [2.2, 0.8,  4.0] },
+  holdingLaser: { pos: [0, 1.8,  5], lookAt: [0,  0.0, -4.5] },
+  shooting:     { pos: [0, 1.8,  5], lookAt: [0,  0.0, -4.5] },
+};
 
-  // ── Sonido ──────────────────────────────────────────────────────────────────
-  const ambientRef = useRef<Howl | null>(null);
-  const dropRef    = useRef<Howl | null>(null);
-  const audioRef   = useRef<AudioContext | null>(null);
+const BASE_FOV = 58;
 
-  useEffect(() => {
-    ambientRef.current = new Howl({ src: ['/assets/sounds/ambient-432hz.mp3'], loop: true, volume: 0.15 });
-    dropRef.current    = new Howl({ src: ['/assets/sounds/water-drop.mp3'], volume: 0.30 });
-    return () => { ambientRef.current?.stop(); };
-  }, []);
-
-  useEffect(() => {
-    if (stage === 'seated' || stage === 'lasering') {
-      ambientRef.current?.play();
+// ─── Color del láser ────────────────────────────────────────────────────────
+function ColorController({
+  colorIdx, laserColorRef,
+}: { colorIdx: number; laserColorRef: React.MutableRefObject<THREE.Color> }) {
+  useFrame((state) => {
+    const sel = LASER_COLORS[colorIdx];
+    if (sel.hex === 'rainbow') {
+      laserColorRef.current.setHSL((state.clock.elapsedTime * 0.22) % 1, 1, 0.58);
     } else {
-      ambientRef.current?.stop();
+      laserColorRef.current.set(sel.hex);
     }
-  }, [stage]);
+  });
+  return null;
+}
 
-  const playLaserZap = useCallback(() => {
-    try {
-      if (!audioRef.current) audioRef.current = new AudioContext();
-      const ctx = audioRef.current;
-      const osc  = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(920, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(130, ctx.currentTime + 0.18);
-      gain.gain.setValueAtTime(0.065, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.20);
-      osc.start(); osc.stop(ctx.currentTime + 0.22);
-    } catch { /* AudioContext bloqueado */ }
-  }, []);
+// ─── Cámara ───────────────────────────────────────────────────────────────────
+function CameraRig({ stage }: { stage: WaterStage }) {
+  const { camera } = useThree();
+  const curPos    = useRef(new THREE.Vector3(...CAMERA_POSES.approaching.pos));
+  const curLookAt = useRef(new THREE.Vector3(...CAMERA_POSES.approaching.lookAt));
+  const yaw       = useRef(0);
+  const pitch     = useRef(0);
 
-  // ── Color activo (multi-selección + arcoíris) ─────────────────────────────
-  const colorCfg = useRef({ selected: [0], rainbow: false });
-  useEffect(() => { colorCfg.current = { selected, rainbow }; }, [selected, rainbow]);
+  useFrame((state) => {
+    const cam    = camera as THREE.PerspectiveCamera;
+    const pose   = CAMERA_POSES[stage];
+    const aspect = state.size.width / state.size.height;
+    const pf     = THREE.MathUtils.clamp(1 - aspect, 0, 0.85);
 
-  const getColor = useCallback((): THREE.Color => {
-    const { selected: sel, rainbow: rb } = colorCfg.current;
-    if (rb) {
-      const h = ((Date.now() / 1800) % 1);
-      return new THREE.Color().setHSL(h, 0.78, 0.60);
+    const base = new THREE.Vector3(...pose.pos);
+    const look = new THREE.Vector3(...pose.lookAt);
+    const adj  = base.clone().addScaledVector(base.clone().sub(look).normalize(), pf * 2.1);
+
+    curPos.current.lerp(adj, 0.038);
+    curLookAt.current.lerp(look, 0.038);
+    camera.position.copy(curPos.current);
+
+    cam.fov = BASE_FOV + pf * 26;
+    cam.updateProjectionMatrix();
+
+    if (stage !== 'shooting') {
+      yaw.current   = THREE.MathUtils.lerp(yaw.current,   -state.pointer.x * THREE.MathUtils.degToRad(6), 0.04);
+      pitch.current = THREE.MathUtils.lerp(pitch.current,   state.pointer.y * THREE.MathUtils.degToRad(4), 0.04);
+    } else {
+      yaw.current   = THREE.MathUtils.lerp(yaw.current,   0, 0.06);
+      pitch.current = THREE.MathUtils.lerp(pitch.current, 0, 0.06);
     }
-    const idxs = sel.length ? sel : [0];
-    const c = new THREE.Color(0, 0, 0);
-    idxs.forEach(i => c.add(new THREE.Color(PALETTE[i].hex)));
-    c.multiplyScalar(1 / idxs.length);
-    return c;
-  }, []);
 
-  // ── Estado compartido con la escena ───────────────────────────────────────
-  const world = useRef<LakeWorld>({
-    // El laser dispara hacia el centro del lago inicialmente
-    targetPoint:  new THREE.Vector3(0, LAKE_Y, LAKE_CENTER_Z),
-    handPosition: new THREE.Vector3(2.2, 0.76, -11.5), // ← misma que IDLE_LASER_POS
-    beams: Array.from({ length: MAX_BEAMS }, () => ({
-      active: false,
-      from: new THREE.Vector3(),
-      to: new THREE.Vector3(),
-      color: new THREE.Color('#00ffd0'),
-      startTime: 0,
-    })),
-    beamCursor: 0,
-    getColor,
-    fireShot: (x, z, color) => {
-      const w = world.current;
-      w.targetPoint.set(x, LAKE_Y, z);
-      const slot = w.beams[w.beamCursor % MAX_BEAMS];
-      w.beamCursor = (w.beamCursor + 1) % MAX_BEAMS;
-      slot.active    = true;
-      slot.from.copy(w.handPosition);
-      slot.to.set(x, LAKE_Y + 0.1, z);
-      slot.color.copy(color);
-      slot.startTime = performance.now();
-      playLaserZap();
-      dropRef.current?.play();
-      w.onShotFired?.();
-    },
+    const baseQ = new THREE.Quaternion().setFromRotationMatrix(
+      new THREE.Matrix4().lookAt(camera.position, curLookAt.current, camera.up)
+    );
+    const offQ = new THREE.Quaternion().setFromEuler(
+      new THREE.Euler(pitch.current, yaw.current, 0, 'YXZ')
+    );
+    camera.quaternion.copy(baseQ).multiply(offQ);
   });
 
-  useEffect(() => {
-    world.current.onShotFired = () => {
-      setShotsFired(n => {
-        const next = n + 1;
-        if (next >= SHOTS_FOR_CLOSURE && !closureShown) {
-          reduceLevel();
-          setClosureShown(true);
-        }
-        return next;
-      });
-    };
-  }, [reduceLevel, closureShown]);
+  return null;
+}
 
-  // ── Paleta ────────────────────────────────────────────────────────────────
-  const toggleColor = (idx: number) => {
-    setRainbow(false);
-    setSelected(prev => {
-      if (prev.includes(idx)) {
-        const next = prev.filter(i => i !== idx);
-        return next.length ? next : prev;
-      }
-      return [...prev, idx];
-    });
+// ─── Componente principal ─────────────────────────────────────────────────────
+export default function WaterCalm() {
+  const navigate        = useNavigate();
+  const { reduceLevel } = useAnxiety();
+
+  const [stage,        setStage]        = useState<WaterStage>('approaching');
+  const [colorIdx,     setColorIdx]     = useState(0);
+  const [isFiring,     setIsFiring]     = useState(false);
+
+  const lakeRef        = useRef<LakeHandle>(null);
+  const laserColorRef  = useRef(new THREE.Color('#10b981'));
+  const laserTargetRef = useRef(new THREE.Vector3(0, LAKE_Y, LAKE_Z_CENTER));
+  const ids            = useRef<number[]>([]);
+  const lastReduce     = useRef(0);
+
+  const addT = (fn: () => void, delay: number) => {
+    ids.current.push(window.setTimeout(fn, delay));
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
-  const content = (
-    <div className="watercalm-3d">
-      <CliffScene
-        stage={stage}
-        world={world}
-        onIdleAdvance={() => setStage('approaching')}
-        onApproachComplete={() => setStage('seated')}
-      />
+  useEffect(() => () => { ids.current.forEach(clearTimeout); }, []);
 
-      <button
-        className="watercalm-3d__back btn-secondary"
-        onClick={() => navigate('/games')}
-      >
+  // ── Progresión cinematográfica ──────────────────────────────────────────────
+  useEffect(() => {
+    if (stage === 'approaching')  addT(() => setStage('atEdge'),       4800);
+    if (stage === 'atEdge')       addT(() => setStage('sitting'),       4800);
+    if (stage === 'sitting')      addT(() => setStage('gazingLake'),    4000);
+    if (stage === 'gazingLake')   addT(() => setStage('spotLaser'),     6000);
+    if (stage === 'spotLaser')    addT(() => setStage('holdingLaser'),  3500);
+  }, [stage]);
+
+  // ── Sonido ───────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const s = new Howl({ src: ['/assets/sounds/water-drop.mp3'], loop: true, volume: 0.22 });
+    s.play();
+    return () => { s.stop(); s.unload(); };
+  }, []);
+
+  // ── Callback de impacto del láser ──────────────────────────────────────────
+  const handleHit = useCallback((wx: number, wz: number) => {
+    lakeRef.current?.addRipple(wx, wz);
+    laserTargetRef.current.set(wx, LAKE_Y, wz);
+    const now = Date.now();
+    if (now - lastReduce.current > 30000) { lastReduce.current = now; reduceLevel(); }
+  }, [reduceLevel]);
+
+  const handleFireStart = useCallback(() => { if (stage === 'shooting') setIsFiring(true);  }, [stage]);
+  const handleFireEnd   = useCallback(() => setIsFiring(false), []);
+
+  return createPortal(
+    <div className="watercalm-container">
+      <button className="btn-secondary watercalm-back-btn" onClick={() => navigate('/games')}>
         ← Volver a juegos
       </button>
 
-      {/* Hint inicial al llegar */}
-      <AnimatePresence>
-        {stage === 'arriving' && (
-          <motion.p
-            className="watercalm-3d__hint"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          >
-            Mirá las estrellas... te acercarás al borde sola.
-          </motion.p>
-        )}
-      </AnimatePresence>
+      <Canvas
+        className="watercalm-canvas"
+        dpr={[1, 1.5]}
+        camera={{ position: CAMERA_POSES.approaching.pos, fov: BASE_FOV, near: 0.1, far: 130 }}
+        onPointerDown={handleFireStart}
+        onPointerUp={handleFireEnd}
+      >
+        <color attach="background" args={['#16284d']} />
+        <fog   attach="fog"        args={['#16284d', 22, 60]} />
 
-      {/* Hint durante acercamiento */}
-      <AnimatePresence>
-        {stage === 'approaching' && (
-          <motion.p
-            className="watercalm-3d__hint"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          >
-            ¿Ves el lago allá abajo? Qué hermoso...
-          </motion.p>
-        )}
-      </AnimatePresence>
+        <ambientLight    color="#1e3060" intensity={1.1} />
+        <directionalLight color="#9ab8e0" intensity={0.55} position={[6, 14, -5]} />
 
-      {/* Hotspot para agarrar el láser */}
-      <AnimatePresence>
-        {stage === 'seated' && (
-          <motion.button
-            className="watercalm-3d__hotspot"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setStage('lasering')}
-          >
-            🔫 Agarrar el láser
-          </motion.button>
-        )}
-      </AnimatePresence>
+        <CustomStars />
 
-      {/* Paleta de colores */}
-      <AnimatePresence>
-        {stage === 'lasering' && (
-          <motion.div
-            className="watercalm-3d__palette"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 30 }}
-          >
-            <div className="watercalm-3d__palette-row">
-              {PALETTE.map((c, i) => (
-                <button
-                  key={c.name}
-                  className={`watercalm-3d__swatch${selected.includes(i) && !rainbow ? ' watercalm-3d__swatch--active' : ''}`}
-                  style={{ background: c.hex }}
-                  title={c.name}
-                  onClick={() => toggleColor(i)}
-                />
-              ))}
-              <button
-                className={`watercalm-3d__swatch watercalm-3d__swatch--rainbow${rainbow ? ' watercalm-3d__swatch--active' : ''}`}
-                title="Arcoíris"
-                onClick={() => setRainbow(r => !r)}
-              />
-            </div>
-            <p className="watercalm-3d__palette-label">
-              {rainbow
-                ? 'Arcoíris activo ✨'
-                : selected.length > 1
-                  ? `${selected.length} colores mezclándose`
-                  : PALETTE[selected[0]]?.name ?? 'Color seleccionado'}
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        <Suspense fallback={null}>
+          <CliffScene />
+          <Lake ref={lakeRef} laserColorRef={laserColorRef} />
+          <LaserPointer
+            visible={stage === 'holdingLaser' || stage === 'shooting'}
+            firing={isFiring}
+            laserColorRef={laserColorRef}
+            onHit={handleHit}
+          />
+          <BoatDogs laserTarget={laserTargetRef} active={stage === 'shooting'} />
+        </Suspense>
 
-      {/* Contador de disparos */}
-      {stage === 'lasering' && (
-        <div className="watercalm-3d__counter">
-          {Math.min(shotsFired, SHOTS_FOR_CLOSURE)}/{SHOTS_FOR_CLOSURE}
+        <ColorController colorIdx={colorIdx} laserColorRef={laserColorRef} />
+        <CameraRig stage={stage} />
+
+        <EffectComposer>
+          <Bloom intensity={0.75} luminanceThreshold={0.22} luminanceSmoothing={0.3} mipmapBlur />
+        </EffectComposer>
+      </Canvas>
+
+      {stage === 'holdingLaser' && (
+        <button className="watercalm-hotspot" onClick={() => setStage('shooting')}>
+          🔦 Tomar el láser
+        </button>
+      )}
+
+      {stage === 'shooting' && (
+        <div className="watercalm-color-bar">
+          {LASER_COLORS.map((c, i) => (
+            <button
+              key={i}
+              className={`watercalm-color-btn${i === colorIdx ? ' watercalm-color-btn--active' : ''}${c.hex === 'rainbow' ? ' watercalm-color-btn--rainbow' : ''}`}
+              style={c.hex !== 'rainbow' ? { background: c.hex } : {}}
+              onClick={() => setColorIdx(i)}
+              title={c.name}
+            >
+              {c.emoji}
+            </button>
+          ))}
         </div>
       )}
 
-      {/* Overlay de cierre / victoria */}
-      <AnimatePresence>
-        {closureShown && (
-          <motion.div
-            className="watercalm-3d__closure"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          >
-            <motion.div
-              className="watercalm-3d__closure-card"
-              initial={{ scale: 0.6, y: 50 }} animate={{ scale: 1, y: 0 }}
-              transition={{ type: 'spring', stiffness: 170, damping: 16 }}
-            >
-              <div className="watercalm-3d__closure-emoji">🌊</div>
-              <h3>Has iluminado la laguna</h3>
-              <p>
-                Tito y Lia reman felices junto a tu luz.
-                <br />
-                <em>Podés seguir jugando o descansar cuando quieras.</em>
-              </p>
-              <div className="watercalm-3d__closure-actions">
-                <button className="btn-primary" onClick={() => setClosureShown(false)}>
-                  Seguir en el lago
-                </button>
-                <button className="btn-secondary" onClick={() => navigate('/games')}>
-                  ← Volver a juegos
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+      {stage === 'shooting' && (
+        <p className="watercalm-hint">
+          {isFiring ? '✨ Dibujando ondas…' : '🔦 Mantén presionado para disparar al lago'}
+        </p>
+      )}
+    </div>,
+    document.body
   );
-
-  return createPortal(content, document.body);
 }

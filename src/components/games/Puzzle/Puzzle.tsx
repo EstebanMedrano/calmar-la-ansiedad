@@ -6,10 +6,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAnxiety } from '../../context/AnxietyContext';
 import { Howl } from 'howler';
-import BedroomScene from './BedroomScene';
+import * as THREE from 'three';
+import BedroomScene, { type BedroomSceneHandle } from './BedroomScene';
 import './Puzzle.scss';
 
-export type Phase = 'idle' | 'calling' | 'intro' | 'breaking' | 'puzzle' | 'complete';
+export type Phase = 'idle' | 'calling' | 'intro' | 'breaking' | 'puzzle' | 'complete' | 'helping';
 export type DogType = 'tito' | 'lia';
 
 const ALL_PUZZLES = [
@@ -30,12 +31,12 @@ function subtitleFor(phase: Phase, dog: DogType, placed: number): string {
     case 'intro':    return `¡${label} viene corriendo!`;
     case 'breaking': return `¡${label} rompió el cuadro!`;
     case 'puzzle':   return `Arrastra las piezas · ${placed}/${TOTAL}`;
+    case 'helping':  return `¡${label} te está ayudando!`;
     case 'complete': return '¡Lo lograste! 🎉';
     default: return '';
   }
 }
 
-// FIX 4: sonido de snap sintetizado (sin Water Drop)
 function useSynthSnap() {
   const ctxRef = useRef<AudioContext | null>(null);
 
@@ -81,9 +82,18 @@ export default function Puzzle() {
   const [completed, setCompleted] = useState(false);
   const [allDone,   setAllDone]   = useState(false);
 
-  // FIX 3: phaseRef para handleImpact seguro (evita stale closure)
+  const puzzleFrameRef = useRef<BedroomSceneHandle>(null);
   const phaseRef = useRef<Phase>('idle');
+  const dogsPresentRef = useRef(0);
+  const [helpTarget, setHelpTarget] = useState<THREE.Vector3 | null>(null);
+
   useEffect(() => { phaseRef.current = phase; }, [phase]);
+  
+  useEffect(() => {
+    if (phase === 'intro') {
+      dogsPresentRef.current += 1;
+    }
+  }, [phase]);
 
   const sfx    = useRef<{ bark?: Howl; success?: Howl }>({});
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -113,27 +123,31 @@ export default function Puzzle() {
     showMsg(`¡${dog === 'tito' ? 'Tito 🦊' : 'Lia 🤍'}, ven aquí!`, 2000);
   };
 
-  // FIX 3: handleImpact distingue primera rotura vs re-rotura
   const handleImpact = useCallback(() => {
     const p = phaseRef.current;
     if (p === 'intro') {
       setPhase('breaking');
       sfx.current.bark?.play();
     } else if (p === 'puzzle') {
-      // Re-rotura: resetea piezas y contador
       setPhase('breaking');
       setPlaced(0);
       sfx.current.bark?.play();
       showMsg('¡Volvió a romperlo! 😅', 2200);
     }
-    // En cualquier otro estado (complete, etc.) no hace nada
   }, [showMsg]);
+
+  const handleTimeout = useCallback(() => {
+    if (phaseRef.current !== 'puzzle') return;
+    setCallId(id => id + 1);
+    setPhase('intro');
+    showMsg(`¡El tiempo se acabó! ${dogType === 'tito' ? '🦊 Tito' : '🤍 Lia'} volverá a romperlo.`, 2000);
+  }, [dogType, showMsg]);
 
   const handleSettled  = useCallback(() => setPhase('puzzle'), []);
 
   const handleSnap = useCallback((count: number) => {
     setPlaced(count);
-    playSnap(); // FIX 4: sin water-drop
+    playSnap();
     if (count > 0 && count % 4 === 0 && count < TOTAL) {
       const msgs = ['¡Vas increíble! 🌟', '¡Sigue así! 💪', '¡Casi lo tienes! ✨'];
       showMsg(msgs[Math.floor(Math.random() * msgs.length)]);
@@ -154,6 +168,23 @@ export default function Puzzle() {
     setPuzzleIdx(p => p + 1);
   };
 
+  const handleHelp = useCallback(() => {
+    if (phase !== 'puzzle') return;
+    if (!puzzleFrameRef.current) return;
+    const pos = puzzleFrameRef.current.puzzleFrame?.getUnplacedPiecePosition();
+    if (!pos) return;
+    setHelpTarget(pos);
+    setPhase('helping');
+  }, [phase]);
+
+  const handleHelpComplete = useCallback(() => {
+    setPhase('puzzle');
+    setHelpTarget(null); 
+    if (puzzleFrameRef.current?.puzzleFrame) {
+      puzzleFrameRef.current.puzzleFrame.placeSelectedPiece();
+    }
+  }, []);
+
   const cur      = puzzlesRef.current[puzzleIdx];
   const progress = (placed / TOTAL) * 100;
 
@@ -165,14 +196,18 @@ export default function Puzzle() {
           camera={{ position: [0, 1.6, 4.6], fov: 58, near: 0.1, far: 60 }}
           gl={{ antialias: true }}
           dpr={[1, 2]}
-          style={{ touchAction: 'none' }}
+          style={{ width: '100%', height: '100%', touchAction: 'none' }}
         >
           <Suspense fallback={null}>
             <BedroomScene
+              ref={puzzleFrameRef}
               phase={phase} dogType={dogType} callId={callId}
               texture={cur.src}
               onImpact={handleImpact} onSettled={handleSettled}
               onSnap={handleSnap} onComplete={handleComplete}
+              onTimeout={handleTimeout}
+              helpTarget={helpTarget}
+              onHelpComplete={handleHelpComplete}
             />
           </Suspense>
           <EffectComposer>
@@ -209,6 +244,21 @@ export default function Puzzle() {
             Arrastra las piezas de los costados hacia el cuadro
           </div>
         )}
+
+        <AnimatePresence>
+          {phase === 'puzzle' && (
+            <motion.div className="puzzle__help-container"
+              initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0, y:10 }}
+            >
+              <button 
+                className={`puzzle__help-btn puzzle__help-btn--${dogType}`} 
+                onClick={handleHelp}
+              >
+                {dogType === 'tito' ? '🦊 Pide ayuda a Tito' : '🤍 Pide ayuda a Lia'}
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <AnimatePresence>
           {message && (

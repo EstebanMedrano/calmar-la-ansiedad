@@ -1,6 +1,7 @@
-import { useRef, useEffect, useMemo } from 'react';
+import { useRef, useEffect, useMemo } from 'react'; // <-- AÑADIDO useMemo
 import { useFrame } from '@react-three/fiber';
 import { RoundedBox, useGLTF, useAnimations } from '@react-three/drei';
+import { Howl } from 'howler';
 import * as THREE from 'three';
 import type { DogType } from './Puzzle';
 
@@ -11,13 +12,11 @@ const PATHS: Record<DogType, string> = {
   lia:  '/assets/3D/lia.glb',
 };
 
-// FIX 5: escala base por tipo de perro
 const BASE_SCALE: Record<DogType, number> = {
   tito: 0.9,
-  lia:  0.50,   // Lia más chica
+  lia:  0.85, 
 };
 
-// Tiempo antes de volver a romper (segundos)
 const REBREAK_AFTER = 60;
 
 export interface Dog3DProps {
@@ -27,10 +26,13 @@ export interface Dog3DProps {
   framePos:    THREE.Vector3;
   watchPos:    THREE.Vector3;
   onImpact:    () => void;
+  onTimeout:   () => void;
   positionRef: React.MutableRefObject<THREE.Vector3>;
+  helpTarget:  THREE.Vector3 | null;
+  onHelpArrived: () => void;
 }
 
-type Sub = 'hidden' | 'running' | 'jumping' | 'impact' | 'watching';
+type Sub = 'hidden' | 'running' | 'jumping' | 'impact' | 'watching' | 'runningToHelp' | 'helpingArrive';
 const RUN_SPEED = 4.5;
 const JUMP_DUR  = 0.44;
 const HIT_DUR   = 0.38;
@@ -40,9 +42,11 @@ export default function Dog3D(props: Dog3DProps) {
 }
 
 // ── GLTF Dog ──────────────────────────────────────────────────────────────
-function GLTFDog({ dogType, callId, doorPos, framePos, watchPos, onImpact, positionRef }: Dog3DProps) {
+function GLTFDog({ dogType, callId, doorPos, framePos, watchPos, onImpact, onTimeout, positionRef, helpTarget, onHelpArrived }: Dog3DProps) {
   const groupRef = useRef<THREE.Group>(null);
-  const { scene, animations } = useGLTF(PATHS[dogType]);
+  // 🛑 CORRECCIÓN: Clonamos la escena para tener una copia independiente
+  const { scene: rawScene, animations } = useGLTF(PATHS[dogType]);
+  const scene = useMemo(() => rawScene.clone(true), [rawScene]);
   const { actions, names }    = useAnimations(animations, groupRef);
 
   const sub     = useRef<Sub>('hidden');
@@ -50,6 +54,27 @@ function GLTFDog({ dogType, callId, doorPos, framePos, watchPos, onImpact, posit
   const fired   = useRef(false);
   const active  = useRef<string | null>(null);
   const baseScale = BASE_SCALE[dogType];
+
+  const randomTarget = useRef(new THREE.Vector3());
+  const waitTimer    = useRef(0);
+  const walkState    = useRef<'waiting' | 'walking'>('waiting');
+  
+  const barkSound = useMemo(() => {
+    return new Howl({
+      src: ['/assets/sounds/lia-bark.mp3'],
+      volume: 0.3,
+    });
+  }, []);
+
+  const generateRandomTarget = () => {
+    const minX = -2.5; const maxX = 3.5;
+    const minZ = -4.0; const maxZ = -1.5;
+    randomTarget.current.set(
+      minX + Math.random() * (maxX - minX),
+      0,
+      minZ + Math.random() * (maxZ - minZ)
+    );
+  };
 
   useEffect(() => {
     console.log(`[${dogType}] clips:`, names);
@@ -83,28 +108,70 @@ function GLTFDog({ dogType, callId, doorPos, framePos, watchPos, onImpact, posit
     subTime.current += dt;
     positionRef.current.copy(g.position);
 
+    if (sub.current === 'helpingArrive') {
+      if (!helpTarget) {
+        sub.current = 'watching';
+        play(/idle|sit|stand|wait/i);
+        generateRandomTarget();
+        walkState.current = 'walking';
+      }
+      return; 
+    }
+
     if (sub.current === 'running') {
-      const dir = new THREE.Vector3(framePos.x, g.position.y, framePos.z + 1.1).sub(g.position);
-      const dist = dir.length();
-      if (dist > 0.08) {
+      let target = framePos.clone();
+      target.z += 1.1;
+
+      if (helpTarget) {
+        target.copy(helpTarget);
+      }
+
+      const dir = target.clone().sub(g.position);
+      const xzDist = new THREE.Vector3(dir.x, 0, dir.z).length();
+      
+      if (xzDist > 0.001) {
         dir.normalize();
         g.position.addScaledVector(dir, RUN_SPEED * dt);
         g.rotation.y = Math.atan2(dir.x, dir.z);
       }
       g.position.y = Math.abs(Math.sin(subTime.current * 10)) * 0.05;
-      if (dist < 0.65) { sub.current = 'jumping'; subTime.current = 0; play(/jump|leap/i); }
 
-    } else if (sub.current === 'jumping') {
+      if (helpTarget) {
+        if (xzDist < 0.35) {
+          sub.current = 'helpingArrive';
+          onHelpArrived();
+          setTimeout(() => {
+            if (sub.current === 'helpingArrive' && helpTarget === null) {
+              sub.current = 'watching';
+              play(/idle|sit|stand|wait/i);
+              generateRandomTarget();
+              walkState.current = 'walking';
+            }
+          }, 500);
+        }
+      } else {
+        if (xzDist < 0.65 || subTime.current > 3.0) { 
+          sub.current = 'jumping'; 
+          subTime.current = 0; 
+          play(/jump|leap/i); 
+        }
+      }
+      return;
+    }
+
+    if (sub.current === 'jumping') {
       const p = Math.min(subTime.current / JUMP_DUR, 1);
-      g.position.z += dt * 2.8;
+      g.position.z -= dt * 2.8; 
       g.position.y  = Math.sin(p * Math.PI) * 1.0;
       g.rotation.x  = p * 0.28;
       if (subTime.current > JUMP_DUR) {
         sub.current = 'impact'; subTime.current = 0;
         if (!fired.current) { fired.current = true; onImpact(); }
       }
+      return;
+    }
 
-    } else if (sub.current === 'impact') {
+    if (sub.current === 'impact') {
       const p  = Math.min(subTime.current / HIT_DUR, 1);
       const sq = 1 - Math.sin(p * Math.PI) * 0.25;
       g.scale.set(1.2 * baseScale, sq * baseScale, 1.2 * baseScale);
@@ -116,19 +183,76 @@ function GLTFDog({ dogType, callId, doorPos, framePos, watchPos, onImpact, posit
         g.rotation.set(0, Math.PI * 0.72, 0);
         sub.current = 'watching';
         play(/idle|sit|stand|wait/i);
+        generateRandomTarget();
+        walkState.current = 'walking';
+      }
+      return;
+    }
+
+    if (sub.current === 'watching') {
+      if (helpTarget) {
+        sub.current = 'runningToHelp';
+        subTime.current = 0;
+        play(/run|walk|trot|gallop|sprint/i);
+        return;
       }
 
-    } else if (sub.current === 'watching') {
-      // FIX 3: re-rompe después de REBREAK_AFTER segundos
+      const distToTarget = g.position.distanceTo(randomTarget.current);
+
+      if (walkState.current === 'walking') {
+        if (distToTarget > 0.3) {
+          const dir = randomTarget.current.clone().sub(g.position).normalize();
+          g.position.addScaledVector(dir, (RUN_SPEED * 0.45) * dt);
+          g.rotation.y = THREE.MathUtils.lerp(g.rotation.y, Math.atan2(dir.x, dir.z), 0.1);
+          play(/run|walk|trot|gallop|sprint/i);
+          g.position.y = Math.abs(Math.sin(subTime.current * 12)) * 0.04;
+        } else {
+          walkState.current = 'waiting';
+          waitTimer.current = 0;
+          play(/idle|sit|stand|wait/i);
+        }
+      } else if (walkState.current === 'waiting') {
+        waitTimer.current += dt;
+        if (Math.random() < 0.006) { barkSound.play(); }
+
+        if (waitTimer.current > 2.5 + Math.random() * 3.0) {
+          generateRandomTarget();
+          walkState.current = 'walking';
+        }
+      }
+
       if (subTime.current > REBREAK_AFTER) {
-        sub.current     = 'running';
-        subTime.current = 0;
-        fired.current   = false;
-        play(/run|walk|trot|gallop|sprint/i);
+        onTimeout();
+      }
+      return;
+    }
+
+    if (sub.current === 'runningToHelp') {
+      if (!helpTarget) return;
+      const dir = helpTarget.clone().sub(g.position);
+      const xzDist = new THREE.Vector3(dir.x, 0, dir.z).length();
+      
+      if (xzDist > 0.15) {
+        dir.normalize();
+        g.position.addScaledVector(dir, RUN_SPEED * dt);
+        g.rotation.y = Math.atan2(dir.x, dir.z);
+        g.position.y = Math.abs(Math.sin(subTime.current * 12)) * 0.04;
+      } else {
+        sub.current = 'helpingArrive';
+        onHelpArrived();
+        setTimeout(() => {
+          if (sub.current === 'helpingArrive' && helpTarget === null) {
+            sub.current = 'watching';
+            play(/idle|sit|stand|wait/i);
+            generateRandomTarget();
+            walkState.current = 'walking';
+          }
+        }, 400);
       }
     }
   }, 0);
 
+  // 🛑 CORRECCIÓN: Usamos la escena clonada y no la raw
   return <primitive ref={groupRef} object={scene} visible={false} />;
 }
 
@@ -136,7 +260,7 @@ useGLTF.preload(PATHS.tito);
 useGLTF.preload(PATHS.lia);
 
 // ── Procedural Dog (fallback) ─────────────────────────────────────────────
-function ProceduralDog({ dogType, callId, doorPos, framePos, watchPos, onImpact, positionRef }: Dog3DProps) {
+function ProceduralDog({ dogType, callId, doorPos, framePos, watchPos, onImpact, onTimeout, positionRef, helpTarget, onHelpArrived }: Dog3DProps) {
   const root    = useRef<THREE.Group>(null);
   const legRefs = useRef<(THREE.Mesh | null)[]>([null, null, null, null]);
   const tailRef = useRef<THREE.Mesh>(null);
@@ -146,6 +270,27 @@ function ProceduralDog({ dogType, callId, doorPos, framePos, watchPos, onImpact,
   const subTime = useRef(0);
   const fired   = useRef(false);
   const baseScale = BASE_SCALE[dogType];
+
+  const randomTarget = useRef(new THREE.Vector3());
+  const waitTimer    = useRef(0);
+  const walkState    = useRef<'waiting' | 'walking'>('waiting');
+  
+  const barkSound = useMemo(() => {
+    return new Howl({
+      src: ['/assets/sounds/lia-bark.mp3'],
+      volume: 0.3,
+    });
+  }, []);
+
+  const generateRandomTarget = () => {
+    const minX = -2.5; const maxX = 3.5;
+    const minZ = -4.0; const maxZ = -1.5;
+    randomTarget.current.set(
+      minX + Math.random() * (maxX - minX),
+      0,
+      minZ + Math.random() * (maxZ - minZ)
+    );
+  };
 
   useEffect(() => {
     if (callId === 0 || !root.current) return;
@@ -175,10 +320,31 @@ function ProceduralDog({ dogType, callId, doorPos, framePos, watchPos, onImpact,
     const legs = legRefs.current;
     const t    = subTime.current;
 
+    if (sub.current === 'helpingArrive') {
+      if (!helpTarget) {
+        sub.current = 'watching';
+        generateRandomTarget();
+        walkState.current = 'walking';
+      }
+      return; 
+    }
+
     if (sub.current === 'running') {
-      const dir  = new THREE.Vector3(framePos.x, g.position.y, framePos.z + 1.1).sub(g.position);
-      const dist = dir.length();
-      if (dist > 0.05) { dir.normalize(); g.position.addScaledVector(dir, RUN_SPEED * dt); g.rotation.y = Math.atan2(dir.x, dir.z); }
+      let target = framePos.clone();
+      target.z += 1.1;
+
+      if (helpTarget) {
+        target.copy(helpTarget);
+      }
+
+      const dir = target.clone().sub(g.position);
+      const xzDist = new THREE.Vector3(dir.x, 0, dir.z).length();
+      
+      if (xzDist > 0.001) { 
+        dir.normalize(); 
+        g.position.addScaledVector(dir, RUN_SPEED * dt); 
+        g.rotation.y = Math.atan2(dir.x, dir.z); 
+      }
       const c = Math.sin(t * 14);
       if (legs[0]) legs[0].rotation.x =  c * 0.75;
       if (legs[1]) legs[1].rotation.x = -c * 0.75;
@@ -186,11 +352,31 @@ function ProceduralDog({ dogType, callId, doorPos, framePos, watchPos, onImpact,
       if (legs[3]) legs[3].rotation.x =  c * 0.75;
       g.position.y = Math.abs(Math.sin(t * 14)) * 0.07;
       if (tailRef.current) tailRef.current.rotation.z = Math.sin(t * 9) * 0.4;
-      if (dist < 0.65) { sub.current = 'jumping'; subTime.current = 0; }
+      
+      if (helpTarget) {
+        if (xzDist < 0.35) {
+          sub.current = 'helpingArrive';
+          onHelpArrived();
+          setTimeout(() => {
+            if (sub.current === 'helpingArrive' && helpTarget === null) {
+              sub.current = 'watching';
+              generateRandomTarget();
+              walkState.current = 'walking';
+            }
+          }, 400);
+        }
+      } else {
+        if (xzDist < 0.65 || subTime.current > 3.0) { 
+          sub.current = 'jumping'; 
+          subTime.current = 0; 
+        }
+      }
+      return;
+    }
 
-    } else if (sub.current === 'jumping') {
+    if (sub.current === 'jumping') {
       const p = Math.min(t / JUMP_DUR, 1);
-      g.position.z += dt * 2.8;
+      g.position.z -= dt * 2.8; 
       g.position.y  = Math.sin(p * Math.PI) * 1.0;
       g.rotation.x  = p * 0.35;
       legs.forEach(l => { if (l) l.rotation.x = -0.5; });
@@ -198,8 +384,10 @@ function ProceduralDog({ dogType, callId, doorPos, framePos, watchPos, onImpact,
         sub.current = 'impact'; subTime.current = 0;
         if (!fired.current) { fired.current = true; onImpact(); }
       }
+      return;
+    }
 
-    } else if (sub.current === 'impact') {
+    if (sub.current === 'impact') {
       const p  = Math.min(t / HIT_DUR, 1);
       const sq = 1 - Math.sin(p * Math.PI) * 0.3;
       g.scale.set((1 + (1 - sq) * 0.4) * baseScale, sq * baseScale, (1 + (1 - sq) * 0.4) * baseScale);
@@ -209,31 +397,90 @@ function ProceduralDog({ dogType, callId, doorPos, framePos, watchPos, onImpact,
         g.position.copy(watchPos);
         g.rotation.set(0, Math.PI * 0.72, 0);
         sub.current = 'watching';
+        generateRandomTarget();
+        walkState.current = 'walking';
       }
+      return;
+    }
 
-    } else if (sub.current === 'watching') {
-      // FIX 3: animaciones idle expresivas
-      if (tailRef.current) {
-        tailRef.current.rotation.z = Math.sin(t * 3.8) * 0.6;
-        tailRef.current.rotation.y = Math.sin(t * 2.4) * 0.25;
-      }
-      if (headRef.current) {
-        headRef.current.position.y = 0.44 + Math.sin(t * 1.4) * 0.022;
-        headRef.current.rotation.y = Math.sin(t * 0.52) * 0.32;   // mira al costado
-        headRef.current.rotation.z = Math.sin(t * 0.85) * 0.07;   // inclina cabeza
-      }
-      // Meceo corporal suave
-      g.position.x  = watchPos.x + Math.sin(t * 0.42) * 0.08;
-      g.position.y  = Math.abs(Math.sin(t * 1.9)) * 0.035;
-      // Patas en reposo
-      legs.forEach((l, i) => { if (l) l.rotation.x = Math.sin(t * 1.3 + i * 0.65) * 0.11; });
-
-      // FIX 3: re-rompe el cuadro tras REBREAK_AFTER segundos
-      if (t > REBREAK_AFTER) {
-        sub.current     = 'running';
+    if (sub.current === 'watching') {
+      if (helpTarget) {
+        sub.current = 'runningToHelp';
         subTime.current = 0;
-        fired.current   = false;
-        g.position.copy(watchPos);
+        return;
+      }
+
+      const distToTarget = g.position.distanceTo(randomTarget.current);
+
+      if (walkState.current === 'walking') {
+        if (distToTarget > 0.3) {
+          const dir = randomTarget.current.clone().sub(g.position).normalize();
+          g.position.addScaledVector(dir, (RUN_SPEED * 0.45) * dt);
+          g.rotation.y = THREE.MathUtils.lerp(g.rotation.y, Math.atan2(dir.x, dir.z), 0.1);
+          const c = Math.sin(t * 14);
+          if (legs[0]) legs[0].rotation.x =  c * 0.75;
+          if (legs[1]) legs[1].rotation.x = -c * 0.75;
+          if (legs[2]) legs[2].rotation.x = -c * 0.75;
+          if (legs[3]) legs[3].rotation.x =  c * 0.75;
+          g.position.y = Math.abs(Math.sin(t * 14)) * 0.07;
+          if (tailRef.current) tailRef.current.rotation.z = Math.sin(t * 9) * 0.4;
+        } else {
+          walkState.current = 'waiting';
+          waitTimer.current = 0;
+          legs.forEach((l, i) => { if (l) l.rotation.x = Math.sin(t * 1.3 + i * 0.65) * 0.11; });
+        }
+      } else if (walkState.current === 'waiting') {
+        waitTimer.current += dt;
+        if (Math.random() < 0.006) { barkSound.play(); }
+        if (waitTimer.current > 2.5 + Math.random() * 3.0) {
+          generateRandomTarget();
+          walkState.current = 'walking';
+        }
+        if (tailRef.current) {
+          tailRef.current.rotation.z = Math.sin(t * 3.8) * 0.6;
+          tailRef.current.rotation.y = Math.sin(t * 2.4) * 0.25;
+        }
+        if (headRef.current) {
+          headRef.current.position.y = 0.44 + Math.sin(t * 1.4) * 0.022;
+          headRef.current.rotation.y = Math.sin(t * 0.52) * 0.32;
+          headRef.current.rotation.z = Math.sin(t * 0.85) * 0.07;
+        }
+        g.position.x  = watchPos.x + Math.sin(t * 0.42) * 0.08;
+        g.position.y  = Math.abs(Math.sin(t * 1.9)) * 0.035;
+      }
+
+      if (t > REBREAK_AFTER) {
+        onTimeout();
+      }
+      return;
+    }
+
+    if (sub.current === 'runningToHelp') {
+      if (!helpTarget) return;
+      const dir = helpTarget.clone().sub(g.position);
+      const xzDist = new THREE.Vector3(dir.x, 0, dir.z).length();
+      
+      if (xzDist > 0.15) {
+        dir.normalize();
+        g.position.addScaledVector(dir, RUN_SPEED * dt);
+        g.rotation.y = Math.atan2(dir.x, dir.z);
+        const c = Math.sin(t * 14);
+        if (legs[0]) legs[0].rotation.x =  c * 0.75;
+        if (legs[1]) legs[1].rotation.x = -c * 0.75;
+        if (legs[2]) legs[2].rotation.x = -c * 0.75;
+        if (legs[3]) legs[3].rotation.x =  c * 0.75;
+        g.position.y = Math.abs(Math.sin(t * 14)) * 0.07;
+        if (tailRef.current) tailRef.current.rotation.z = Math.sin(t * 9) * 0.4;
+      } else {
+        sub.current = 'helpingArrive';
+        onHelpArrived();
+        setTimeout(() => {
+          if (sub.current === 'helpingArrive' && helpTarget === null) {
+            sub.current = 'watching';
+            generateRandomTarget();
+            walkState.current = 'walking';
+          }
+        }, 400);
       }
     }
   }, 0);

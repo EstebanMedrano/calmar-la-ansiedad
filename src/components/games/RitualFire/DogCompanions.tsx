@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF, useAnimations } from '@react-three/drei';
 import { Howl } from 'howler';
@@ -40,7 +40,8 @@ function Dog({
   onPickedUp, onFetchComplete,
 }: DogProps) {
   const groupRef = useRef<Group>(null);
-  const { scene, animations } = useGLTF(path);
+  const { scene: rawScene, animations } = useGLTF(path);
+  const scene = useMemo(() => rawScene.clone(true), [rawScene]);
   const { actions } = useAnimations(animations, groupRef);
 
   // ── Auto-align: levanta el modelo para que los pies queden en Y=0 ─────────
