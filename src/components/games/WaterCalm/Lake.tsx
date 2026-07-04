@@ -3,11 +3,11 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { lakeVertexShader, lakeFragmentShader } from './lakeShader';
 
-// Lago redimensionado para que el borde neón quede justo frente al jugador
+// 🛑 TAMAÑO DE ÓVALO ESTIRADO: Aumentamos el ancho a 36 para que el estiramiento lateral quepa holgadamente.
 export const LAKE_Y        = -0.5;
-export const LAKE_Z_CENTER = -4.0;
-export const LAKE_WIDTH    = 24;
-export const LAKE_HEIGHT   = 16;
+export const LAKE_Z_CENTER = -4.5;
+export const LAKE_WIDTH    = 36;  // Antes 22
+export const LAKE_HEIGHT   = 12;  // Se mantiene igual para no crecer hacia abajo
 const MAX_RIPPLES = 20;
 
 export interface LakeHandle {
@@ -61,8 +61,7 @@ const Lake = forwardRef<LakeHandle, LakeProps>(({ laserColorRef }, ref) => {
   return (
     <group>
       <mesh position={[0, LAKE_Y, LAKE_Z_CENTER]} rotation={[-Math.PI / 2, 0, 0]}>
-        {/* Más divisiones para que las ondas se vean suaves */}
-        <planeGeometry args={[LAKE_WIDTH, LAKE_HEIGHT, 180, 180]} />
+        <planeGeometry args={[LAKE_WIDTH, LAKE_HEIGHT, 160, 160]} />
         <shaderMaterial
           ref={matRef}
           vertexShader={lakeVertexShader}
@@ -73,10 +72,10 @@ const Lake = forwardRef<LakeHandle, LakeProps>(({ laserColorRef }, ref) => {
         />
       </mesh>
       
-      {/* Luces para bañar el agua y que se vea el brillo */}
-      <pointLight position={[0, LAKE_Y+2.5, LAKE_Z_CENTER]} color="#00ffcc" intensity={18} distance={40} decay={1.2} />
-      <pointLight position={[-12, LAKE_Y+1.5, LAKE_Z_CENTER-3]} color="#00e8b0" intensity={10} distance={30} decay={1.8} />
-      <pointLight position={[ 12, LAKE_Y+1.5, LAKE_Z_CENTER+3]} color="#00e8b0" intensity={10} distance={30} decay={1.8} />
+      {/* Iluminación ajustada al estiramiento */}
+      <pointLight position={[0, LAKE_Y+2.0, LAKE_Z_CENTER]} color="#00ffcc" intensity={15} distance={40} decay={1.4} />
+      <pointLight position={[-15, LAKE_Y+1.0, LAKE_Z_CENTER-2]} color="#00e8b0" intensity={7} distance={30} decay={2.0} />
+      <pointLight position={[ 15, LAKE_Y+1.0, LAKE_Z_CENTER+2]} color="#00e8b0" intensity={7} distance={30} decay={2.0} />
     </group>
   );
 });

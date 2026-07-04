@@ -17,9 +17,8 @@ export const lakeVertexShader = /* glsl */`
   void main() {
     vUv = uv;
     vec3 pos = position;
-    // Olas mucho más pronunciadas para que no parezca un piso plano
-    float w = noise(pos.xy*0.12 + vec2(uTime*0.08, uTime*0.06))*0.7
-            + noise(pos.xy*0.35 - vec2(uTime*0.12, uTime*0.18))*0.3;
+    float w = noise(pos.xy*0.12 + vec2(uTime*0.08, uTime*0.06))*0.15
+            + noise(pos.xy*0.35 - vec2(uTime*0.12, uTime*0.18))*0.08;
     pos.z += w;
     vWorldPos = (modelMatrix * vec4(pos, 1.0)).xyz;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
@@ -52,54 +51,68 @@ export const lakeFragmentShader = /* glsl */`
   void main() {
     vec2 xz = vWorldPos.xz;
 
-    // 1. Base del agua: Profundidad radial (Oscuro en el centro, un poco más claro en los bordes)
-    vec2 centerUV = vUv - 0.5;
-    float distCenter = length(centerUV);
-    vec3 deepColor = vec3(0.0, 0.06, 0.12);
-    vec3 midColor  = vec3(0.02, 0.20, 0.28);
-    vec3 color = mix(deepColor, midColor, distCenter * 0.6);
+    // ── 1. FORMA DE ÓVALO ESTIRADO A LOS LADOS ──────────────────────────────
+    vec2 uvOffset = vec2(sin(vUv.y * 6.28) * 0.02, cos(vUv.x * 6.28) * 0.02);
+    vec2 distortedUv = vUv + uvOffset;
+    vec2 cuv = distortedUv - 0.5;
 
-    // Micro-textura de oleaje natural
-    float micro = fbm(xz * 2.0 + uTime * 0.25) * 0.12;
-    color += vec3(0.04, micro*0.6, micro*0.7);
+    // 🛑 LA CLAVE DEL ÓVALO ESTIRADO: Multiplicamos el Eje X por 3.2 en vez de 2.0.
+    vec2 shiftedCuv = vec2(cuv.x, cuv.y + 0.05);
+    float distNorm = length(shiftedCuv * vec2(3.2, 1.0));
 
-    // 2. ¡BORDE NEÓN DE TIRA LED (Línea continua y gruesa)!
-    float neonWidth = 0.06;
-    // Calculamos el borde en forma de anillo circular sólido
-    float neonRing = 1.0 - smoothstep(0.0, neonWidth, abs(0.85 - distCenter * 1.1));
-    float pulse = 0.8 + 0.2 * sin(uTime * 1.5 + distCenter * 20.0);
-    color += vec3(0.1, 1.0, 0.6) * neonRing * pulse * 12.0;
+    // Ruido sutil en los bordes
+    float noiseShape = fbm(cuv * 3.0) * 0.06;
+    
+    // 🛑 Ajustamos el radio para que coincida exactamente con el nuevo estiramiento.
+    float ellipseRadius = 0.48;
+    float lakeShape = ellipseRadius - distNorm + noiseShape;
 
-    // 3. Reflejos de luz de la luna/estrellas (Especular básico)
-    float sp1 = pow(max(0.0, noise(xz*3.5 + uTime*0.5) - 0.75), 3.0);
-    color += vec3(0.7, 0.8, 1.0) * sp1 * 4.0;
+    float waterMask = smoothstep(-0.02, 0.15, lakeShape);
+    float alpha = waterMask;
 
-    // 4. 🌊 ONDAS EXPANSIVAS DE LA V1 (Traducidas a 3D) 🌊
+    // ── 2. PROFUNDIDAD Y COLOR DEL AGUA ──────────────────────────────────────
+    float depthFactor = 1.0 - clamp(distNorm / ellipseRadius, 0.0, 1.0);
+    vec3 deepColor   = vec3(0.0, 0.04, 0.12);
+    vec3 midColor    = vec3(0.04, 0.25, 0.40);
+    vec3 shallowColor = vec3(0.12, 0.55, 0.60);
+
+    vec3 color = mix(deepColor, midColor, depthFactor);
+    color = mix(color, shallowColor, smoothstep(0.4, 1.0, depthFactor));
+
+    // ── 3. EFECTO CRISTALINO Y ESPEJO ──────────────────────────────────────
+    float micro = fbm(xz * 2.0 + uTime * 0.25) * 0.001;
+    color += vec3(0.0, micro * 0.05, micro * 0.1);
+    float gloss = pow(max(0.0, noise(xz * 2.0 + uTime * 0.05) - 0.9), 4.0) * 0.6;
+    color += vec3(0.8, 0.9, 1.0) * gloss;
+
+    // ── 4. BORDE NEÓN (Sólido y fino, usando el nuevo radio de elipse) ──────
+    float neonIntensity = 1.0 - smoothstep(0.0, 0.003, abs(ellipseRadius - distNorm));
+    float pulse = 0.8 + 0.2 * sin(uTime * 1.5 + distNorm * 40.0);
+    color += vec3(0.2, 1.0, 0.7) * neonIntensity * pulse * 12.0;
+
+    // ── 5. ONDAS EXPANSIVAS (Con límite respetado gracias al alpha) ─────────
     for (int i = 0; i < 20; i++) {
       if (float(i) >= uRippleCount) break;
       float age = uTime - uRippleTime[i];
-      if (age <= 0.0 || age > 3.5) continue; // Vida útil de 3.5s
+      if (age <= 0.0 || age > 3.5) continue;
 
       float dist = length(xz - uRipplePos[i]);
-      float radius = age * 2.2; // Velocidad de expansión
+      float radius = age * 1.8; 
       float fade = 1.0 - (age / 3.5);
 
-      // A. Gradiente Radial de relleno (Igual que ctx.createRadialGradient en V1)
       float gradFill = exp(-pow(dist / max(radius, 0.1), 2.0) * 1.5);
-      color += uLaserColor * gradFill * fade * 2.5;
+      color += (uLaserColor * gradFill * fade * 0.5) * alpha;
 
-      // B. Anillos interiores blancos (Igual que ctx.stroke en V1)
       for (int ring = 0; ring < 3; ring++) {
-        float ringRadius = radius - float(ring) * 0.6;
+        float ringRadius = radius - float(ring) * 0.4;
         if (ringRadius > 0.0) {
-          float ringVal = exp(-pow(abs(dist - ringRadius) * 3.0, 2.0));
-          color += vec3(1.0) * ringVal * fade * 1.2; // Anillos blancos
+          float ringVal = exp(-pow(abs(dist - ringRadius) * 15.0, 2.0));
+          color += (vec3(1.0) * ringVal * fade * 0.2) * alpha;
         }
       }
     }
 
-    // Transparencia para fusionarse con el suelo
-    float alpha = 1.0 - smoothstep(0.95, 1.0, distCenter);
-    gl_FragColor = vec4(color, alpha * 0.98);
+    // ── 6. TRANSPARENCIA CRISTALINA ─────────────────────────────────────────
+    gl_FragColor = vec4(color, alpha * 0.85);
   }
 `;

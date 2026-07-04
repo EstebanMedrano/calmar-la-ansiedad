@@ -29,7 +29,6 @@ type WaterStage =
   | 'gazingLake'  | 'spotLaser'
   | 'holdingLaser' | 'shooting';
 
-// Cámara ajustada para que el borde neón del lago se vea justo al frente
 const CAMERA_POSES: Record<WaterStage, {
   pos:    [number,number,number];
   lookAt: [number,number,number];
@@ -37,10 +36,10 @@ const CAMERA_POSES: Record<WaterStage, {
   approaching:  { pos: [0, 1.6, 14], lookAt: [0,  0.5,  6.0] },
   atEdge:       { pos: [0, 1.5,  6], lookAt: [0,  0.1,  2.0] },
   sitting:      { pos: [0, 1.4,  5], lookAt: [0,  0.6, -1.0] },
-  gazingLake:   { pos: [0, 1.8,  5], lookAt: [0,  0.0, -4.5] },
+  gazingLake:   { pos: [0, 2.5,  5], lookAt: [0, -0.2, -4.5] },
   spotLaser:    { pos: [0, 1.4,  5], lookAt: [2.2, 0.8,  4.0] },
-  holdingLaser: { pos: [0, 1.8,  5], lookAt: [0,  0.0, -4.5] },
-  shooting:     { pos: [0, 1.8,  5], lookAt: [0,  0.0, -4.5] },
+  holdingLaser: { pos: [0, 2.5,  5], lookAt: [0, -0.2, -4.5] },
+  shooting:     { pos: [0, 2.5,  5], lookAt: [0, -0.2, -4.5] },
 };
 
 const BASE_FOV = 58;
@@ -86,19 +85,17 @@ function CameraRig({ stage }: { stage: WaterStage }) {
     cam.updateProjectionMatrix();
 
     if (stage !== 'shooting') {
-      yaw.current   = THREE.MathUtils.lerp(yaw.current,   -state.pointer.x * THREE.MathUtils.degToRad(6), 0.04);
-      pitch.current = THREE.MathUtils.lerp(pitch.current,   state.pointer.y * THREE.MathUtils.degToRad(4), 0.04);
+      yaw.current   = THREE.MathUtils.lerp(yaw.current,   -state.pointer.x * THREE.MathUtils.degToRad(12), 0.04);
+      pitch.current = THREE.MathUtils.lerp(pitch.current,   state.pointer.y * THREE.MathUtils.degToRad(6), 0.04);
     } else {
-      yaw.current   = THREE.MathUtils.lerp(yaw.current,   0, 0.06);
-      pitch.current = THREE.MathUtils.lerp(pitch.current, 0, 0.06);
+      yaw.current   = THREE.MathUtils.lerp(yaw.current,   -state.pointer.x * THREE.MathUtils.degToRad(10), 0.08);
+      pitch.current = THREE.MathUtils.lerp(pitch.current,   state.pointer.y * THREE.MathUtils.degToRad(5), 0.08);
     }
 
     const baseQ = new THREE.Quaternion().setFromRotationMatrix(
       new THREE.Matrix4().lookAt(camera.position, curLookAt.current, camera.up)
     );
-    const offQ = new THREE.Quaternion().setFromEuler(
-      new THREE.Euler(pitch.current, yaw.current, 0, 'YXZ')
-    );
+    const offQ = new THREE.Quaternion().setFromEuler(new THREE.Euler(pitch.current, yaw.current, 0, 'YXZ'));
     camera.quaternion.copy(baseQ).multiply(offQ);
   });
 
@@ -120,6 +117,21 @@ export default function WaterCalm() {
   const ids            = useRef<number[]>([]);
   const lastReduce     = useRef(0);
 
+  // 🛑 CORRECCIÓN DEL SONIDO DEL AGUA: Controlamos su reproducción con isFiring
+  const waterSoundRef = useRef<Howl | null>(null);
+  useEffect(() => {
+    waterSoundRef.current = new Howl({ src: ['/assets/sounds/water-drop.mp3'], loop: true, volume: 0.22 });
+    return () => { waterSoundRef.current?.unload(); };
+  }, []);
+
+  useEffect(() => {
+    if (isFiring) {
+      waterSoundRef.current?.play();
+    } else {
+      waterSoundRef.current?.stop();
+    }
+  }, [isFiring]);
+
   const addT = (fn: () => void, delay: number) => {
     ids.current.push(window.setTimeout(fn, delay));
   };
@@ -134,13 +146,6 @@ export default function WaterCalm() {
     if (stage === 'gazingLake')   addT(() => setStage('spotLaser'),     6000);
     if (stage === 'spotLaser')    addT(() => setStage('holdingLaser'),  3500);
   }, [stage]);
-
-  // ── Sonido ───────────────────────────────────────────────────────────────
-  useEffect(() => {
-    const s = new Howl({ src: ['/assets/sounds/water-drop.mp3'], loop: true, volume: 0.22 });
-    s.play();
-    return () => { s.stop(); s.unload(); };
-  }, []);
 
   // ── Callback de impacto del láser ──────────────────────────────────────────
   const handleHit = useCallback((wx: number, wz: number) => {

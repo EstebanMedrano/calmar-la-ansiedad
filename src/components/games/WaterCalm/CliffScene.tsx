@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { LAKE_Y, LAKE_Z_CENTER, LAKE_HEIGHT } from './Lake';
 
-// Posiciones ajustadas
 export const LOG_POS:   [number,number,number] = [0,   0.35, 3.8];
 export const LASER_POS: [number,number,number] = [2.2, 0.80, 3.8];
 
@@ -54,8 +53,8 @@ function LaserPropOnRock() {
 export default function CliffScene() {
   const shoreTreesLeft = useMemo<TreeTransform[]>(() => {
     const arr: TreeTransform[] = [];
-    for (let i=0;i<18;i++) arr.push({
-      position: [-5.5-Math.random()*8, 0, 6-Math.random()*22] as [number,number,number],
+    for (let i=0;i<14;i++) arr.push({
+      position: [-12 - Math.random()*8, 0, 6 - Math.random()*22] as [number,number,number],
       scale: 0.85+Math.random()*0.75, rotationY: Math.random()*Math.PI*2,
     });
     return arr;
@@ -63,8 +62,8 @@ export default function CliffScene() {
 
   const shoreTreesRight = useMemo<TreeTransform[]>(() => {
     const arr: TreeTransform[] = [];
-    for (let i=0;i<18;i++) arr.push({
-      position: [5.5+Math.random()*8, 0, 6-Math.random()*22] as [number,number,number],
+    for (let i=0;i<14;i++) arr.push({
+      position: [12 + Math.random()*8, 0, 6 - Math.random()*22] as [number,number,number],
       scale: 0.85+Math.random()*0.75, rotationY: Math.random()*Math.PI*2,
     });
     return arr;
@@ -72,8 +71,8 @@ export default function CliffScene() {
 
   const backTrees = useMemo<TreeTransform[]>(() => {
     const arr: TreeTransform[] = [];
-    for (let i=0;i<14;i++) arr.push({
-      position: [(Math.random()-0.5)*22, 0, 6+Math.random()*14] as [number,number,number],
+    for (let i=0;i<12;i++) arr.push({
+      position: [(Math.random()-0.5)*20, 0, 5 + Math.random()*14] as [number,number,number],
       scale: 0.9+Math.random()*0.7, rotationY: Math.random()*Math.PI*2,
     });
     return arr;
@@ -81,9 +80,9 @@ export default function CliffScene() {
 
   const farBankTrees = useMemo<TreeTransform[]>(() => {
     const arr: TreeTransform[] = [];
-    const farZ = LAKE_Z_CENTER - LAKE_HEIGHT/2;
-    for (let i=0;i<22;i++) arr.push({
-      position: [(Math.random()-0.5)*30, 0, farZ-Math.random()*8] as [number,number,number],
+    const farZ = LAKE_Z_CENTER - LAKE_HEIGHT/2 - 2.5;
+    for (let i=0;i<18;i++) arr.push({
+      position: [(Math.random()-0.5)*20, 0, farZ - Math.random()*6] as [number,number,number],
       scale: 0.9+Math.random()*0.8, rotationY: Math.random()*Math.PI*2,
     });
     return arr;
@@ -93,10 +92,10 @@ export default function CliffScene() {
     <group>
       <Moon />
 
-      {/* SUELO CORREGIDO: Termina exactamente donde empieza el borde circular del neón */}
-      <mesh rotation={[-Math.PI/2,0,0]} position={[0, -0.5, 13]}>
-        <planeGeometry args={[40, 19]} />
-        <meshStandardMaterial color="#0b0f09" roughness={1} />
+      {/* 🛑 SUELO EXTENDIDO: Ahora cubre TODO el fondo y tiene color oscuro unificado */}
+      <mesh rotation={[-Math.PI/2,0,0]} position={[0, -0.5, -4]} receiveShadow>
+        <planeGeometry args={[80, 80]} />
+        <meshStandardMaterial color="#080a0d" roughness={1} />
       </mesh>
 
       {/* Tiras de tierra a los lados del lago */}

@@ -3,7 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { LAKE_Y, LAKE_Z_CENTER, LAKE_WIDTH, LAKE_HEIGHT } from './Lake';
 
-const THROTTLE_MS = 60; // Aún más responsivo
+const THROTTLE_MS = 200;
 
 function orientSegment(mesh: THREE.Mesh, start: THREE.Vector3, end: THREE.Vector3) {
   const dir = new THREE.Vector3().subVectors(end, start);
@@ -36,6 +36,10 @@ export default function LaserPointer({ visible, firing, laserColorRef, onHit }: 
   const lakePlane    = useRef(new THREE.Plane(new THREE.Vector3(0, 1, 0), -LAKE_Y));
   const rc           = useRef(new THREE.Raycaster());
   const tmpV         = useRef(new THREE.Vector3());
+
+  // 🛑 LÍMITES VISUALES EXACTOS DEL LAGO (Para evitar disparar fuera del neón)
+  const VISUAL_HALF_WIDTH = LAKE_WIDTH * (0.48 / 3.2);  // 36 * 0.15 = 5.4
+  const VISUAL_HALF_HEIGHT = LAKE_HEIGHT * (0.48 / 1.0); // 12 * 0.48 = 5.76
 
   useEffect(() => {
     const g = gunGroupRef.current;
@@ -72,9 +76,10 @@ export default function LaserPointer({ visible, firing, laserColorRef, onHit }: 
     const hit = tmpV.current;
     const hitOk = rc.current.ray.intersectPlane(lakePlane.current, hit);
 
+    // 🛑 CORRECCIÓN: Se usa el borde visual exacto del óvalo neón, no el borde del plano físico (que es 3 veces más grande)
     const withinLake = hitOk &&
-      hit.x > -LAKE_WIDTH/2 && hit.x < LAKE_WIDTH/2 &&
-      hit.z > LAKE_Z_CENTER - LAKE_HEIGHT/2 && hit.z < LAKE_Z_CENTER + LAKE_HEIGHT/2;
+      hit.x > -VISUAL_HALF_WIDTH && hit.x < VISUAL_HALF_WIDTH &&
+      hit.z > LAKE_Z_CENTER - VISUAL_HALF_HEIGHT && hit.z < LAKE_Z_CENTER + VISUAL_HALF_HEIGHT;
 
     beam.visible     = !!firing;
     hitGlow.visible  = !!(firing && withinLake);
@@ -89,9 +94,8 @@ export default function LaserPointer({ visible, firing, laserColorRef, onHit }: 
       endPt.y = LAKE_Y + 0.1;
       orientSegment(beam, muzzleWorld.current, endPt);
 
-      // Resplandor de impacto más grande
       hitGlow.position.set(endPt.x, LAKE_Y + 0.15, endPt.z);
-      hitGlow.scale.setScalar(1.0 + Math.sin(state.clock.elapsedTime * 30) * 0.1); // Lateo suave
+      hitGlow.scale.setScalar(1.0 + Math.sin(state.clock.elapsedTime * 30) * 0.1);
       
       if (hitLight) hitLight.position.set(endPt.x, LAKE_Y + 0.8, endPt.z);
 
@@ -127,7 +131,6 @@ export default function LaserPointer({ visible, firing, laserColorRef, onHit }: 
           blending={THREE.AdditiveBlending} depthWrite={false} />
       </mesh>
 
-      {/* Esfera de resplandor de impacto */}
       <mesh ref={hitGlowRef} visible={false}>
         <sphereGeometry args={[0.55, 10, 10]} />
         <meshBasicMaterial color="#ffffff" transparent opacity={0.70}
