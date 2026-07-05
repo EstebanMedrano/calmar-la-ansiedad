@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
+import { Text } from '@react-three/drei';
 import { Howl } from 'howler';
 import * as THREE from 'three';
 import CliffScene from './CliffScene';
@@ -59,6 +60,24 @@ function ColorController({
   return null;
 }
 
+// ─── Contador 3D en el bosque ─────────────────────────────────────────────
+function CatchCounter({ count }: { count: number }) {
+  return (
+    <group position={[0, LAKE_Y + 3.5, LAKE_Z_CENTER - 14]}>
+      <Text
+        fontSize={1.6}
+        color="#f0f8ff"
+        anchorX="center"
+        anchorY="middle"
+        outlineWidth={0.04}
+        outlineColor="#00ffcc"
+      >
+        🦊 Capturas: {count}/10
+      </Text>
+    </group>
+  );
+}
+
 // ─── Cámara ───────────────────────────────────────────────────────────────────
 function CameraRig({ stage }: { stage: WaterStage }) {
   const { camera } = useThree();
@@ -110,6 +129,9 @@ export default function WaterCalm() {
   const [stage,        setStage]        = useState<WaterStage>('approaching');
   const [colorIdx,     setColorIdx]     = useState(0);
   const [isFiring,     setIsFiring]     = useState(false);
+  const [catchCount,   setCatchCount]   = useState(0);
+  const [winningDog,   setWinningDog]   = useState<'tito' | 'lia' | null>(null);
+  const [gameOver,     setGameOver]     = useState(false); 
 
   const lakeRef        = useRef<LakeHandle>(null);
   const laserColorRef  = useRef(new THREE.Color('#10b981'));
@@ -117,7 +139,6 @@ export default function WaterCalm() {
   const ids            = useRef<number[]>([]);
   const lastReduce     = useRef(0);
 
-  // 🛑 CORRECCIÓN DEL SONIDO DEL AGUA: Controlamos su reproducción con isFiring
   const waterSoundRef = useRef<Howl | null>(null);
   useEffect(() => {
     waterSoundRef.current = new Howl({ src: ['/assets/sounds/water-drop.mp3'], loop: true, volume: 0.22 });
@@ -138,16 +159,16 @@ export default function WaterCalm() {
 
   useEffect(() => () => { ids.current.forEach(clearTimeout); }, []);
 
-  // ── Progresión cinematográfica ──────────────────────────────────────────────
+  // Progresión cinematográfica
   useEffect(() => {
-    if (stage === 'approaching')  addT(() => setStage('atEdge'),       4800);
-    if (stage === 'atEdge')       addT(() => setStage('sitting'),       4800);
-    if (stage === 'sitting')      addT(() => setStage('gazingLake'),    4000);
-    if (stage === 'gazingLake')   addT(() => setStage('spotLaser'),     6000);
-    if (stage === 'spotLaser')    addT(() => setStage('holdingLaser'),  3500);
+    if (stage === 'approaching')  addT(() => setStage('atEdge'),       1500);
+    if (stage === 'atEdge')       addT(() => setStage('sitting'),       1500);
+    if (stage === 'sitting')      addT(() => setStage('gazingLake'),    1500);
+    if (stage === 'gazingLake')   addT(() => setStage('spotLaser'),     2000);
+    if (stage === 'spotLaser')    addT(() => setStage('holdingLaser'),  1500);
   }, [stage]);
 
-  // ── Callback de impacto del láser ──────────────────────────────────────────
+  // ─── Callback de impacto del láser ──────────────────────────────────────────
   const handleHit = useCallback((wx: number, wz: number) => {
     lakeRef.current?.addRipple(wx, wz);
     laserTargetRef.current.set(wx, LAKE_Y, wz);
@@ -157,6 +178,41 @@ export default function WaterCalm() {
 
   const handleFireStart = useCallback(() => { if (stage === 'shooting') setIsFiring(true);  }, [stage]);
   const handleFireEnd   = useCallback(() => setIsFiring(false), []);
+
+  // ─── Lógica de atrape ──────────────────────────────────────────────────────
+  const onDogCatch = useCallback((dog: 'tito' | 'lia') => {
+    if (gameOver) return;
+    setCatchCount(prev => {
+      const newCount = prev + 1;
+      if (newCount >= 10) {
+        setWinningDog(dog);  
+        setIsFiring(false);  
+      }
+      return newCount;
+    });
+  }, [gameOver]);
+
+  // 🛑 Callback que ejecuta el perro cuando termina su salto (Aumentado a 4 segundos)
+  const handleJumpComplete = useCallback(() => {
+    setTimeout(() => {
+      setGameOver(true); 
+    }, 4000); // 🛑 Retraso de 4 segundos (los 2 anteriores + 2 extra)
+  }, []);
+
+  // ─── Reiniciar juego ──────────────────────────────────────────────────────
+  const resetGame = useCallback(() => {
+    setCatchCount(0);
+    setGameOver(false);
+    setWinningDog(null);
+    setStage('approaching');
+    laserTargetRef.current.set(0, LAKE_Y, LAKE_Z_CENTER);
+    ids.current.forEach(clearTimeout);
+    ids.current = [];
+  }, []);
+
+  const goToMenu = useCallback(() => {
+    navigate('/games');
+  }, [navigate]);
 
   return createPortal(
     <div className="watercalm-container">
@@ -184,11 +240,19 @@ export default function WaterCalm() {
           <Lake ref={lakeRef} laserColorRef={laserColorRef} />
           <LaserPointer
             visible={stage === 'holdingLaser' || stage === 'shooting'}
-            firing={isFiring}
+            firing={isFiring && !gameOver}
             laserColorRef={laserColorRef}
             onHit={handleHit}
           />
-          <BoatDogs laserTarget={laserTargetRef} active={stage === 'shooting'} />
+          <BoatDogs
+            laserTarget={laserTargetRef}
+            active={stage === 'shooting' && !gameOver}
+            isFiring={isFiring}
+            onCatch={onDogCatch}
+            winningDog={winningDog}
+            onJumpComplete={handleJumpComplete}
+          />
+          <CatchCounter count={catchCount} />
         </Suspense>
 
         <ColorController colorIdx={colorIdx} laserColorRef={laserColorRef} />
@@ -199,13 +263,13 @@ export default function WaterCalm() {
         </EffectComposer>
       </Canvas>
 
-      {stage === 'holdingLaser' && (
+      {stage === 'holdingLaser' && !gameOver && (
         <button className="watercalm-hotspot" onClick={() => setStage('shooting')}>
           🔦 Tomar el láser
         </button>
       )}
 
-      {stage === 'shooting' && (
+      {stage === 'shooting' && !gameOver && (
         <div className="watercalm-color-bar">
           {LASER_COLORS.map((c, i) => (
             <button
@@ -221,10 +285,27 @@ export default function WaterCalm() {
         </div>
       )}
 
-      {stage === 'shooting' && (
+      {stage === 'shooting' && !gameOver && (
         <p className="watercalm-hint">
           {isFiring ? '✨ Dibujando ondas…' : '🔦 Mantén presionado para disparar al lago'}
         </p>
+      )}
+
+      {/* 🛑 Pantalla de Game Over (Retrasada ahora 4 segundos) */}
+      {gameOver && (
+        <div className="watercalm-gameover">
+          <div className="watercalm-gameover-card">
+            <div className="watercalm-gameover-emoji">
+              {winningDog === 'tito' ? '🦊' : '🤍'}
+            </div>
+            <h2>¡Te atrapó {winningDog === 'tito' ? 'Tito' : 'Lia'}!</h2>
+            <p>El perrito saltó de su bote y te alcanzó.</p>
+            <div className="watercalm-gameover-actions">
+              <button className="btn-primary" onClick={resetGame}>🔄 Volver a jugar</button>
+              <button className="btn-secondary" onClick={goToMenu}>← Volver al menú</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>,
     document.body

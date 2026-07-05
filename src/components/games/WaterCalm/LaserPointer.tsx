@@ -20,6 +20,58 @@ interface LaserPointerProps {
   onHit:         (wx: number, wz: number) => void;
 }
 
+// 🛑 MATEMÁTICAS EXACTAS DEL SHADER (Ligeramente más tolerantes para evitar cortes en la esquina inferior)
+function hash21(px: number, py: number): number {
+  const dotVal = px * 127.1 + py * 311.7;
+  const sinVal = Math.sin(dotVal);
+  const h = sinVal * 43758.5453123;
+  return h - Math.floor(h);
+}
+
+function noise2D(x: number, y: number): number {
+  const ix = Math.floor(x);
+  const iy = Math.floor(y);
+  let fx = x - ix;
+  let fy = y - iy;
+  fx = fx * fx * (3.0 - 2.0 * fx);
+  fy = fy * fy * (3.0 - 2.0 * fy);
+  const a = hash21(ix, iy);
+  const b = hash21(ix + 1, iy);
+  const c = hash21(ix, iy + 1);
+  const d = hash21(ix + 1, iy + 1);
+  return a + (b - a) * fx + (c - a) * fy + (a - b - c + d) * fx * fy;
+}
+
+function fbm(x: number, y: number): number {
+  let value = 0.0;
+  let amplitude = 0.5;
+  let frequency = 1.0;
+  for (let i = 0; i < 4; i++) {
+    value += amplitude * noise2D(x * frequency, y * frequency);
+    amplitude *= 0.5;
+    frequency *= 2.1;
+  }
+  return value;
+}
+
+function isInsideLake(wx: number, wz: number): boolean {
+  const u = (wx + LAKE_WIDTH / 2) / LAKE_WIDTH;
+  const v = (wz - (LAKE_Z_CENTER - LAKE_HEIGHT / 2)) / LAKE_HEIGHT;
+  if (u < 0 || u > 1 || v < 0 || v > 1) return false;
+
+  const uvx = u + Math.sin(v * 6.28) * 0.02;
+  const uvy = v + Math.cos(u * 6.28) * 0.02;
+  const cuvx = uvx - 0.5;
+  const cuvy = uvy - 0.5;
+  const shiftedCuvX = cuvx;
+  const shiftedCuvY = cuvy + 0.05;
+  const distNorm = Math.sqrt(shiftedCuvX * shiftedCuvX * 3.2 * 3.2 + shiftedCuvY * shiftedCuvY);
+  const noiseShape = fbm(cuvx * 3.0, cuvy * 3.0) * 0.06;
+  const lakeShape = 0.48 - distNorm + noiseShape;
+  // 🛑 AUMENTAMOS LA TOLERANCIA A -0.08 PARA EVITAR EL CORTE EN LA ESQUINA INFERIOR IZQUIERDA
+  return lakeShape > -0.08;
+}
+
 export default function LaserPointer({ visible, firing, laserColorRef, onHit }: LaserPointerProps) {
   const { camera, scene } = useThree();
 
@@ -36,10 +88,6 @@ export default function LaserPointer({ visible, firing, laserColorRef, onHit }: 
   const lakePlane    = useRef(new THREE.Plane(new THREE.Vector3(0, 1, 0), -LAKE_Y));
   const rc           = useRef(new THREE.Raycaster());
   const tmpV         = useRef(new THREE.Vector3());
-
-  // 🛑 LÍMITES VISUALES EXACTOS DEL LAGO (Para evitar disparar fuera del neón)
-  const VISUAL_HALF_WIDTH = LAKE_WIDTH * (0.48 / 3.2);  // 36 * 0.15 = 5.4
-  const VISUAL_HALF_HEIGHT = LAKE_HEIGHT * (0.48 / 1.0); // 12 * 0.48 = 5.76
 
   useEffect(() => {
     const g = gunGroupRef.current;
@@ -76,10 +124,7 @@ export default function LaserPointer({ visible, firing, laserColorRef, onHit }: 
     const hit = tmpV.current;
     const hitOk = rc.current.ray.intersectPlane(lakePlane.current, hit);
 
-    // 🛑 CORRECCIÓN: Se usa el borde visual exacto del óvalo neón, no el borde del plano físico (que es 3 veces más grande)
-    const withinLake = hitOk &&
-      hit.x > -VISUAL_HALF_WIDTH && hit.x < VISUAL_HALF_WIDTH &&
-      hit.z > LAKE_Z_CENTER - VISUAL_HALF_HEIGHT && hit.z < LAKE_Z_CENTER + VISUAL_HALF_HEIGHT;
+    const withinLake = hitOk && isInsideLake(hit.x, hit.z);
 
     beam.visible     = !!firing;
     hitGlow.visible  = !!(firing && withinLake);
@@ -88,7 +133,7 @@ export default function LaserPointer({ visible, firing, laserColorRef, onHit }: 
     if (firing && withinLake) {
       hitPoint.current.copy(hit);
 
-      muzzleWorld.current.set(0.26, -0.14, -0.38);
+      muzzleWorld.current.set(0.27, -0.19, -0.53);
       camera.localToWorld(muzzleWorld.current);
       const endPt = hitPoint.current.clone();
       endPt.y = LAKE_Y + 0.1;
