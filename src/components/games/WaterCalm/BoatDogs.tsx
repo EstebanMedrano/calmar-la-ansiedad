@@ -209,7 +209,7 @@ export default function BoatDogs({ laserTarget, active, isFiring, onCatch, winni
         dogScale={TITO_SCALE}
         boatColor="#7a4a20"
         target={laserTarget}
-        speedMul={0.9375}
+        speedMul={2}
         side="right"
         active={active && winningDog !== 'tito'}
         isFiring={isFiring}
@@ -223,7 +223,7 @@ export default function BoatDogs({ laserTarget, active, isFiring, onCatch, winni
         dogScale={LIA_SCALE}
         boatColor="#5a3518"
         target={laserTarget}
-        speedMul={0.75}
+        speedMul={2}
         side="left"
         active={active && winningDog !== 'lia'}
         isFiring={isFiring}

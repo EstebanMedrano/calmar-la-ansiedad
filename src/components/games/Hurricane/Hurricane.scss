@@ -1,233 +1,147 @@
-// Hurricane.scss — Huracán de Pensamientos v2
-// @use variables globales del proyecto
-
 @use '../../../styles/variables' as *;
 
-// ─── Contenedor raíz ──────────────────────────────────────────────────────
-.hurricane {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.1rem;
-  padding: 1rem 0.5rem 2rem;
-}
-
-// ─── Header ───────────────────────────────────────────────────────────────
-.hurricane__header {
-  text-align: center;
-}
-
-.hurricane__title {
-  font-size: clamp(1.2rem, 4vw, 1.6rem);
-  font-weight: 700;
-  margin-bottom: 0.25rem;
-}
-
-.hurricane__title-gradient {
-  background: linear-gradient(135deg, #ef4444, #f59e0b, #8b5cf6);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.hurricane__subtitle {
-  color: #94a3b8;
-  font-size: 0.88rem;
-}
-
-// ─── Barra de progreso ────────────────────────────────────────────────────
-.hurricane__progress {
-  width: 100%;
-  max-width: 44rem;
-}
-
-.hurricane__progress-labels {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.8rem;
-  color: #94a3b8;
-  margin-bottom: 0.35rem;
-}
-
-.hurricane__progress-count {
-  font-weight: 700;
-  color: #f8fafc;
-}
-
-.hurricane__progress-track {
-  height: 0.55rem;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-.hurricane__progress-fill {
-  height: 100%;
-  border-radius: 999px;
-  box-shadow: 0 0 8px currentColor;
-  transition: background-color 0.4s ease;
-}
-
-// ─── Canvas container ─────────────────────────────────────────────────────
-.hurricane__canvas-wrap {
-  position: relative;
-  width: 100%;
-  max-width: 52rem;
-  border-radius: 0.75rem;
-  overflow: hidden;
-  // cursor invisible en desktop para mostrar el cursor personalizado
-  cursor: none;
-
-  // En móvil volvemos al cursor normal (no hay cursor personalizado)
-  @media (hover: none) {
-    cursor: default;
-  }
-}
-
-.hurricane__canvas {
-  display: block;
-  width: 100%;
-  border-radius: 0.75rem;
-  border: 1px solid rgba(139, 92, 246, 0.2);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5), inset 0 0 60px rgba(139, 92, 246, 0.04);
-}
-
-// ─── Cursor personalizado (solo desktop) ──────────────────────────────────
-.hurricane__cursor {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 2rem;
-  height: 2rem;
-  font-size: 1.5rem;
-  pointer-events: none;
-  z-index: 10;
-  transition: font-size 0.1s;
-
-  &--active {
-    font-size: 2rem;
-  }
-
-  // Ocultar en móvil
-  @media (hover: none) {
-    display: none;
-  }
-}
-
-// ─── Hint ─────────────────────────────────────────────────────────────────
-.hurricane__hint {
-  position: absolute;
-  bottom: 0.6rem;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.55);
-  color: #94a3b8;
-  font-size: 0.78rem;
-  padding: 0.3rem 0.9rem;
-  border-radius: 999px;
-  white-space: nowrap;
-  pointer-events: none;
-  backdrop-filter: blur(4px);
-}
-
-// ─── Botones ──────────────────────────────────────────────────────────────
-.hurricane__actions {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-// ─── Overlay de victoria ──────────────────────────────────────────────────
-.hurricane__victory {
+.hurricane-container {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 50;
-  backdrop-filter: blur(6px);
-}
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  z-index: 9999;
+  overflow: hidden;
+  background: #0a1020;
 
-.hurricane__victory-card {
-  background: linear-gradient(160deg, #0f172a, #1e1b4b);
-  border: 1px solid rgba(139, 92, 246, 0.4);
-  border-radius: 1.25rem;
-  padding: 2.5rem 2rem;
-  text-align: center;
-  max-width: 26rem;
-  width: 92%;
-  box-shadow:
-    0 24px 60px rgba(0, 0, 0, 0.6),
-    0 0 40px rgba(139, 92, 246, 0.15);
-}
-
-// Fila de emojis animados
-.hurricane__victory-sky {
-  display: flex;
-  justify-content: center;
-  gap: 0.6rem;
-  font-size: 1.8rem;
-  margin-bottom: 1rem;
-}
-
-.hurricane__victory-title {
-  font-size: clamp(1.3rem, 4vw, 1.6rem);
-  font-weight: 700;
-  color: #f8fafc;
-  margin-bottom: 0.75rem;
-}
-
-.hurricane__victory-desc {
-  color: #94a3b8;
-  font-size: 0.92rem;
-  line-height: 1.8;
-  margin-bottom: 1.75rem;
-
-  em {
-    color: #a78bfa;
-    font-style: normal;
-    font-weight: 500;
+  .hurricane-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    cursor: crosshair;
+    touch-action: none;
   }
-}
 
-.hurricane__victory-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+  .hurricane-back-btn {
+    position: absolute;
+    top: max(16px, env(safe-area-inset-top));
+    left: 16px;
+    z-index: 20;
+    padding: 9px 16px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.25);
+    background: rgba(10,14,24,0.55);
+    color: #f1f5f9;
+    font-size: 0.85rem;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+    &:hover { background: rgba(10,14,24,0.85); }
+    @media (max-width:480px) { font-size:0.78rem; padding:7px 12px; }
+  }
 
-  @media (min-width: 480px) {
-    flex-direction: row;
+  .hurricane-hint {
+    position: absolute;
+    bottom: max(8%, env(safe-area-inset-bottom));
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    padding: 10px 22px;
+    border-radius: 999px;
+    background: rgba(10,14,24,0.68);
+    color: #f3ead9;
+    font-size: 0.95rem;
+    pointer-events: none;
+    backdrop-filter: blur(6px);
+    white-space: nowrap;
+    border: 1px solid rgba(255,255,255,0.1);
+
+    &--warning {
+      background: rgba(100,20,10,0.82);
+      color: #ffccaa;
+      animation: hintPulse 0.85s ease-in-out infinite;
+    }
+    @media (max-width:480px) { font-size:0.82rem; padding:8px 14px; }
+  }
+
+  .hurricane-progress {
+    position: absolute;
+    top: max(14px, env(safe-area-inset-top));
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    width: min(90vw, 450px);
+    background: rgba(8,10,22,0.78);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 14px;
+    padding: 12px 18px;
+    backdrop-filter: blur(10px);
+
+    &__text {
+      font-size: 0.88rem;
+      color: #f1f5f9;
+      text-align: center;
+      margin-bottom: 8px;
+      strong { color: #f59e0b; }
+    }
+    &__bg {
+      height: 8px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    &__fill {
+      height: 100%;
+      background: linear-gradient(90deg,#ef4444,#f59e0b,#8b5cf6);
+      border-radius: 999px;
+      transition: width 0.45s ease;
+    }
+    &__hint {
+      font-size: 0.74rem;
+      color: rgba(255,255,255,0.45);
+      text-align: center;
+      margin-top: 6px;
+    }
+  }
+
+  .hurricane-victory {
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
     justify-content: center;
+    background: rgba(0,0,0,0.62);
+    backdrop-filter: blur(10px);
+    animation: fadeIn 0.6s ease;
+
+    &__box {
+      text-align: center;
+      background: rgba(10,14,26,0.92);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 22px;
+      padding: 44px 34px;
+      max-width: min(92vw, 440px);
+      color: #f3ead9;
+    }
+    &__emoji { font-size: 3.8rem; margin-bottom: 18px; }
+    h2 {
+      font-size: 1.5rem;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg,#f59e0b,#10b981);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    p { color: rgba(255,255,255,0.72); margin-bottom: 8px; font-size: 0.95rem; }
+    &__btn {
+      margin-top: 24px;
+      padding: 11px 24px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.25);
+      background: rgba(30,40,60,0.6);
+      color: #f1f5f9;
+      font-size: 0.95rem;
+      cursor: pointer;
+      &:hover { background: rgba(30,40,60,0.9); }
+    }
   }
 }
 
-.hurricane__btn-primary {
-  background: linear-gradient(135deg, #8b5cf6, #ef4444);
-  color: #fff;
-  border: none;
-  border-radius: 0.6rem;
-  padding: 0.65rem 1.4rem;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.2s, transform 0.15s;
-
-  &:hover {
-    opacity: 0.88;
-    transform: translateY(-1px);
-  }
-
-  &:active {
-    transform: translateY(0);
-  }
-}
-
-// ─── Responsive ───────────────────────────────────────────────────────────
-@media (min-width: 768px) {
-  .hurricane {
-    padding: 1.5rem 1rem 2rem;
-    gap: 1.4rem;
-  }
-}
+@keyframes hintPulse { 0%,100%{opacity:1} 50%{opacity:0.52} }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }

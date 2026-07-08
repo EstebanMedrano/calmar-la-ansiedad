@@ -1,0 +1,105 @@
+import { useRef, useState } from 'react';
+import { useFrame } from '@react-three/fiber';
+import { Text } from '@react-three/drei';
+import { Howl } from 'howler';
+import * as THREE from 'three';
+import type { HurricaneStage } from './Hurricane';
+
+const barkHowl = new Howl({ src: ['/assets/sounds/lia-bark.mp3'], volume: 0.55 });
+
+interface ThoughtProps {
+  id: number;
+  text: string;
+  initialAngle: number;
+  radius: number;
+  yBase: number;
+  color: string;
+  stage: HurricaneStage;
+  tornadoCenter: THREE.Vector3; // 🛑 NUEVA PROPIEDAD
+  onDestroy: (id: number, worldPos: THREE.Vector3) => void;
+}
+
+export default function Thought({
+  id, text, initialAngle, radius, yBase, color, stage, tornadoCenter, onDestroy
+}: ThoughtProps) {
+  const groupRef = useRef<THREE.Group>(null);
+  const [isDestroying, setIsDestroying] = useState(false);
+  const [destroyed, setDestroyed] = useState(false);
+  const worldPos = useRef(new THREE.Vector3());
+  const currentScale = useRef(1);
+  const yAscend = useRef(0);
+  const flashVal = useRef(0);
+  const lightRef = useRef<THREE.PointLight>(null);
+
+  useFrame((state, delta) => {
+    const group = groupRef.current;
+    if (!group || destroyed) return;
+
+    const t = state.clock.elapsedTime;
+    const orbitSpeed = 0.28 + (id % 5) * 0.07;
+    const angle = initialAngle + t * orbitSpeed;
+    const yOsc = Math.sin(t * 0.75 + id) * 0.28;
+
+    // Durante el ascenso y los fuegos artificiales, las frases suben de altura
+    if (stage === 'tornado_ascend' || stage === 'fireworks') yAscend.current += delta * 7.5;
+
+    // 🛑 POSICIÓN CORREGIDA: Se suma el centro del tornado a la órbita
+    group.position.set(
+      tornadoCenter.x + Math.cos(angle) * radius,
+      tornadoCenter.y + yBase + yOsc + yAscend.current,
+      tornadoCenter.z + Math.sin(angle) * radius
+    );
+    group.lookAt(state.camera.position);
+    worldPos.current.copy(group.position);
+
+    if (isDestroying) {
+      currentScale.current = THREE.MathUtils.lerp(currentScale.current, 0, 0.12);
+      flashVal.current     = THREE.MathUtils.lerp(flashVal.current, 1, 0.18);
+      group.scale.setScalar(Math.max(0, currentScale.current));
+      if (lightRef.current)
+        lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, 0, 0.09);
+      if (currentScale.current < 0.02) setDestroyed(true);
+    }
+  });
+
+  const handleClick = (e: { stopPropagation: () => void }) => {
+    e.stopPropagation();
+    if (isDestroying || stage !== 'tornado') return;
+    setIsDestroying(true);
+    barkHowl.play();
+    if (lightRef.current) lightRef.current.intensity = 3.5;
+    onDestroy(id, worldPos.current.clone());
+  };
+
+  if (destroyed) return null;
+
+  const displayColor = isDestroying ? '#ffffff' : color;
+
+  return (
+    <group ref={groupRef} onClick={handleClick}>
+      {/* Large invisible hitbox */}
+      <mesh>
+        <planeGeometry args={[Math.max(1.2, text.length * 0.28), 0.85]} />
+        <meshBasicMaterial transparent opacity={0} />
+      </mesh>
+
+      <mesh position={[0, 0, -0.01]}>
+        <planeGeometry args={[Math.max(1.1, text.length * 0.26), 0.7]} />
+        <meshBasicMaterial color={color} transparent opacity={isDestroying ? 0.55 : 0.10} />
+      </mesh>
+
+      <Text
+        fontSize={0.30}
+        color={displayColor}
+        anchorX="center"
+        anchorY="middle"
+        outlineWidth={0.03}
+        outlineColor="#000000"
+      >
+        {text}
+      </Text>
+
+      <pointLight ref={lightRef} color={color} intensity={0} distance={8} decay={2} />
+    </group>
+  );
+}
