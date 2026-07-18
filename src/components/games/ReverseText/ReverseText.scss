@@ -1,118 +1,114 @@
 @use '../../../styles/variables' as *;
 
-.reverse-game {
-  max-width: 500px;
-  margin: 0 auto;
-  padding: 20px;
+.reverse-wrap {
+  position: fixed; inset: 0; width: 100vw; height: 100dvh;
+  z-index: 9999; background: #08031c; overflow: hidden;
 
-  .reverse-progress {
-    margin-bottom: 24px;
-
-    .progress-bar-bg {
-      background: rgba(255, 255, 255, 0.1);
-      height: 6px;
-      border-radius: 999px;
-      overflow: hidden;
-
-      .progress-bar-fill {
-        height: 100%;
-        background: linear-gradient(90deg, #06b6d4, #8b5cf6);
-        border-radius: 999px;
-        transition: width 0.5s ease;
-      }
-    }
+  .reverse-canvas {
+    width: 100%; height: 100%; display: block;
+    cursor: default; touch-action: none;
   }
 
-  .rotated-phrase-container {
-    text-align: center;
-    margin-bottom: 24px;
-    padding: 32px;
-    background: rgba(6, 182, 212, 0.05);
-    border-radius: 16px;
-    border: 2px dashed rgba(6, 182, 212, 0.3);
-
-    .rotated-phrase {
-      font-size: 2.5rem;
-      font-weight: 700;
-      color: #f8fafc;
-      text-shadow: 0 0 20px rgba(6, 182, 212, 0.5);
-      margin-bottom: 16px;
-      word-break: break-word;
-      transform: rotate(180deg);
-      display: inline-block;
-    }
-
-    .hint-text {
-      color: rgba(248, 250, 252, 0.5);
-      font-size: 0.875rem;
-      font-style: italic;
-    }
+  .reverse-back {
+    position: absolute; top: max(16px, env(safe-area-inset-top)); left: 16px;
+    z-index: 20; padding: 9px 16px; border-radius: 999px;
+    border: 1px solid rgba(255,255,255,.22); background: rgba(8,3,28,.6);
+    color: #f1f5f9; font-size: .85rem; cursor: pointer; backdrop-filter: blur(6px);
+    &:hover { background: rgba(8,3,28,.9); }
+    @media (max-width:480px) { font-size:.78rem; padding:7px 12px; }
   }
 
-  .reverse-input-area {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 12px;
+  .reverse-hud {
+    position: absolute;
+    bottom: max(14px, env(safe-area-inset-bottom));
+    left: 50%; transform: translateX(-50%);
+    z-index: 15; width: min(94vw, 500px);
+    display: flex; flex-direction: column; gap: 9px;
+    
+    // 🛑 ELIMINADO EL FONDO OSCURO Y EL BLUR QUE TAPABAN EL SUELO
+    background: transparent !important; 
+    border: none !important;
+    padding: 0 !important;
+    backdrop-filter: none !important;
 
-    .reverse-input {
-      flex: 1;
-      background: rgba(255, 255, 255, 0.05);
-      border: 2px solid rgba(255, 255, 255, 0.1);
-      border-radius: 999px;
-      padding: 16px 20px;
-      color: #f8fafc;
-      font-size: 1rem;
-      transition: all 0.3s ease;
+    &__top { display: flex; align-items: center; gap: 10px; }
 
-      &:focus {
-        outline: none;
-        border-color: #06b6d4;
-        box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
-        background: rgba(255, 255, 255, 0.08);
-      }
+    &__bar {
+      flex: 1; height: 6px; background: rgba(255,255,255,.1);
+      border-radius: 999px; overflow: hidden;
+    }
+    &__fill { height: 100%; border-radius: 999px; transition: width .4s ease; }
 
-      &::placeholder {
-        color: rgba(248, 250, 252, 0.5);
-      }
+    &__count {
+      font-size: .80rem; font-weight: 700;
+      white-space: nowrap; min-width: 44px; text-align: right;
+      text-shadow: 0 0 16px rgba(0,0,0,0.9);
     }
 
-    .btn-check {
-      background: linear-gradient(135deg, #06b6d4, #0891b2);
-      color: white;
-      padding: 16px 24px;
-      border-radius: 999px;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      border: none;
-      box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);
-      transition: all 0.3s ease;
-
-      &:hover:not(:disabled) {
-        transform: scale(1.05);
-        box-shadow: 0 6px 25px rgba(6, 182, 212, 0.5);
-      }
-
-      &:disabled {
-        opacity: 0.4;
-        cursor: not-allowed;
-      }
+    &__fb {
+      text-align: center; font-size: .92rem; font-weight: 600; margin: 0;
+      &.ok  { color: #10b981; }
+      &.err { color: #ef4444; }
     }
+
+    &__row { display: flex; gap: 9px; }
+
+    &__input {
+      flex: 1; 
+      background: rgba(6,2,20,0.85); // 🛑 Fondo oscuro solo en el input flotante
+      border: 1px solid rgba(255,255,255,.15); border-radius: 999px;
+      padding: 13px 18px; color: #f8fafc; font-size: 1rem;
+      &:focus { outline: none; border-color: rgba(255,255,255,.4); }
+      &::placeholder { color: rgba(255,255,255,.32); }
+      &:disabled { opacity: .45; }
+      @media (max-width:480px) { font-size:.9rem; padding:11px 14px; }
+    }
+
+    &__btn {
+      padding: 0 22px; border-radius: 999px; border: none;
+      color: #fff; font-size: 1.15rem; font-weight: 700; cursor: pointer;
+      min-width: 52px; box-shadow: 0 0 16px rgba(255,255,255,0.1);
+      &:disabled { opacity: .35; cursor: not-allowed; }
+      @media (max-width:480px) { padding: 0 16px; min-width:44px; }
+    }
+
+    &__anim-hint {
+      text-align: center; font-size: .78rem; color: rgba(255,255,255,.42);
+      margin: 0; animation: hintFade .35s ease;
+    }
+
+    @media (max-width:480px) { gap:7px; }
+    @media (max-height:500px) { gap:5px; }
   }
 
-  .feedback-message {
-    min-height: 30px;
-    text-align: center;
-    font-size: 1.125rem;
-    margin-bottom: 16px;
+  .reverse-done {
+    position: absolute; inset: 0; z-index: 30;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,.62); backdrop-filter: blur(10px);
+    padding: 24px; animation: fadeIn .5s ease;
 
-    &.success {
-      color: #10b981;
+    &__box {
+      text-align: center; background: rgba(6,2,20,.94);
+      border: 1px solid rgba(255,255,255,.1); border-radius: 22px;
+      padding: 42px 30px; max-width: min(92vw,380px);
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      color: #f3f4f6;
+      span { font-size: 3rem; }
+      h2  { font-size: 1.4rem; margin: 0;
+            background: linear-gradient(135deg,#06b6d4,#8b5cf6);
+            -webkit-background-clip:text; background-clip:text; color:transparent; }
+      p   { color: rgba(255,255,255,.6); margin: 0; font-size:.9rem; }
+      button { margin-top:10px; padding:11px 24px; border-radius:999px;
+               border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.08);
+               color:#f1f5f9; cursor:pointer; font-size:.9rem;
+               &:hover { background:rgba(255,255,255,.16); } }
     }
-
-    &.error {
-      color: #ef4444;
+    &__phrases {
+      display:flex; flex-direction:column; gap:4px;
+      font-size:.88rem; font-style:italic;
     }
   }
 }
+
+@keyframes hintFade { from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:none} }
+@keyframes fadeIn   { from{opacity:0} to{opacity:1} }
