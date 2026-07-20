@@ -1,350 +1,379 @@
-// Memorama.tsx — Juego de memorama calmante para "El Refugio de Lu" v2
-// Migrado desde v1/js/games/memoryGame.js
-// Mejoras: animaciones 3D de volteo, efectos de match, sonido suave,
-//          pausa "Respira..." en no-match, overlay de victoria con stats
-
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
+import { Canvas } from '@react-three/fiber';
+import * as THREE from 'three';
 import { useAnxiety } from '../../context/AnxietyContext';
+import MemoramaScene from './MemoramaScene';
+import type {
+  IntroStage, CardState, SharkState, DogTarget, DogState, CardData, BurstData,
+} from './types';
+import {
+  PAIRS, PAIR_COLORS, GRID_SX, GRID_SY, GAP_X, GAP_Y, CARD_COLS,
+  STUN_DURATION, ATTACK_TIMEOUT, BLINK_DURATION,
+} from './positions';
 import './Memorama.scss';
 
-// --- Tipos ---
-interface Card {
-  id: number;       // identificador único por instancia (0-15)
-  emoji: string;    // el emoji que muestra esta carta
-  pairId: number;   // id del par (0-7) para detectar match
-}
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
-type CardState = 'hidden' | 'flipped' | 'matched';
-
-// --- Emojis temáticos para Lu ---
-// Se mantienen los originales y se añaden del refugio
-const EMOJIS = ['🌿', '🌸', '🦋', '🌙', '⭐', '☁️', '🌈', '🕊️'];
-
-// --- Fisher-Yates shuffle ---
-const shuffle = <T,>(arr: T[]): T[] => {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
+const shuffle = <T,>(a: T[]): T[] => {
+  const r = [...a];
+  for (let i = r.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
+    [r[i], r[j]] = [r[j], r[i]];
   }
-  return a;
+  return r;
 };
 
-// --- Crear mazo inicial barajado ---
-const createDeck = (): Card[] => {
-  const pairs: Card[] = EMOJIS.flatMap((emoji, pairId) => [
-    { id: pairId * 2,     emoji, pairId },
-    { id: pairId * 2 + 1, emoji, pairId },
-  ]);
-  return shuffle(pairs);
-};
+const createDeck = (): CardData[] =>
+  shuffle(Array.from({ length: PAIRS }, (_, p) => [
+    { id: p * 2, pairId: p }, { id: p * 2 + 1, pairId: p },
+  ]).flat());
 
-// --- Componente principal ---
+const getCardPos = (idx: number): [number, number, number] => [
+  GRID_SX + (idx % CARD_COLS) * GAP_X,
+  GRID_SY - Math.floor(idx / CARD_COLS) * GAP_Y,
+  0,
+];
+
+const fmt = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
+
+// ── Componente ────────────────────────────────────────────────────────────────
+
 export default function Memorama() {
-  const navigate = useNavigate();
+  const navigate        = useNavigate();
   const { reduceLevel } = useAnxiety();
 
-  // Estado del juego
-  const [deck, setDeck]               = useState<Card[]>(createDeck);
-  const [cardStates, setCardStates]   = useState<CardState[]>(Array(16).fill('hidden'));
-  const [flipped, setFlipped]         = useState<number[]>([]);   // índices volteados actualmente
-  const [moves, setMoves]             = useState(0);
-  const [matchedPairs, setMatchedPairs] = useState(0);
-  const [isLocked, setIsLocked]       = useState(false);  // bloqueo durante evaluación
-  const [hint, setHint]               = useState('');     // mensaje contextual
-  const [completed, setCompleted]     = useState(false);
-  const [elapsedSec, setElapsedSec]   = useState(0);
+  // ── Game state ──────────────────────────────────────────────────────────────
+  const [introStage,  setIntroStage]  = useState<IntroStage>('beach');
+  const [isPlaying,   setIsPlaying]   = useState(false);
+  const [deck,        setDeck]        = useState<CardData[]>(() => createDeck());
+  const [cardStates,  setCardStates]  = useState<CardState[]>(Array(PAIRS * 2).fill('hidden'));
+  const [flipped,     setFlipped]     = useState<number[]>([]);
+  const [locked,      setLocked]      = useState(false);
+  const [matched,     setMatched]     = useState(0);
+  const [moves,       setMoves]       = useState(0);
+  const [elapsed,     setElapsed]     = useState(0);
+  const [score,       setScore]       = useState(0);
+  const [combo,       setCombo]       = useState(0);
+  const [bursts,      setBursts]      = useState<BurstData[]>([]);
+  const [shakeSet,    setShakeSet]    = useState(new Set<number>());
+  const [completed,   setCompleted]   = useState(false);
 
-  // Audio
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const startTimeRef = useRef<number>(Date.now());
-  const timerRef    = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Pair reveal overlay
+  const [pairReveal,  setPairReveal]  = useState<{ pairId: number; points: number } | null>(null);
 
-  // --- Timer ---
+  // Shark / dogs
+  const [sharkState,  setSharkState]  = useState<SharkState>('chasing');
+  const [sharkTarget, setSharkTarget] = useState<DogTarget>('tito');
+  const [titoState,   setTitoState]   = useState<DogState>('swimming');
+  const [liaState,    setLiaState]    = useState<DogState>('swimming');
+
+  // ── Refs ────────────────────────────────────────────────────────────────────
+  const titoWorldPos    = useRef(new THREE.Vector3(4.5,  2.5, 0));
+  const liaWorldPos     = useRef(new THREE.Vector3(4.5, -2.5, 0));
+  const sharkWorldPos   = useRef(new THREE.Vector3(6.0,  0.0, 0));
+  const comboRef        = useRef(0);
+  const matchedRef      = useRef(0);
+  const lastActionRef   = useRef(Date.now());
+  const sharkStRef      = useRef<SharkState>('chasing');
+  const timerRef        = useRef<number | null>(null);
+  const sharkTimerRef   = useRef<number | null>(null);
+  const chaseSwitchRef  = useRef<number | null>(null);
+  const startRef        = useRef(Date.now());
+
+  sharkStRef.current = sharkState;
+  matchedRef.current = matched;
+
+  // ── Timer (starts after intro) ──────────────────────────────────────────────
   useEffect(() => {
-    timerRef.current = setInterval(() => {
-      setElapsedSec(Math.round((Date.now() - startTimeRef.current) / 1000));
-    }, 1000);
+    if (!isPlaying) return;
+    startRef.current = Date.now();
+    lastActionRef.current = Date.now();
+    timerRef.current = window.setInterval(
+      () => setElapsed(Math.round((Date.now() - startRef.current) / 1000)), 1000
+    );
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, []);
+  }, [isPlaying]);
 
-  // Detener timer al completar
+  // ── Shark attack timer (triggers after ATTACK_TIMEOUT seconds without a match) ──
   useEffect(() => {
-    if (completed && timerRef.current) clearInterval(timerRef.current);
-  }, [completed]);
+    if (!isPlaying) return;
+    sharkTimerRef.current = window.setInterval(() => {
+      if (sharkStRef.current !== 'chasing' || matchedRef.current >= PAIRS) return;
+      const sinceAction = (Date.now() - lastActionRef.current) / 1000;
+      if (sinceAction >= ATTACK_TIMEOUT) {
+        lastActionRef.current = Date.now(); // Reset timer
+        setSharkState('attacking');
 
-  // --- AudioContext lazy ---
-  const getAudioCtx = () => {
-    if (!audioCtxRef.current) {
-      audioCtxRef.current = new AudioContext();
+        // Attack the closest dog
+        const titoD = titoWorldPos.current.distanceTo(sharkWorldPos.current);
+        const liaD  = liaWorldPos.current.distanceTo(sharkWorldPos.current);
+        const victim: DogTarget = titoD < liaD ? 'tito' : 'lia';
+
+        // Blink effect (no lives lost — solo efecto visual)
+        if (victim === 'tito') {
+          setTitoState('blinking');
+          setTimeout(() => setTitoState('swimming'), BLINK_DURATION * 1000);
+        } else {
+          setLiaState('blinking');
+          setTimeout(() => setLiaState('swimming'), BLINK_DURATION * 1000);
+        }
+
+        // Shark returns to chase after 3s
+        setTimeout(() => {
+          setSharkState('chasing');
+          setSharkTarget(Math.random() < 0.5 ? 'tito' : 'lia');
+        }, 3000);
+      }
+    }, 500);
+    return () => { if (sharkTimerRef.current) clearInterval(sharkTimerRef.current); };
+  }, [isPlaying]);
+
+  // ── Shark chase target switch (alternates between Tito and Lia during chase) ──
+  useEffect(() => {
+    if (!isPlaying) return;
+    const switchNow = () => {
+      if (sharkStRef.current === 'chasing') {
+        setSharkTarget(t => t === 'tito' ? 'lia' : 'tito');
+      }
+      // Schedule next switch (randomized 4-8 seconds)
+      chaseSwitchRef.current = window.setTimeout(switchNow, 4000 + Math.random() * 4000);
+    };
+    chaseSwitchRef.current = window.setTimeout(switchNow, 5000);
+    return () => { if (chaseSwitchRef.current) clearTimeout(chaseSwitchRef.current); };
+  }, [isPlaying]);
+
+  // ── Stop timers on victory ──────────────────────────────────────────────────
+  useEffect(() => {
+    if (matched >= PAIRS && isPlaying && !pairReveal) {
+      setTitoState('celebrating');
+      setLiaState('celebrating');
+      setSharkState('dead');
+      if (timerRef.current)       clearInterval(timerRef.current);
+      if (sharkTimerRef.current)  clearInterval(sharkTimerRef.current);
+      if (chaseSwitchRef.current) clearTimeout(chaseSwitchRef.current);
     }
-    return audioCtxRef.current;
-  };
+  }, [matched, isPlaying, pairReveal]);
 
-  // Tono suave al voltear
-  const playFlipTone = useCallback(() => {
-    try {
-      const ctx = getAudioCtx();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = 440;
-      osc.type = 'sine';
-      gain.gain.setValueAtTime(0.05, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.3);
-    } catch { /* AudioContext bloqueado por política del navegador */ }
-  }, []);
+  // ── Burst helper ────────────────────────────────────────────────────────────
+  const addBurst = useCallback((idx: number) => {
+    const color = PAIR_COLORS[deck[idx].pairId % PAIR_COLORS.length];
+    const pos   = getCardPos(idx);
+    const id    = `${Date.now()}-${idx}`;
+    setBursts(b => [...b, { id, pos, color }]);
+    setTimeout(() => setBursts(b => b.filter(x => x.id !== id)), 1400);
+  }, [deck]);
 
-  // Tono de match (acorde mayor)
-  const playMatchTone = useCallback(() => {
-    try {
-      const ctx = getAudioCtx();
-      [261.6, 329.6, 392].forEach((freq, i) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.frequency.value = freq;
-        osc.type = 'sine';
-        const t = ctx.currentTime + i * 0.06;
-        gain.gain.setValueAtTime(0.07, t);
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
-        osc.start(t);
-        osc.stop(t + 0.5);
-      });
-    } catch { /* silencioso */ }
-  }, []);
-
-  // --- Reiniciar ---
-  const resetGame = useCallback(() => {
-    setDeck(createDeck());
-    setCardStates(Array(16).fill('hidden'));
-    setFlipped([]);
-    setMoves(0);
-    setMatchedPairs(0);
-    setIsLocked(false);
-    setHint('');
-    setCompleted(false);
-    setElapsedSec(0);
-    startTimeRef.current = Date.now();
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => {
-      setElapsedSec(Math.round((Date.now() - startTimeRef.current) / 1000));
-    }, 1000);
-  }, []);
-
-  // --- Lógica de flip ---
+  // ── Card click ──────────────────────────────────────────────────────────────
   const handleCardClick = useCallback((idx: number) => {
-    // Ignorar si: bloqueado, ya volteada o ya encontrada
-    if (isLocked) return;
-    if (cardStates[idx] !== 'hidden') return;
-    if (flipped.length >= 2) return;
+    if (locked || pairReveal || cardStates[idx] !== 'hidden' || flipped.length >= 2) return;
 
-    playFlipTone();
+    const ns = [...cardStates]; ns[idx] = 'flipped';
+    setCardStates(ns);
+    const nf = [...flipped, idx];
+    setFlipped(nf);
 
-    // Voltear carta
-    const newStates = [...cardStates];
-    newStates[idx] = 'flipped';
-    setCardStates(newStates);
-
-    const newFlipped = [...flipped, idx];
-    setFlipped(newFlipped);
-
-    if (newFlipped.length === 2) {
-      // Evaluar par
-      setIsLocked(true);
+    if (nf.length === 2) {
+      setLocked(true);
       setMoves(m => m + 1);
+      const [a, b] = nf;
 
-      const [a, b] = newFlipped;
-      const isMatch = deck[a].pairId === deck[b].pairId;
+      if (deck[a].pairId === deck[b].pairId) {
+        // ── MATCH ───────────────────────────────────────────────────────────
+        const nc = comboRef.current + 1;
+        comboRef.current = nc;
+        setCombo(nc);
+        const bonus  = Math.min(nc - 1, 5) * 60;
+        const points = 100 + bonus;
+        setScore(s => s + points);
 
-      if (isMatch) {
-        playMatchTone();
-        setHint('¡Encontraste un par! 🌟');
         setTimeout(() => {
-          const matched = [...newStates];
-          matched[a] = 'matched';
-          matched[b] = 'matched';
-          setCardStates(matched);
+          const ms = [...ns]; ms[a] = 'matched'; ms[b] = 'matched';
+          setCardStates(ms);
           setFlipped([]);
-          setIsLocked(false);
-          setHint('');
+          // ⚠️ NO setLocked(false) — se desbloquea en handleContinue
 
-          const newCount = matchedPairs + 1;
-          setMatchedPairs(newCount);
+          const nm = matchedRef.current + 1;
+          setMatched(nm);
+          matchedRef.current = nm;
+          lastActionRef.current = Date.now(); // Resetea timer del tiburón
 
-          if (newCount === EMOJIS.length) {
-            // ¡Victoria!
+          // Perrito golpea al tiburón → stun
+          const hitter = sharkTarget;
+          if (hitter === 'tito') setTitoState('hitting');
+          else setLiaState('hitting');
+
+          setSharkState('stunned');
+          setTimeout(() => {
+            if (hitter === 'tito') setTitoState('fleeing');
+            else setLiaState('fleeing');
             setTimeout(() => {
-              setCompleted(true);
-              reduceLevel();
-            }, 400);
-          }
-        }, 600);
+              if (hitter === 'tito') setTitoState('swimming');
+              else setLiaState('swimming');
+            }, 2000);
+            setSharkState('chasing');
+            setSharkTarget(Math.random() < 0.5 ? 'tito' : 'lia');
+          }, STUN_DURATION * 1000);
+
+          addBurst(a); addBurst(b);
+
+          // Mostrar overlay de reveal (mantiene locked=true)
+          setPairReveal({ pairId: deck[a].pairId, points });
+        }, 460);
+
       } else {
-        // No match — pausa "Respira..." antes de voltear
-        setHint('Respira... 🌬️');
+        // ── NO MATCH ─────────────────────────────────────────────────────────
+        comboRef.current = 0; setCombo(0);
+        setShakeSet(new Set([a, b]));
         setTimeout(() => {
-          const reset = [...newStates];
-          reset[a] = 'hidden';
-          reset[b] = 'hidden';
-          setCardStates(reset);
-          setFlipped([]);
-          setIsLocked(false);
-          setHint('');
-        }, 1000);
+          const rs = [...ns]; rs[a] = 'hidden'; rs[b] = 'hidden';
+          setCardStates(rs); setFlipped([]); setLocked(false); setShakeSet(new Set());
+        }, 900);
       }
     }
-  }, [isLocked, cardStates, flipped, deck, matchedPairs, playFlipTone, playMatchTone, reduceLevel]);
+  }, [locked, pairReveal, cardStates, flipped, deck, sharkTarget, addBurst]);
 
-  // --- Formatear tiempo ---
-  const formatTime = (sec: number) => {
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    return `${m}:${s.toString().padStart(2, '0')}`;
-  };
+  // ── Continuar después del reveal ────────────────────────────────────────────
+  const handleContinue = useCallback(() => {
+    setPairReveal(null);
+    setLocked(false);
+    if (matchedRef.current >= PAIRS) {
+      setTimeout(() => { setCompleted(true); reduceLevel(); }, 400);
+    }
+  }, [reduceLevel]);
 
-  // --- Render ---
-  return (
-    <div className="memorama">
-      {/* Encabezado */}
-      <motion.div
-        className="memorama__header"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+  // ── Reset ───────────────────────────────────────────────────────────────────
+  const reset = useCallback(() => {
+    setDeck(createDeck());
+    setCardStates(Array(PAIRS * 2).fill('hidden'));
+    setFlipped([]); setLocked(false); setMatched(0); setMoves(0);
+    setElapsed(0);  setScore(0);      setCombo(0);   setBursts([]);
+    setShakeSet(new Set()); setCompleted(false); setPairReveal(null);
+    setSharkState('chasing'); setSharkTarget('tito');
+    setTitoState('swimming'); setLiaState('swimming');
+    comboRef.current = 0; matchedRef.current = 0;
+    titoWorldPos.current.set(4.5,  2.5, 0);
+    liaWorldPos.current.set(4.5,  -2.5, 0);
+    sharkWorldPos.current.set(6.0,  0.0, 0);
+    startRef.current = Date.now();
+    lastActionRef.current = Date.now();
+    if (timerRef.current)       clearInterval(timerRef.current);
+    if (sharkTimerRef.current)  clearInterval(sharkTimerRef.current);
+    if (chaseSwitchRef.current) clearTimeout(chaseSwitchRef.current);
+    timerRef.current = window.setInterval(
+      () => setElapsed(Math.round((Date.now() - startRef.current) / 1000)), 1000
+    );
+  }, []);
+
+  const timeBonus  = Math.max(0, 500 - elapsed * 2);
+  const finalScore = score + (completed ? timeBonus : 0);
+
+  return createPortal(
+    <div className="mem-wrap">
+      <button className="mem-back" onClick={() => navigate('/games')}>← Volver</button>
+
+      <Canvas
+        className="mem-canvas"
+        dpr={[1, 1.5]}
+        camera={{ position: [0, 0, 18], fov: 58, near: 0.1, far: 80 }}
       >
-        <h2 className="memorama__title">
-          <span className="memorama__title-gradient">🎴 Memorama Calmante</span>
-        </h2>
-        <p className="memorama__subtitle">Encuentra los pares. Tómate tu tiempo.</p>
-      </motion.div>
+        <Suspense fallback={null}>
+          <MemoramaScene
+            introStage={introStage}   isPlaying={isPlaying}
+            deck={deck}               cardStates={cardStates}
+            shakeSet={shakeSet}       bursts={bursts}
+            matched={matched}         sharkState={sharkState}
+            sharkTarget={sharkTarget} titoState={titoState}
+            liaState={liaState}       titoWorldPos={titoWorldPos}
+            liaWorldPos={liaWorldPos} sharkWorldPos={sharkWorldPos}
+            onCardClick={handleCardClick}
+            onStageChange={setIntroStage}
+            onComplete={() => setIsPlaying(true)}
+          />
+        </Suspense>
+      </Canvas>
 
-      {/* Estadísticas */}
-      <div className="memorama__stats">
-        <div className="memorama__stat">
-          <span className="memorama__stat-icon">🎯</span>
-          <span className="memorama__stat-label">Movimientos</span>
-          <span className="memorama__stat-value">{moves}</span>
+      {/* ── HUD ─────────────────────────────────────────────────────────── */}
+      {isPlaying && !completed && (
+        <div className="mem-hud">
+          <div className="mem-hud__pill">🎯 <span>{moves}</span></div>
+          <div className="mem-hud__pill">✅ <span>{matched}/{PAIRS}</span></div>
+          <div className="mem-hud__pill">⏱ <span>{fmt(elapsed)}</span></div>
+          <div className="mem-hud__score">{score.toLocaleString()} pts</div>
         </div>
-        <div className="memorama__stat">
-          <span className="memorama__stat-icon">✅</span>
-          <span className="memorama__stat-label">Pares</span>
-          <span className="memorama__stat-value">{matchedPairs}/{EMOJIS.length}</span>
+      )}
+
+      {/* Barra de progreso */}
+      {isPlaying && (
+        <div className="mem-progress">
+          <div className="mem-progress__fill" style={{ width: `${(matched / PAIRS) * 100}%` }} />
         </div>
-        <div className="memorama__stat">
-          <span className="memorama__stat-icon">⏱️</span>
-          <span className="memorama__stat-label">Tiempo</span>
-          <span className="memorama__stat-value">{formatTime(elapsedSec)}</span>
+      )}
+
+      {/* Shark hint */}
+      {isPlaying && !completed && (
+        <p className="mem-shark-hint">🦈 Encuentra pares para ahuyentar al tiburón</p>
+      )}
+
+      {/* ── Overlay de intro ─────────────────────────────────────────────── */}
+      {!isPlaying && (
+        <div className="mem-intro-overlay">
+          <div className="mem-intro-text">
+            {introStage === 'beach'   && '🌊 La playa...'}
+            {introStage === 'surface' && '💧 El mar...'}
+            {introStage === 'diving'  && '🫧 Sumergiéndose...'}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Mensaje contextual (hint) */}
-      <AnimatePresence>
-        {hint && (
-          <motion.p
-            className="memorama__hint"
-            key="hint"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            transition={{ duration: 0.2 }}
-          >
-            {hint}
-          </motion.p>
-        )}
-      </AnimatePresence>
+      {/* ── Pair reveal overlay (nueva funcionalidad) ────────────────────── */}
+      {pairReveal && (
+        <div className="mem-reveal-overlay" onClick={handleContinue}>
+          <div className="mem-reveal-card" onClick={e => e.stopPropagation()}>
+            <div className="mem-reveal-header">
+              <span className="mem-reveal-badge">✨ ¡Par encontrado!</span>
+              {combo >= 2 && (
+                <span className="mem-reveal-combo">🔥 COMBO ×{combo}</span>
+              )}
+            </div>
+            <img
+              src={`/assets/img/memorama/${pairReveal.pairId + 1}.png`}
+              alt="Par encontrado"
+              className="mem-reveal-img"
+            />
+            <p className="mem-reveal-points">+{pairReveal.points} puntos</p>
+            <button className="mem-continue-btn" onClick={handleContinue}>
+              Seguir jugando →
+            </button>
+          </div>
+        </div>
+      )}
 
-      {/* Grid de cartas */}
-      <div className="memorama__grid">
-        {deck.map((card, idx) => {
-          const state = cardStates[idx];
-          const isFlipped = state === 'flipped' || state === 'matched';
-          return (
-            <motion.div
-              key={`${card.id}-${idx}`}
-              className={`memorama__card memorama__card--${state}`}
-              onClick={() => handleCardClick(idx)}
-              initial={{ opacity: 0, scale: 0.7 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: idx * 0.03, duration: 0.3 }}
-              whileHover={state === 'hidden' ? { scale: 1.05 } : {}}
-              whileTap={state === 'hidden' ? { scale: 0.95 } : {}}
-            >
-              <motion.div
-                className="memorama__card-inner"
-                animate={{ rotateY: isFlipped ? 180 : 0 }}
-                transition={{ duration: 0.4, ease: 'easeInOut' }}
-                style={{ transformStyle: 'preserve-3d' }}
-              >
-                {/* Cara frontal (oculta) */}
-                <div className="memorama__card-front">
-                  <span className="memorama__card-question">❓</span>
-                </div>
-                {/* Cara trasera (emoji) */}
-                <div className="memorama__card-back">
-                  <span className="memorama__card-emoji">{card.emoji}</span>
-                </div>
-              </motion.div>
-
-              {/* Glow en matched */}
-              <AnimatePresence>
-                {state === 'matched' && (
-                  <motion.div
-                    className="memorama__card-glow"
-                    initial={{ opacity: 0, scale: 0.5 }}
-                    animate={{ opacity: [0, 1, 0], scale: [0.5, 1.3, 1] }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.6 }}
-                  />
-                )}
-              </AnimatePresence>
-            </motion.div>
-          );
-        })}
-      </div>
-
-      {/* Botones */}
-      <div className="memorama__actions">
-        <button className="btn-secondary" onClick={resetGame}>🔄 Reiniciar</button>
-        <button className="btn-secondary" onClick={() => navigate('/games')}>← Volver</button>
-      </div>
-
-      {/* Overlay de victoria */}
-      <AnimatePresence>
-        {completed && (
-          <motion.div
-            className="memorama__victory"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <motion.div
-              className="memorama__victory-card"
-              initial={{ scale: 0.5, y: 40 }}
-              animate={{ scale: 1, y: 0 }}
-              transition={{ type: 'spring', stiffness: 200, damping: 18 }}
-            >
-              <div className="memorama__victory-emoji">🎉</div>
-              <h3 className="memorama__victory-title">¡Lo lograste!</h3>
-              <p className="memorama__victory-desc">
-                Completaste el memorama en<br />
-                <strong>{moves} movimientos</strong> y <strong>{formatTime(elapsedSec)}</strong>
-              </p>
-              <div className="memorama__victory-actions">
-                <button className="btn-primary" onClick={resetGame}>Jugar de nuevo</button>
-                <button className="btn-secondary" onClick={() => navigate('/games')}>Volver a juegos</button>
+      {/* ── Victoria ─────────────────────────────────────────────────────── */}
+      {completed && (
+        <div className="mem-victory">
+          <div className="mem-victory__box">
+            <div className="mem-victory__emoji">🏆</div>
+            <h2>¡Victoria!</h2>
+            <p>¡Tito y Lia derrotaron al tiburón!</p>
+            <div className="mem-victory__stats">
+              <div><span>🎯</span><span>{moves} movimientos</span></div>
+              <div><span>⏱</span><span>{fmt(elapsed)}</span></div>
+              <div><span>⭐</span><span>{score.toLocaleString()} pts</span></div>
+              <div><span>⚡</span><span>+{timeBonus} bonus tiempo</span></div>
+              <div className="mem-victory__total">
+                <span>🏅</span><span>{finalScore.toLocaleString()} total</span>
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+            </div>
+            <div className="mem-victory__btns">
+              <button onClick={reset}>Jugar de nuevo</button>
+              <button onClick={() => navigate('/games')}>← Volver</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>,
+    document.body
   );
 }
