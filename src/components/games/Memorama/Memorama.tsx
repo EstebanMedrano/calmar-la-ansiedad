@@ -1,4 +1,4 @@
-import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState, Component } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Canvas } from '@react-three/fiber';
@@ -9,12 +9,47 @@ import type {
   IntroStage, CardState, SharkState, DogTarget, DogState, CardData, BurstData,
 } from './types';
 import {
-  PAIRS, PAIR_COLORS, GRID_SX, GRID_SY, GAP_X, GAP_Y, CARD_COLS,
+  PAIRS, PAIR_COLORS, IMG_PATHS, getGridConfig, getCardPos,
   STUN_DURATION, ATTACK_TIMEOUT, BLINK_DURATION,
 } from './positions';
 import './Memorama.scss';
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ⭐ BARRERA DE SEGURIDAD: Atrapa cualquier error dentro del Canvas y evita la pantalla azul
+class ErrorBoundary extends Component<{ children: React.ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error: any, errorInfo: any) {
+    console.error('Error atrapado en Memorama (se evitó la pantalla azul):', error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center',
+          justifyContent: 'center', background: '#010818', color: '#e0f0ff', zIndex: 9999, padding: '20px'
+        }}>
+          <h2 style={{ color: '#44ddff' }}>¡Ups! Algo salió mal</h2>
+          <p style={{ marginBottom: '20px', textAlign: 'center' }}>
+            Un componente externo falló al cargar un recurso (fuente o imagen).<br />
+            No es un error del juego. Haz clic en el botón para continuar.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            style={{ padding: '12px 24px', borderRadius: '999px', border: 'none', background: '#0088ff', color: 'white', fontSize: '1rem', cursor: 'pointer' }}
+          >
+            Recargar página
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const shuffle = <T,>(a: T[]): T[] => {
   const r = [...a];
@@ -30,62 +65,80 @@ const createDeck = (): CardData[] =>
     { id: p * 2, pairId: p }, { id: p * 2 + 1, pairId: p },
   ]).flat());
 
-const getCardPos = (idx: number): [number, number, number] => [
-  GRID_SX + (idx % CARD_COLS) * GAP_X,
-  GRID_SY - Math.floor(idx / CARD_COLS) * GAP_Y,
-  0,
-];
-
 const fmt = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
 
-// ── Componente ────────────────────────────────────────────────────────────────
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(() =>
+    'ontouchstart' in window && window.innerWidth < 1024
+  );
+  useEffect(() => {
+    const onResize = () => setIsMobile('ontouchstart' in window && window.innerWidth < 1024);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  return isMobile;
+}
+
+function useImagePreload(srcs: string[]) {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all(srcs.map(src => new Promise<void>((res) => {
+      const img = new Image();
+      img.onload = () => res();
+      img.onerror = () => res();
+      img.src = src;
+    }))).then(() => {
+      if (!cancelled) setReady(true);
+    });
+    return () => { cancelled = true; };
+  }, [srcs]);
+  return ready;
+}
 
 export default function Memorama() {
-  const navigate        = useNavigate();
+  const navigate = useNavigate();
   const { reduceLevel } = useAnxiety();
+  const isMobile = useIsMobile();
+  const texturesReady = useImagePreload(IMG_PATHS);
 
-  // ── Game state ──────────────────────────────────────────────────────────────
-  const [introStage,  setIntroStage]  = useState<IntroStage>('beach');
-  const [isPlaying,   setIsPlaying]   = useState(false);
-  const [deck,        setDeck]        = useState<CardData[]>(() => createDeck());
-  const [cardStates,  setCardStates]  = useState<CardState[]>(Array(PAIRS * 2).fill('hidden'));
-  const [flipped,     setFlipped]     = useState<number[]>([]);
-  const [locked,      setLocked]      = useState(false);
-  const [matched,     setMatched]     = useState(0);
-  const [moves,       setMoves]       = useState(0);
-  const [elapsed,     setElapsed]     = useState(0);
-  const [score,       setScore]       = useState(0);
-  const [combo,       setCombo]       = useState(0);
-  const [bursts,      setBursts]      = useState<BurstData[]>([]);
-  const [shakeSet,    setShakeSet]    = useState(new Set<number>());
-  const [completed,   setCompleted]   = useState(false);
+  const [introStage, setIntroStage] = useState<IntroStage>('beach');
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [deck, setDeck] = useState<CardData[]>(() => createDeck());
+  const [cardStates, setCardStates] = useState<CardState[]>(Array(PAIRS * 2).fill('hidden'));
+  const [flipped, setFlipped] = useState<number[]>([]);
+  const [locked, setLocked] = useState(false);
+  const [matched, setMatched] = useState(0);
+  const [moves, setMoves] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
+  const [score, setScore] = useState(0);
+  const [combo, setCombo] = useState(0);
+  const [bursts, setBursts] = useState<BurstData[]>([]);
+  const [shakeSet, setShakeSet] = useState(new Set<number>());
+  const [completed, setCompleted] = useState(false);
+  const [pairReveal, setPairReveal] = useState<{ pairId: number; points: number } | null>(null);
+  const revealTimerRef = useRef<number | null>(null);
 
-  // Pair reveal overlay
-  const [pairReveal,  setPairReveal]  = useState<{ pairId: number; points: number } | null>(null);
-
-  // Shark / dogs
-  const [sharkState,  setSharkState]  = useState<SharkState>('chasing');
+  const [sharkState, setSharkState] = useState<SharkState>('chasing');
   const [sharkTarget, setSharkTarget] = useState<DogTarget>('tito');
-  const [titoState,   setTitoState]   = useState<DogState>('swimming');
-  const [liaState,    setLiaState]    = useState<DogState>('swimming');
+  const [titoState, setTitoState] = useState<DogState>('swimming');
+  const [liaState, setLiaState] = useState<DogState>('swimming');
 
-  // ── Refs ────────────────────────────────────────────────────────────────────
-  const titoWorldPos    = useRef(new THREE.Vector3(4.5,  2.5, 0));
-  const liaWorldPos     = useRef(new THREE.Vector3(4.5, -2.5, 0));
-  const sharkWorldPos   = useRef(new THREE.Vector3(6.0,  0.0, 0));
-  const comboRef        = useRef(0);
-  const matchedRef      = useRef(0);
-  const lastActionRef   = useRef(Date.now());
-  const sharkStRef      = useRef<SharkState>('chasing');
-  const timerRef        = useRef<number | null>(null);
-  const sharkTimerRef   = useRef<number | null>(null);
-  const chaseSwitchRef  = useRef<number | null>(null);
-  const startRef        = useRef(Date.now());
+  const titoWorldPos = useRef(new THREE.Vector3(4.5, 2.5, 0));
+  const liaWorldPos = useRef(new THREE.Vector3(4.5, -2.5, 0));
+  const sharkWorldPos = useRef(new THREE.Vector3(6.0, 0.0, 0));
+  const comboRef = useRef(0);
+  const matchedRef = useRef(0);
+  const lastActionRef = useRef(Date.now());
+  const sharkStRef = useRef<SharkState>('chasing');
+  const timerRef = useRef<number | null>(null);
+  const sharkTimerRef = useRef<number | null>(null);
+  const chaseSwitchRef = useRef<number | null>(null);
+  const startRef = useRef(Date.now());
 
   sharkStRef.current = sharkState;
   matchedRef.current = matched;
 
-  // ── Timer (starts after intro) ──────────────────────────────────────────────
   useEffect(() => {
     if (!isPlaying) return;
     startRef.current = Date.now();
@@ -96,22 +149,19 @@ export default function Memorama() {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [isPlaying]);
 
-  // ── Shark attack timer (triggers after ATTACK_TIMEOUT seconds without a match) ──
   useEffect(() => {
     if (!isPlaying) return;
     sharkTimerRef.current = window.setInterval(() => {
       if (sharkStRef.current !== 'chasing' || matchedRef.current >= PAIRS) return;
       const sinceAction = (Date.now() - lastActionRef.current) / 1000;
       if (sinceAction >= ATTACK_TIMEOUT) {
-        lastActionRef.current = Date.now(); // Reset timer
+        lastActionRef.current = Date.now();
         setSharkState('attacking');
 
-        // Attack the closest dog
         const titoD = titoWorldPos.current.distanceTo(sharkWorldPos.current);
-        const liaD  = liaWorldPos.current.distanceTo(sharkWorldPos.current);
+        const liaD = liaWorldPos.current.distanceTo(sharkWorldPos.current);
         const victim: DogTarget = titoD < liaD ? 'tito' : 'lia';
 
-        // Blink effect (no lives lost — solo efecto visual)
         if (victim === 'tito') {
           setTitoState('blinking');
           setTimeout(() => setTitoState('swimming'), BLINK_DURATION * 1000);
@@ -120,7 +170,6 @@ export default function Memorama() {
           setTimeout(() => setLiaState('swimming'), BLINK_DURATION * 1000);
         }
 
-        // Shark returns to chase after 3s
         setTimeout(() => {
           setSharkState('chasing');
           setSharkTarget(Math.random() < 0.5 ? 'tito' : 'lia');
@@ -130,42 +179,48 @@ export default function Memorama() {
     return () => { if (sharkTimerRef.current) clearInterval(sharkTimerRef.current); };
   }, [isPlaying]);
 
-  // ── Shark chase target switch (alternates between Tito and Lia during chase) ──
   useEffect(() => {
     if (!isPlaying) return;
     const switchNow = () => {
       if (sharkStRef.current === 'chasing') {
         setSharkTarget(t => t === 'tito' ? 'lia' : 'tito');
       }
-      // Schedule next switch (randomized 4-8 seconds)
       chaseSwitchRef.current = window.setTimeout(switchNow, 4000 + Math.random() * 4000);
     };
     chaseSwitchRef.current = window.setTimeout(switchNow, 5000);
     return () => { if (chaseSwitchRef.current) clearTimeout(chaseSwitchRef.current); };
   }, [isPlaying]);
 
-  // ── Stop timers on victory ──────────────────────────────────────────────────
   useEffect(() => {
     if (matched >= PAIRS && isPlaying && !pairReveal) {
       setTitoState('celebrating');
       setLiaState('celebrating');
       setSharkState('dead');
-      if (timerRef.current)       clearInterval(timerRef.current);
-      if (sharkTimerRef.current)  clearInterval(sharkTimerRef.current);
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (sharkTimerRef.current) clearInterval(sharkTimerRef.current);
       if (chaseSwitchRef.current) clearTimeout(chaseSwitchRef.current);
+      if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
     }
   }, [matched, isPlaying, pairReveal]);
 
-  // ── Burst helper ────────────────────────────────────────────────────────────
-  const addBurst = useCallback((idx: number) => {
-    const color = PAIR_COLORS[deck[idx].pairId % PAIR_COLORS.length];
-    const pos   = getCardPos(idx);
-    const id    = `${Date.now()}-${idx}`;
-    setBursts(b => [...b, { id, pos, color }]);
-    setTimeout(() => setBursts(b => b.filter(x => x.id !== id)), 1400);
-  }, [deck]);
+  useEffect(() => {
+    if (pairReveal) {
+      revealTimerRef.current = window.setTimeout(() => {
+        handleContinue();
+      }, 2500);
+    }
+    return () => { if (revealTimerRef.current) clearTimeout(revealTimerRef.current); };
+  }, [pairReveal]);
 
-  // ── Card click ──────────────────────────────────────────────────────────────
+  const handleContinue = useCallback(() => {
+    if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
+    setPairReveal(null);
+    setLocked(false);
+    if (matchedRef.current >= PAIRS) {
+      setTimeout(() => { setCompleted(true); reduceLevel(); }, 400);
+    }
+  }, [reduceLevel]);
+
   const handleCardClick = useCallback((idx: number) => {
     if (locked || pairReveal || cardStates[idx] !== 'hidden' || flipped.length >= 2) return;
 
@@ -180,11 +235,10 @@ export default function Memorama() {
       const [a, b] = nf;
 
       if (deck[a].pairId === deck[b].pairId) {
-        // ── MATCH ───────────────────────────────────────────────────────────
         const nc = comboRef.current + 1;
         comboRef.current = nc;
         setCombo(nc);
-        const bonus  = Math.min(nc - 1, 5) * 60;
+        const bonus = Math.min(nc - 1, 5) * 60;
         const points = 100 + bonus;
         setScore(s => s + points);
 
@@ -192,14 +246,12 @@ export default function Memorama() {
           const ms = [...ns]; ms[a] = 'matched'; ms[b] = 'matched';
           setCardStates(ms);
           setFlipped([]);
-          // ⚠️ NO setLocked(false) — se desbloquea en handleContinue
 
           const nm = matchedRef.current + 1;
           setMatched(nm);
           matchedRef.current = nm;
-          lastActionRef.current = Date.now(); // Resetea timer del tiburón
+          lastActionRef.current = Date.now();
 
-          // Perrito golpea al tiburón → stun
           const hitter = sharkTarget;
           if (hitter === 'tito') setTitoState('hitting');
           else setLiaState('hitting');
@@ -216,14 +268,20 @@ export default function Memorama() {
             setSharkTarget(Math.random() < 0.5 ? 'tito' : 'lia');
           }, STUN_DURATION * 1000);
 
-          addBurst(a); addBurst(b);
+          const aspect = window.innerWidth / window.innerHeight;
+          const gridCfg = getGridConfig(aspect);
+          const posA = getCardPos(a, gridCfg);
+          const posB = getCardPos(b, gridCfg);
+          const idA = `${Date.now()}-a`;
+          const idB = `${Date.now()}-b`;
+          setBursts(prev => [...prev, { id: idA, pos: posA, color: PAIR_COLORS[deck[a].pairId % PAIR_COLORS.length] }]);
+          setBursts(prev => [...prev, { id: idB, pos: posB, color: PAIR_COLORS[deck[b].pairId % PAIR_COLORS.length] }]);
+          setTimeout(() => setBursts(prev => prev.filter(x => x.id !== idA && x.id !== idB)), 1400);
 
-          // Mostrar overlay de reveal (mantiene locked=true)
           setPairReveal({ pairId: deck[a].pairId, points });
         }, 460);
 
       } else {
-        // ── NO MATCH ─────────────────────────────────────────────────────────
         comboRef.current = 0; setCombo(0);
         setShakeSet(new Set([a, b]));
         setTimeout(() => {
@@ -232,42 +290,41 @@ export default function Memorama() {
         }, 900);
       }
     }
-  }, [locked, pairReveal, cardStates, flipped, deck, sharkTarget, addBurst]);
+  }, [locked, pairReveal, cardStates, flipped, deck, sharkTarget]);
 
-  // ── Continuar después del reveal ────────────────────────────────────────────
-  const handleContinue = useCallback(() => {
-    setPairReveal(null);
-    setLocked(false);
-    if (matchedRef.current >= PAIRS) {
-      setTimeout(() => { setCompleted(true); reduceLevel(); }, 400);
-    }
-  }, [reduceLevel]);
-
-  // ── Reset ───────────────────────────────────────────────────────────────────
   const reset = useCallback(() => {
     setDeck(createDeck());
     setCardStates(Array(PAIRS * 2).fill('hidden'));
     setFlipped([]); setLocked(false); setMatched(0); setMoves(0);
-    setElapsed(0);  setScore(0);      setCombo(0);   setBursts([]);
+    setElapsed(0); setScore(0); setCombo(0); setBursts([]);
     setShakeSet(new Set()); setCompleted(false); setPairReveal(null);
     setSharkState('chasing'); setSharkTarget('tito');
     setTitoState('swimming'); setLiaState('swimming');
+    setIntroStage('beach'); setIsPlaying(false);
     comboRef.current = 0; matchedRef.current = 0;
-    titoWorldPos.current.set(4.5,  2.5, 0);
-    liaWorldPos.current.set(4.5,  -2.5, 0);
-    sharkWorldPos.current.set(6.0,  0.0, 0);
+    titoWorldPos.current.set(4.5, 2.5, 0);
+    liaWorldPos.current.set(4.5, -2.5, 0);
+    sharkWorldPos.current.set(6.0, 0.0, 0);
     startRef.current = Date.now();
     lastActionRef.current = Date.now();
-    if (timerRef.current)       clearInterval(timerRef.current);
-    if (sharkTimerRef.current)  clearInterval(sharkTimerRef.current);
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (sharkTimerRef.current) clearInterval(sharkTimerRef.current);
     if (chaseSwitchRef.current) clearTimeout(chaseSwitchRef.current);
-    timerRef.current = window.setInterval(
-      () => setElapsed(Math.round((Date.now() - startRef.current) / 1000)), 1000
-    );
+    if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
   }, []);
 
-  const timeBonus  = Math.max(0, 500 - elapsed * 2);
+  const timeBonus = Math.max(0, 500 - elapsed * 2);
   const finalScore = score + (completed ? timeBonus : 0);
+
+  if (!texturesReady) {
+    return createPortal(
+      <div className="mem-wrap mem-loading">
+        <div className="mem-loading__spinner" />
+        <p className="mem-loading__text">Cargando memorama...</p>
+      </div>,
+      document.body
+    );
+  }
 
   return createPortal(
     <div className="mem-wrap">
@@ -275,26 +332,29 @@ export default function Memorama() {
 
       <Canvas
         className="mem-canvas"
-        dpr={[1, 1.5]}
+        dpr={isMobile ? [1, 1.2] : [1, 1.5]}
         camera={{ position: [0, 0, 18], fov: 58, near: 0.1, far: 80 }}
       >
-        <Suspense fallback={null}>
-          <MemoramaScene
-            introStage={introStage}   isPlaying={isPlaying}
-            deck={deck}               cardStates={cardStates}
-            shakeSet={shakeSet}       bursts={bursts}
-            matched={matched}         sharkState={sharkState}
-            sharkTarget={sharkTarget} titoState={titoState}
-            liaState={liaState}       titoWorldPos={titoWorldPos}
-            liaWorldPos={liaWorldPos} sharkWorldPos={sharkWorldPos}
-            onCardClick={handleCardClick}
-            onStageChange={setIntroStage}
-            onComplete={() => setIsPlaying(true)}
-          />
-        </Suspense>
+        {/* ⭐ ENVOLVEMOS TODO EN LA BARRERA DE SEGURIDAD */}
+        <ErrorBoundary>
+          <Suspense fallback={null}>
+            <MemoramaScene
+              introStage={introStage} isPlaying={isPlaying}
+              deck={deck} cardStates={cardStates}
+              shakeSet={shakeSet} bursts={bursts}
+              matched={matched} sharkState={sharkState}
+              sharkTarget={sharkTarget} titoState={titoState}
+              liaState={liaState} titoWorldPos={titoWorldPos}
+              liaWorldPos={liaWorldPos} sharkWorldPos={sharkWorldPos}
+              onCardClick={handleCardClick}
+              onStageChange={setIntroStage}
+              onComplete={() => setIsPlaying(true)}
+              isMobile={isMobile}
+            />
+          </Suspense>
+        </ErrorBoundary>
       </Canvas>
 
-      {/* ── HUD ─────────────────────────────────────────────────────────── */}
       {isPlaying && !completed && (
         <div className="mem-hud">
           <div className="mem-hud__pill">🎯 <span>{moves}</span></div>
@@ -304,30 +364,26 @@ export default function Memorama() {
         </div>
       )}
 
-      {/* Barra de progreso */}
       {isPlaying && (
         <div className="mem-progress">
           <div className="mem-progress__fill" style={{ width: `${(matched / PAIRS) * 100}%` }} />
         </div>
       )}
 
-      {/* Shark hint */}
       {isPlaying && !completed && (
         <p className="mem-shark-hint">🦈 Encuentra pares para ahuyentar al tiburón</p>
       )}
 
-      {/* ── Overlay de intro ─────────────────────────────────────────────── */}
       {!isPlaying && (
         <div className="mem-intro-overlay">
           <div className="mem-intro-text">
-            {introStage === 'beach'   && '🌊 La playa...'}
+            {introStage === 'beach' && '🌊 La playa...'}
             {introStage === 'surface' && '💧 El mar...'}
-            {introStage === 'diving'  && '🫧 Sumergiéndose...'}
+            {introStage === 'diving' && '🫧 Sumergiéndose...'}
           </div>
         </div>
       )}
 
-      {/* ── Pair reveal overlay (nueva funcionalidad) ────────────────────── */}
       {pairReveal && (
         <div className="mem-reveal-overlay" onClick={handleContinue}>
           <div className="mem-reveal-card" onClick={e => e.stopPropagation()}>
@@ -341,16 +397,17 @@ export default function Memorama() {
               src={`/assets/img/memorama/${pairReveal.pairId + 1}.png`}
               alt="Par encontrado"
               className="mem-reveal-img"
+              loading="eager"
             />
             <p className="mem-reveal-points">+{pairReveal.points} puntos</p>
             <button className="mem-continue-btn" onClick={handleContinue}>
               Seguir jugando →
             </button>
+            <p className="mem-reveal-auto">Se cerrará automáticamente...</p>
           </div>
         </div>
       )}
 
-      {/* ── Victoria ─────────────────────────────────────────────────────── */}
       {completed && (
         <div className="mem-victory">
           <div className="mem-victory__box">

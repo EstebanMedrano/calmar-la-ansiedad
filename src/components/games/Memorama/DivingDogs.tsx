@@ -14,11 +14,10 @@ function clampInZone(v: THREE.Vector3, z: Zone) {
   v.z = -1.0;
 }
 
-// ⭐ EFECTOS ANCLADOS LOCALMENTE AL PERRO
-function DogEffects({ visible, blink, showMinus }: { visible:boolean; blink:boolean; showMinus:boolean }) {
+function DogEffects({ visible, blink, showMinus }: { visible: boolean; blink: boolean; showMinus: boolean }) {
   const ref = useRef<THREE.Group>(null);
-  const r1  = useRef<THREE.Mesh>(null);
-  const r2  = useRef<THREE.Mesh>(null);
+  const r1 = useRef<THREE.Mesh>(null);
+  const r2 = useRef<THREE.Mesh>(null);
   useFrame((_, dt) => {
     const g = ref.current; if (!g) return;
     g.visible = visible;
@@ -31,23 +30,23 @@ function DogEffects({ visible, blink, showMinus }: { visible:boolean; blink:bool
       {showMinus && (
         <>
           <mesh position={[0, .28, 0]}>
-            <boxGeometry args={[.22, .06, .06]} /><meshBasicMaterial color="#ff2244"/>
+            <boxGeometry args={[.22, .06, .06]} /><meshBasicMaterial color="#ff2244" />
           </mesh>
-          <mesh position={[-.1, .1, 0]}><boxGeometry args={[.04, .14, .04]} /><meshBasicMaterial color="#ff2244"/></mesh>
-          <mesh position={[.1, .1, 0]}><boxGeometry args={[.16, .06, .04]} /><meshBasicMaterial color="#ff2244"/></mesh>
-          <mesh position={[.1, .17, 0]}><boxGeometry args={[.16, .06, .04]} /><meshBasicMaterial color="#ff2244"/></mesh>
-          <mesh position={[.1, .03, 0]}><boxGeometry args={[.16, .06, .04]} /><meshBasicMaterial color="#ff2244"/></mesh>
+          <mesh position={[-.1, .1, 0]}><boxGeometry args={[.04, .14, .04]} /><meshBasicMaterial color="#ff2244" /></mesh>
+          <mesh position={[.1, .1, 0]}><boxGeometry args={[.16, .06, .04]} /><meshBasicMaterial color="#ff2244" /></mesh>
+          <mesh position={[.1, .17, 0]}><boxGeometry args={[.16, .06, .04]} /><meshBasicMaterial color="#ff2244" /></mesh>
+          <mesh position={[.1, .03, 0]}><boxGeometry args={[.16, .06, .04]} /><meshBasicMaterial color="#ff2244" /></mesh>
         </>
       )}
       {blink && (
         <>
           <mesh ref={r1}>
-            <torusGeometry args={[.22, .015, 6, 22]} /><meshBasicMaterial color="#ff4499" blending={THREE.AdditiveBlending} depthWrite={false}/>
+            <torusGeometry args={[.22, .015, 6, 22]} /><meshBasicMaterial color="#ff4499" blending={THREE.AdditiveBlending} depthWrite={false} />
           </mesh>
-          <mesh ref={r2} rotation={[Math.PI/3, 0, 0]}>
-            <torusGeometry args={[.18, .011, 6, 18]} /><meshBasicMaterial color="#ff88cc" blending={THREE.AdditiveBlending} depthWrite={false}/>
+          <mesh ref={r2} rotation={[Math.PI / 3, 0, 0]}>
+            <torusGeometry args={[.18, .011, 6, 18]} /><meshBasicMaterial color="#ff88cc" blending={THREE.AdditiveBlending} depthWrite={false} />
           </mesh>
-          <pointLight color="#ff44aa" intensity={.8} distance={2} decay={2}/>
+          <pointLight color="#ff44aa" intensity={.8} distance={2} decay={2} />
         </>
       )}
     </group>
@@ -55,31 +54,39 @@ function DogEffects({ visible, blink, showMinus }: { visible:boolean; blink:bool
 }
 
 interface DogProps {
-  path:      string;
-  scale:     number;
-  zone:      Zone;
-  dogState:  DogState;
-  sharkPos:  React.MutableRefObject<THREE.Vector3>;
-  worldPos:  React.MutableRefObject<THREE.Vector3>;
-  initY:     number;
+  path: string;
+  scale: number;
+  zone: Zone;
+  dogState: DogState;
+  sharkPos: React.MutableRefObject<THREE.Vector3>;
+  worldPos: React.MutableRefObject<THREE.Vector3>;
+  initY: number;
   isMobile?: boolean;
 }
 
 function DivingDog({ path, scale, zone, dogState, sharkPos, worldPos, initY, isMobile }: DogProps) {
-  const gRef    = useRef<Group>(null);
-  const innerRef= useRef<THREE.Group>(null);
+  const gRef = useRef<Group>(null);
+  const innerRef = useRef<THREE.Group>(null);
   const malletR = useRef<THREE.Group>(null);
   const helmetR = useRef<THREE.Mesh>(null);
-  const blinkT  = useRef(0);
+  const blinkT = useRef(0);
   const showBlink = useRef(false);
   const showMinus = useRef(false);
-  const minusT  = useRef(0);
+  const minusT = useRef(0);
 
   const { scene: raw, animations } = useGLTF(path);
   const scene = useMemo(() => raw.clone(true), [raw]);
   const { actions } = useAnimations(animations, gRef);
 
   const finalScale = isMobile ? scale * 0.75 : scale;
+
+  useEffect(() => {
+    showBlink.current = false;
+    showMinus.current = false;
+    blinkT.current = 0;
+    minusT.current = 0;
+    if (gRef.current) gRef.current.visible = true;
+  }, []);
 
   useEffect(() => {
     const box = new THREE.Box3().setFromObject(scene);
@@ -134,7 +141,6 @@ function DivingDog({ path, scale, zone, dogState, sharkPos, worldPos, initY, isM
       case 'blinking': {
         const toShark = sharkPos.current.clone().sub(worldPos.current);
         const dist = toShark.length();
-        // ⭐ Mayor rango de huida y mejor reacción
         const fleeDir = dist < 7.0 ? toShark.clone().normalize().negate() : new THREE.Vector3(0, 0, 0);
         const wander = new THREE.Vector3(Math.sin(t * .4 + zone.yMin) * .5, Math.cos(t * .35 + zone.xMin) * .5, 0);
         const dir = fleeDir.add(wander).normalize();
@@ -176,7 +182,6 @@ function DivingDog({ path, scale, zone, dogState, sharkPos, worldPos, initY, isM
     <group ref={gRef} position={[zone.xMin + 1.5, initY, -1.0]}>
       <group ref={innerRef}>
         <primitive object={scene} scale={finalScale} />
-        {/* Burbuja de los perros */}
         <mesh position={[0, 0.2, 0]}>
           <sphereGeometry args={[0.65, 16, 12]} />
           <meshBasicMaterial color="#88ccff" transparent opacity={0.15} depthWrite={false} />
@@ -196,27 +201,24 @@ function DivingDog({ path, scale, zone, dogState, sharkPos, worldPos, initY, isM
           </group>
         )}
       </group>
-      {/* ⭐ EFECTOS ANCLADOS LOCALMENTE */}
       <DogEffects visible={showBlink.current || dogState === 'blinking'} blink={dogState === 'blinking'} showMinus={showMinus.current} />
     </group>
   );
 }
 
 interface Props {
-  titoState:   DogState;
-  liaState:    DogState;
-  sharkPos:    React.MutableRefObject<THREE.Vector3>;
-  titoWorldPos:React.MutableRefObject<THREE.Vector3>;
+  titoState: DogState;
+  liaState: DogState;
+  sharkPos: React.MutableRefObject<THREE.Vector3>;
+  titoWorldPos: React.MutableRefObject<THREE.Vector3>;
   liaWorldPos: React.MutableRefObject<THREE.Vector3>;
-  isMobile?:   boolean;
+  isMobile?: boolean;
 }
 
 export default function DivingDogs({ titoState, liaState, sharkPos, titoWorldPos, liaWorldPos, isMobile }: Props) {
   return (
     <>
-      {/* ⭐ Tamaño de Tito aumentado a .55 */}
       <DivingDog path="/assets/3D/tito.glb" scale={.55} zone={TITO_ZONE} dogState={titoState} sharkPos={sharkPos} worldPos={titoWorldPos} initY={2.5} isMobile={isMobile} />
-      {/* ⭐ Tamaño de Lia aumentado a .50 */}
       <DivingDog path="/assets/3D/lia.glb" scale={.50} zone={LIA_ZONE} dogState={liaState} sharkPos={sharkPos} worldPos={liaWorldPos} initY={-2.5} isMobile={isMobile} />
     </>
   );
