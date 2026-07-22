@@ -1,26 +1,37 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Lock } from 'lucide-react';
+import GameThumb from './GameThumb';
+import useReducedMotion from '../../hooks/useReducedMotion';
 import './GameCarousel.scss';
 
 interface Game {
   id: string;
   title: string;
   desc: string;
-  image?: string;
   accentColor?: string;
+  /** Tarjeta visible pero no jugable (el regalo antes del cumpleaños). */
+  locked?: boolean;
+  /** Texto que sustituye al "Jugar →" mientras está bloqueada. */
+  lockedLabel?: string;
 }
 
 interface GameCarouselProps {
   games: Game[];
 }
 
-const AUTO_INTERVAL = 3000; // ms entre rotaciones
+/** Tiempo entre rotaciones. Largo a propósito: da tiempo a leer la tarjeta. */
+const AUTO_INTERVAL = 6500;
+/** Cuántas tarjetas se ven a cada lado de la central. */
+const VISIBLE_SIDES = 2;
 
 export default function GameCarousel({ games }: GameCarouselProps) {
-  const navigate  = useNavigate();
-  const [current, setCurrent]   = useState(0);
+  const navigate = useNavigate();
+  const reducedMotion = useReducedMotion();
+  const [current, setCurrent] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const dragStartX = useRef<number>(0);
+  const [dragOffset, setDragOffset] = useState(0);
+  const dragStartX = useRef(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const total = games.length;
@@ -35,22 +46,43 @@ export default function GameCarousel({ games }: GameCarouselProps) {
 
   const stopAuto = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = null;
   }, []);
 
   useEffect(() => {
+    // Si la tarjeta centrada está bloqueada, el carrusel se detiene: es
+    // información que hay que poder leer con calma (la cuenta atrás),
+    // no algo que deba pasar de largo.
+    if (games[current]?.locked) {
+      stopAuto();
+      return;
+    }
     startAuto();
     return () => stopAuto();
-  }, [startAuto, stopAuto]);
+  }, [startAuto, stopAuto, current, games]);
 
   // ── swipe / drag ───────────────────────────────────────────────────────────
   const onPointerDown = (e: React.PointerEvent) => {
     dragStartX.current = e.clientX;
     setIsDragging(false);
+    // Captura el puntero para que un swipe que termina fuera del viewport
+    // siga disparando onPointerUp; si no, el carrusel se quedaba colgado
+    // con el autoplay parado.
+    e.currentTarget.setPointerCapture?.(e.pointerId);
     stopAuto();
   };
 
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!e.currentTarget.hasPointerCapture?.(e.pointerId)) return;
+    // Las tarjetas siguen al dedo mientras arrastra: sin esto el gesto
+    // no da ninguna respuesta hasta que lo sueltas.
+    setDragOffset(e.clientX - dragStartX.current);
+  };
+
   const onPointerUp = (e: React.PointerEvent) => {
+    e.currentTarget.releasePointerCapture?.(e.pointerId);
     const delta = e.clientX - dragStartX.current;
+    setDragOffset(0);
     if (Math.abs(delta) > 40) {
       setIsDragging(true);
       setCurrent(prev =>
@@ -62,6 +94,11 @@ export default function GameCarousel({ games }: GameCarouselProps) {
 
   const handleCardClick = (index: number) => {
     if (isDragging) return;
+    // Una tarjeta bloqueada se puede centrar para verla, pero no abrir.
+    if (games[index].locked) {
+      setCurrent(index);
+      return;
+    }
     if (index === current) {
       navigate(`/game/${games[index].id}`);
     } else {
@@ -71,13 +108,19 @@ export default function GameCarousel({ games }: GameCarouselProps) {
     }
   };
 
-  // ── position helper ────────────────────────────────────────────────────────
-  const getPosition = (index: number) => {
-    const diff = (index - current + total) % total;
-    if (diff === 0) return 'center';
-    if (diff === 1 || diff === -(total - 1)) return 'right';
-    if (diff === total - 1 || diff === -1) return 'left';
-    return 'hidden';
+  /**
+   * Distancia con signo desde la tarjeta centrada, por el camino más corto.
+   *
+   * Antes había cuatro posiciones fijas (center/left/right/hidden) y el salto
+   * era brusco. Ahora cada tarjeta recibe un desplazamiento continuo, así que
+   * el movimiento es un deslizamiento suave y se ven varias tarjetas a cada
+   * lado en vez de solo una.
+   */
+  const offsetOf = (index: number) => {
+    let diff = index - current;
+    if (diff > total / 2) diff -= total;
+    if (diff < -total / 2) diff += total;
+    return diff;
   };
 
   return (
@@ -85,37 +128,59 @@ export default function GameCarousel({ games }: GameCarouselProps) {
       <div
         className="carousel-viewport"
         onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
       >
         {games.map((game, index) => {
-          const pos = getPosition(index);
-          if (pos === 'hidden') return null;
+          const offset = offsetOf(index);
+          if (Math.abs(offset) > VISIBLE_SIDES) return null;
+
+          const isCenter = offset === 0;
+          const depth = Math.abs(offset);
+          // El arrastre se reparte entre las tarjetas para que acompañen
+          // al dedo sin separarse unas de otras.
+          const drag = dragOffset / 3;
 
           return (
             <div
               key={game.id}
-              className={`carousel-card carousel-card--${pos}`}
-              style={{ '--accent': game.accentColor ?? '#8b5cf6' } as React.CSSProperties}
+              className={`carousel-card${isCenter ? ' carousel-card--center' : ''}${game.locked ? ' carousel-card--locked' : ''}`}
+              style={{
+                '--accent': game.accentColor ?? '#8b5cf6',
+                // Todo el posicionamiento es una sola transformación: el
+                // navegador la resuelve en la GPU y no recalcula el diseño.
+                transform: `translateX(calc(-50% + ${offset * 62}% + ${drag}px)) scale(${1 - depth * 0.14}) rotateY(${offset * -14}deg)`,
+                opacity: isCenter ? 1 : Math.max(0, 0.62 - (depth - 1) * 0.26),
+                zIndex: 10 - depth,
+                transition: isDragging || dragOffset !== 0
+                  ? 'none'
+                  : reducedMotion
+                    ? 'opacity .2s linear'
+                    : 'transform 1.1s cubic-bezier(.22,.61,.36,1), opacity 1.1s ease',
+              } as React.CSSProperties}
               onClick={() => handleCardClick(index)}
+              aria-disabled={game.locked || undefined}
             >
-              {/* imagen o gradiente de fondo */}
-              <div className="carousel-card__bg">
-                {game.image && (
-                  <img
-                    src={game.image}
-                    alt={game.title}
-                    className="carousel-card__img"
-                    draggable={false}
-                  />
-                )}
+              {game.locked && (
+                <span className="carousel-card__lock" aria-hidden="true">
+                  <Lock size={16} />
+                </span>
+              )}
+
+              <div className="carousel-card__art">
+                <GameThumb id={game.id} className="carousel-card__thumb" />
               </div>
 
-              {/* contenido */}
               <div className="carousel-card__body">
                 <h3 className="carousel-card__title">{game.title}</h3>
-                <p  className="carousel-card__desc">{game.desc}</p>
-                {pos === 'center' && (
-                  <span className="carousel-card__cta">Jugar →</span>
+                <p className="carousel-card__desc">{game.desc}</p>
+                {isCenter && (
+                  game.locked
+                    ? <span className="carousel-card__cta carousel-card__cta--locked">
+                        {game.lockedLabel ?? 'Aún no'}
+                      </span>
+                    : <span className="carousel-card__cta">Jugar →</span>
                 )}
               </div>
             </div>
@@ -125,12 +190,13 @@ export default function GameCarousel({ games }: GameCarouselProps) {
 
       {/* dots */}
       <div className="carousel-dots">
-        {games.map((_, i) => (
+        {games.map((g, i) => (
           <button
-            key={i}
+            key={g.id}
             className={`carousel-dot${i === current ? ' carousel-dot--active' : ''}`}
             onClick={() => { setCurrent(i); stopAuto(); startAuto(); }}
-            aria-label={`Ir a juego ${i + 1}`}
+            aria-label={`Ir a ${g.title}`}
+            aria-current={i === current || undefined}
           />
         ))}
       </div>

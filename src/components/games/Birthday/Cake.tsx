@@ -1,0 +1,121 @@
+import { useMemo } from 'react';
+import { Text } from '@react-three/drei';
+import { CAKE_TOP_Y } from './positions';
+
+interface CakeProps {
+  isMobile: boolean;
+  /** 0 = luces encendidas, 1 = todo oscuro. Atenúa el brillo del glaseado. */
+  dimFactor?: number;
+}
+
+const TIER1_H = 0.22;
+const TIER2_H = 0.18;
+const TIER1_R = 0.56;
+const TIER2_R = 0.43;
+
+/**
+ * La torta, hecha con primitivas.
+ *
+ * Es procedural en vez de un modelo .glb por dos razones: no hay que modelar
+ * ni exportar nada, y el texto de encima puede cambiarse escribiendo una
+ * cadena en lugar de rehacer una textura.
+ */
+export default function Cake({ isMobile, dimFactor = 0 }: CakeProps) {
+  // Chorreados de glaseado repartidos por el borde
+  const drips = useMemo(() => {
+    const n = 12;
+    return Array.from({ length: n }, (_, i) => {
+      const a = (i / n) * Math.PI * 2;
+      return {
+        key: i,
+        x: Math.cos(a) * TIER1_R,
+        z: Math.sin(a) * TIER1_R,
+        // Alturas irregulares para que no parezca un patrón
+        len: 0.06 + ((i * 37) % 11) / 100,
+      };
+    });
+  }, []);
+
+  // Muy bajo a propósito: el glaseado no debe brillar por sí mismo, solo
+  // recibir la luz de las velas. Si emite, el texto de encima se lava.
+  const glazeEmissive = 0.04 + dimFactor * 0.1;
+
+  return (
+    <group>
+      {/* Piso inferior */}
+      <mesh position={[0, TIER1_H / 2, 0]} castShadow>
+        <cylinderGeometry args={[TIER1_R, TIER1_R + 0.02, TIER1_H, 48]} />
+        <meshStandardMaterial color="#f7e3d0" roughness={0.85} />
+      </mesh>
+
+      {/* Borde de merengue del piso inferior */}
+      <mesh position={[0, TIER1_H, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[TIER1_R, 0.035, 10, 48]} />
+        <meshStandardMaterial
+          color="#fff3e6"
+          roughness={0.6}
+          emissive="#ffd9a0"
+          emissiveIntensity={glazeEmissive}
+        />
+      </mesh>
+
+      {/* Chorreados */}
+      {drips.map((d) => (
+        <mesh key={d.key} position={[d.x, TIER1_H - d.len / 2, d.z]}>
+          <capsuleGeometry args={[0.028, d.len, 4, 8]} />
+          <meshStandardMaterial color="#fff3e6" roughness={0.6} />
+        </mesh>
+      ))}
+
+      {/* Piso superior */}
+      <mesh position={[0, TIER1_H + TIER2_H / 2, 0]} castShadow>
+        <cylinderGeometry args={[TIER2_R, TIER2_R + 0.02, TIER2_H, 48]} />
+        <meshStandardMaterial color="#f9c5d5" roughness={0.82} />
+      </mesh>
+
+      <mesh position={[0, TIER1_H + TIER2_H, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[TIER2_R, 0.03, 10, 48]} />
+        <meshStandardMaterial
+          color="#fff3e6"
+          roughness={0.6}
+          emissive="#ffd9a0"
+          emissiveIntensity={glazeEmissive}
+        />
+      </mesh>
+
+      {/* Superficie donde van el texto y las velas. Tono algo más apagado que
+          el merengue para que el texto oscuro tenga contraste suficiente
+          incluso con las velas encendidas justo al lado. */}
+      <mesh position={[0, CAKE_TOP_Y - 0.001, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[TIER2_R - 0.01, 48]} />
+        <meshStandardMaterial color="#f2ddc9" roughness={0.9} />
+      </mesh>
+
+      {/*
+        El texto sí va en 3D (y no en DOM como el de la carta) porque es corto,
+        está escrito sobre la torta y tiene que inclinarse con ella.
+        Si en el móvil no se vieran bien la ñ ni las tildes, habría que pasar
+        una fuente propia con la prop `font`.
+      */}
+      <Text
+        position={[0, CAKE_TOP_Y + 0.002, 0]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        fontSize={isMobile ? 0.068 : 0.062}
+        maxWidth={TIER2_R * 1.75}
+        textAlign="center"
+        anchorX="center"
+        anchorY="middle"
+        lineHeight={1.35}
+        color="#3d0715"
+      >
+        {'Feliz cumpleaños\npara mi querida Lu'}
+      </Text>
+
+      {/* Plato */}
+      <mesh position={[0, 0.01, 0]} receiveShadow>
+        <cylinderGeometry args={[TIER1_R + 0.16, TIER1_R + 0.16, 0.02, 48]} />
+        <meshStandardMaterial color="#e8eaf0" roughness={0.35} metalness={0.25} />
+      </mesh>
+    </group>
+  );
+}

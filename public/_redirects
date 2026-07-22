@@ -1,0 +1,3 @@
+# SPA: cualquier ruta la resuelve React Router en el cliente.
+# Sin esto, recargar en /game/birthday devuelve un 404 en Netlify.
+/*  /index.html  200

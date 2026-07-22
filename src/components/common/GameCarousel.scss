@@ -1,146 +1,170 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
 .carousel-wrap {
   width: 100%;
   max-width: 700px;
-  margin: 1.5rem auto 0;
+  margin: $space-4 auto 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.5rem;
+  gap: $space-5;
   user-select: none;
+  // Las tarjetas laterales se salen a propósito; que se recorten aquí
+  // en vez de provocar scroll lateral en toda la página.
+  overflow: hidden;
 }
 
 // ── viewport ────────────────────────────────────────────────────────────────
 .carousel-viewport {
   position: relative;
   width: 100%;
-  height: 320px;
+  // Antes eran 320px fijos: en un móvil apaisado no cabía en pantalla.
+  height: clamp(280px, 48vh, 350px);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: grab;
+  // Da profundidad al giro de las tarjetas laterales
+  perspective: 1100px;
+  // pan-y deja que el dedo siga desplazando la página en vertical
+  // y reserva el horizontal para el carrusel.
+  touch-action: pan-y;
 
   &:active { cursor: grabbing; }
+
+  @include short-screen {
+    height: 210px;
+  }
 }
 
-// ── card base ───────────────────────────────────────────────────────────────
+// ── tarjeta ─────────────────────────────────────────────────────────────────
 .carousel-card {
   position: absolute;
+  left: 50%;
+  width: min(64vw, 250px);
+  height: min(92%, 300px);
+  display: flex;
+  flex-direction: column;
   border-radius: 24px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   cursor: pointer;
+  // El posicionamiento lo pone el TSX en la prop style, porque es continuo
+  // y depende de la distancia a la tarjeta central.
+  will-change: transform, opacity;
+  backface-visibility: hidden;
 
-  // accent color viene como CSS var desde el TSX
   background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--accent) 30%, #1e1b4b),
-    color-mix(in srgb, var(--accent) 10%, #0f172a)
+    160deg,
+    color-mix(in srgb, var(--accent) 32%, #1e1b4b),
+    color-mix(in srgb, var(--accent) 8%, #0f172a)
   );
 
-  &__bg {
-    position: absolute;
-    inset: 0;
-    overflow: hidden;
+  &--center {
+    border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+    box-shadow:
+      0 20px 60px rgba(0, 0, 0, 0.5),
+      0 0 44px color-mix(in srgb, var(--accent) 28%, transparent);
   }
 
-  &__img {
+  // ── ilustración ───────────────────────────────────────────────────────────
+  &__art {
+    flex: 1;
+    display: grid;
+    place-items: center;
+    min-height: 0;
+    padding: $space-4 $space-4 0;
+    color: var(--accent);
+  }
+
+  &__thumb {
     width: 100%;
     height: 100%;
-    object-fit: cover;
-    opacity: 0.35;
-    transition: opacity 0.4s;
+    max-height: 130px;
+    filter: drop-shadow(0 4px 14px color-mix(in srgb, var(--accent) 45%, transparent));
   }
 
   &__body {
-    position: relative;
-    z-index: 1;
-    padding: 1.75rem;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
+    padding: 0 $space-4 $space-4;
   }
 
   &__title {
     color: #f8fafc;
-    font-size: 1.2rem;
-    font-weight: 700;
-    margin: 0 0 0.35rem;
-    text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    @include fluid-text(0.98rem, 1.18rem, 4.2vw);
+    font-weight: $font-weight-bold;
+    margin: 0 0 0.25rem;
+    line-height: 1.25;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
   }
 
   &__desc {
-    color: rgba(248, 250, 252, 0.65);
-    font-size: 0.85rem;
+    color: rgba(248, 250, 252, 0.62);
+    font-size: $font-size-xs;
     margin: 0;
     line-height: 1.4;
   }
 
   &__cta {
     display: inline-block;
-    margin-top: 0.75rem;
-    font-size: 0.85rem;
-    font-weight: 600;
+    margin-top: $space-3;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
     color: var(--accent);
     letter-spacing: 0.03em;
-    transition: transform 0.2s;
   }
 
-  // ── posiciones ─────────────────────────────────────────────────────────────
-  &--center {
-    width: 260px;
-    height: 280px;
-    z-index: 3;
-    transform: translateX(0) scale(1);
-    box-shadow:
-      0 0 0 1px color-mix(in srgb, var(--accent) 50%, transparent),
-      0 20px 60px rgba(0, 0, 0, 0.5),
-      0 0 40px color-mix(in srgb, var(--accent) 25%, transparent);
+  // ── bloqueada (el regalo antes del cumpleaños) ────────────────────────────
+  &--locked {
+    cursor: default;
+    filter: grayscale(0.6) brightness(0.66);
 
-    .carousel-card__img { opacity: 0.5; }
-
-    &:hover .carousel-card__cta { transform: translateX(4px); }
+    .carousel-card__title,
+    .carousel-card__desc { color: rgba(248, 250, 252, 0.72); }
   }
 
-  &--left {
-    width: 200px;
-    height: 220px;
+  &__lock {
+    position: absolute;
+    top: 12px;
+    right: 12px;
     z-index: 2;
-    transform: translateX(-180px) scale(0.88);
-    opacity: 0.6;
-    pointer-events: auto;
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: rgba(15, 23, 42, 0.72);
+    color: rgba(248, 250, 252, 0.85);
+    backdrop-filter: blur(4px);
   }
 
-  &--right {
-    width: 200px;
-    height: 220px;
-    z-index: 2;
-    transform: translateX(180px) scale(0.88);
-    opacity: 0.6;
-    pointer-events: auto;
+  &__cta--locked {
+    color: rgba(248, 250, 252, 0.62);
+    font-variant-numeric: tabular-nums;
   }
 }
 
-// ── dots ────────────────────────────────────────────────────────────────────
+// ── puntos ──────────────────────────────────────────────────────────────────
 .carousel-dots {
   display: flex;
-  gap: 8px;
+  flex-wrap: wrap;
   justify-content: center;
+  gap: 7px;
+  max-width: 90%;
 }
 
 .carousel-dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   border: none;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.22);
   cursor: pointer;
   padding: 0;
-  transition: all 0.3s ease;
+  transition: all $transition-normal;
 
   &--active {
-    width: 24px;
+    width: 22px;
     border-radius: 999px;
     background: #8b5cf6;
   }

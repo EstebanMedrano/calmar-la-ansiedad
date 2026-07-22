@@ -17,7 +17,11 @@ const CW = 0.95, CH = 1.15;
 
 export default function Card3D({ position, texture, cardState, shake, color, scale = 1, onClick }: Props) {
   const gRef = useRef<THREE.Group>(null);
-  const bubbleRef = useRef<THREE.Mesh>(null);
+  // Envuelve TODA la carta. Antes la escala solo se aplicaba a la burbuja
+  // decorativa (que es translúcida y casi invisible), así que todo el ajuste
+  // de tamaño para móvil no llegaba nunca a la carta ni el efecto de pulsado
+  // se veía.
+  const scaleRef = useRef<THREE.Group>(null);
   const glowRef = useRef<THREE.PointLight>(null);
   const rotY = useRef(cardState !== 'hidden' ? Math.PI : 0);
   const phase = useMemo(() => Math.random() * Math.PI * 2, []);
@@ -47,25 +51,47 @@ export default function Card3D({ position, texture, cardState, shake, color, sca
     rotY.current += (tR - rotY.current) * Math.min(1, dt * 9);
     g.rotation.y = rotY.current;
 
-    const tBS = cardState === 'matched' ? 0 : hov ? 1.08 : 1.0;
+    // 'matched' ya no encoge la carta a cero: al emparejar, la carta debe
+    // quedarse visible mostrando el dibujo, que es la recompensa del juego.
+    const tBS = hov ? 1.06 : 1.0;
     bScale.current += (tBS - bScale.current) * Math.min(1, dt * 7);
     pressScale.current += (1.0 - pressScale.current) * Math.min(1, dt * 15);
     const finalScale = Math.max(0, bScale.current) * pressScale.current * scale;
-    if (bubbleRef.current) bubbleRef.current.scale.setScalar(finalScale);
+    if (scaleRef.current) scaleRef.current.scale.setScalar(finalScale);
 
     if (glowRef.current && cardState === 'matched') {
       glowRef.current.intensity = .4 + Math.sin(t * 3.5 + phase) * .15;
     }
   });
 
+  // Punto donde empezó el toque, para distinguir un toque de un arrastre.
+  const downPt = useRef<{ x: number; y: number } | null>(null);
+
   const handlePointerDown = (e: any) => {
     e.stopPropagation();
+    downPt.current = { x: e.clientX ?? 0, y: e.clientY ?? 0 };
     pressScale.current = 0.92;
   };
+
   const handlePointerUp = (e: any) => {
     e.stopPropagation();
     pressScale.current = 1.0;
+    // Si el dedo se movió más de 12px es un desplazamiento, no un toque.
+    // Sin esto, arrastrar el dedo por encima del tablero volteaba cartas
+    // sin querer.
+    const start = downPt.current;
+    downPt.current = null;
+    if (start) {
+      const dx = (e.clientX ?? 0) - start.x;
+      const dy = (e.clientY ?? 0) - start.y;
+      if (Math.hypot(dx, dy) > 12) return;
+    }
     onClick();
+  };
+
+  const handlePointerCancel = () => {
+    downPt.current = null;
+    pressScale.current = 1.0;
   };
 
   return (
@@ -74,16 +100,21 @@ export default function Card3D({ position, texture, cardState, shake, color, sca
       position={position}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
       onPointerEnter={() => setHov(true)}
-      onPointerLeave={() => { setHov(false); pressScale.current = 1.0; }}
+      onPointerLeave={() => { setHov(false); handlePointerCancel(); }}
     >
-      <mesh ref={bubbleRef}>
-        <sphereGeometry args={[0.75, 16, 12]} />
-        <meshBasicMaterial color="#88ccff" transparent opacity={0.14} depthWrite={false} />
+     <group ref={scaleRef}>
+      {/* Burbuja de aire alrededor de la carta. Va más pequeña que la carta:
+          antes era de radio 0.75 y, al escalar ahora junto con ella, las
+          burbujas de cartas vecinas se solapaban y emborronaban el tablero. */}
+      <mesh>
+        <sphereGeometry args={[0.62, 14, 10]} />
+        <meshBasicMaterial color="#88ccff" transparent opacity={0.07} depthWrite={false} />
       </mesh>
       <mesh position={[-0.12, 0.16, 0.52]}>
-        <sphereGeometry args={[0.065, 8, 6]} />
-        <meshBasicMaterial color="#ffffff" transparent opacity={0.45}
+        <sphereGeometry args={[0.05, 8, 6]} />
+        <meshBasicMaterial color="#ffffff" transparent opacity={0.35}
           blending={THREE.AdditiveBlending} depthWrite={false} />
       </mesh>
 
@@ -142,6 +173,7 @@ export default function Card3D({ position, texture, cardState, shake, color, sca
       {hov && cardState === 'hidden' && (
         <pointLight color={color} intensity={.30} distance={1.8} decay={2} />
       )}
+     </group>
     </group>
   );
 }

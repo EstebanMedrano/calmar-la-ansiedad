@@ -1,7 +1,13 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback, Suspense } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
+import { Canvas } from '@react-three/fiber';
+import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAnxiety } from '../../context/AnxietyContext';
+import GroundingScene from './GroundingScene';
+import type { OrbData } from './SenseOrbs';
+import useIsMobile from '../../../hooks/useIsMobile';
 import './Grounding.scss';
 
 interface Step {
@@ -46,43 +52,62 @@ const ACCENT_COLORS = ['#10b981', '#06b6d4', '#8b5cf6', '#f59e0b', '#ef4444'];
 export default function Grounding() {
   const navigate = useNavigate();
   const { reduceLevel } = useAnxiety();
+  const isMobile = useIsMobile();
 
-  // items por paso: array de arrays
-  const [items, setItems]         = useState<string[][]>(STEPS.map(() => []));
+  const [items, setItems] = useState<string[][]>(() => STEPS.map(() => []));
   const [stepIndex, setStepIndex] = useState(0);
-  const [input, setInput]         = useState('');
-  const [feedback, setFeedback]   = useState('');
-  const [finished, setFinished]   = useState(false);
+  const [input, setInput] = useState('');
+  const [feedback, setFeedback] = useState('');
+  const [finished, setFinished] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const step    = STEPS[stepIndex];
-  const current = items[stepIndex];
-  const accent  = ACCENT_COLORS[stepIndex];
-  const remaining  = step.number - current.length;
-  const stepDone   = current.length === step.number;
-  const totalItems = STEPS.reduce((s, st) => s + st.number, 0);
-  const doneItems  = items.reduce((s, arr) => s + arr.length, 0);
-  const totalPct   = (doneItems / totalItems) * 100;
+  // Todos los temporizadores juntos: antes quedaban sueltos y al salir del
+  // juego a media animación intentaban actualizar un componente ya desmontado.
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const addT = useCallback((fn: () => void, ms: number) => {
+    timers.current.push(setTimeout(fn, ms));
+  }, []);
+  useEffect(() => () => { timers.current.forEach(clearTimeout); }, []);
 
-  // focus al cambiar de paso
+  const step = STEPS[stepIndex];
+  const current = items[stepIndex];
+  const accent = ACCENT_COLORS[stepIndex];
+  const remaining = step.number - current.length;
+  const stepDone = current.length === step.number;
+  const totalItems = STEPS.reduce((s, st) => s + st.number, 0);
+  const doneItems = items.reduce((s, arr) => s + arr.length, 0);
+  const totalPct = (doneItems / totalItems) * 100;
+
+  /** Una luz en la escena por cada cosa anotada. */
+  const orbs = useMemo<OrbData[]>(
+    () => items.flatMap((arr, stepIdx) => arr.map((_, slot) => ({ step: stepIdx, slot }))),
+    [items],
+  );
+
   useEffect(() => {
-    if (!stepDone) setTimeout(() => inputRef.current?.focus(), 300);
-  }, [stepIndex, stepDone]);
+    // En móvil no se enfoca solo: abrir el teclado nada más entrar tapa
+    // media pantalla y la escena que acaba de aparecer.
+    if (!stepDone && !isMobile) addT(() => inputRef.current?.focus(), 300);
+  }, [stepIndex, stepDone, isMobile, addT]);
 
   const addItem = () => {
     const val = input.trim();
     if (!val) return;
-    if (current.includes(val)) {
+    // Comparación sin distinguir mayúsculas ni espacios: antes "Mi taza" y
+    // "mi taza" contaban como dos cosas distintas.
+    if (current.some((it) => it.toLowerCase() === val.toLowerCase())) {
       setFeedback('Ya anotaste eso, intenta con otra cosa');
-      setTimeout(() => setFeedback(''), 2000);
+      addT(() => setFeedback(''), 2000);
       return;
     }
-    const updated = items.map((arr, i) => i === stepIndex ? [...arr, val] : arr);
-    setItems(updated);
+    setItems((prev) => prev.map((arr, i) => (i === stepIndex ? [...arr, val] : arr)));
     setInput('');
-    if (updated[stepIndex].length === step.number) {
-      setFeedback('¡Paso completado! ✨');
-    }
+    setFeedback('');
+  };
+
+  /** Permite borrar algo mal escrito, que antes no se podía. */
+  const removeItem = (idx: number) => {
+    setItems((prev) => prev.map((arr, i) => (i === stepIndex ? arr.filter((_, j) => j !== idx) : arr)));
   };
 
   const handleKey = (e: React.KeyboardEvent) => {
@@ -91,7 +116,7 @@ export default function Grounding() {
 
   const nextStep = () => {
     setFeedback('');
-    setStepIndex(prev => prev + 1);
+    setStepIndex((prev) => prev + 1);
   };
 
   const finish = () => {
@@ -99,175 +124,175 @@ export default function Grounding() {
     setFinished(true);
   };
 
-  // ── pantalla de finalización ───────────────────────────────────────────────
-  if (finished) {
-    return (
-      <motion.div
-        className="grounding"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <div className="grounding__completion">
-          <div className="grounding__completion-star">🌟</div>
-          <h3>¡Lo lograste!</h3>
-          <p>Has completado el grounding. Estás anclada al presente.</p>
-
-          <div className="grounding__summary">
-            {STEPS.map((s) => (
-              <div key={s.id} className="grounding__summary-row">
-                <span>{s.icon}</span>
-                <span>{s.number} {s.label.toLowerCase()}</span>
-                <span className="grounding__summary-check">✓</span>
-              </div>
-            ))}
-          </div>
-
-          <button className="btn-primary grounding__finish-btn" onClick={() => navigate('/games')}>
-            ← Volver a juegos
-          </button>
-        </div>
-      </motion.div>
-    );
-  }
-
-  return (
+  return createPortal(
     <div className="grounding">
-      <h2 className="text-center">
-        <span className="grounding__title">🌍 Técnica 5-4-3-2-1</span>
-      </h2>
+      <Canvas
+        className="grounding__canvas"
+        dpr={isMobile ? [1, 1.5] : [1, 2]}
+        camera={{ position: [0, 1.65, 6.2], fov: 50, near: 0.1, far: 120 }}
+      >
+        {/* El Suspense va por dentro y el composer por fuera: si la carga de
+            los perros suspendiera con el composer dentro, se montaría con el
+            renderer sin inicializar y el lienzo saldría negro. */}
+        <Suspense fallback={null}>
+          <GroundingScene
+            stepIndex={stepIndex}
+            accent={accent}
+            orbs={orbs}
+            colors={ACCENT_COLORS}
+            isMobile={isMobile}
+            finished={finished}
+          />
+        </Suspense>
+        <EffectComposer>
+          <Bloom intensity={0.55} luminanceThreshold={0.55} luminanceSmoothing={0.25} mipmapBlur />
+        </EffectComposer>
+      </Canvas>
 
-      {/* indicadores de paso */}
-      <div className="grounding__steps-row">
-        {STEPS.map((s, i) => {
-          const done = items[i].length === s.number;
-          const active = i === stepIndex;
-          return (
-            <div
-              key={s.id}
-              className={`grounding__step-dot${active ? ' grounding__step-dot--active' : ''}${done ? ' grounding__step-dot--done' : ''}`}
-              style={{ '--dot-color': ACCENT_COLORS[i] } as React.CSSProperties}
-            >
-              <span className="grounding__step-dot-icon">{s.icon}</span>
-              <span className="grounding__step-dot-num">{s.number}</span>
-              {done && <span className="grounding__step-dot-check">✓</span>}
-            </div>
-          );
-        })}
-      </div>
+      <button className="grounding__back-btn" onClick={() => navigate('/games')}>
+        ← Volver a juegos
+      </button>
 
-      {/* barra de progreso total */}
-      <div className="grounding__total-bar">
-        <motion.div
-          className="grounding__total-fill"
-          animate={{ width: `${totalPct}%` }}
-          transition={{ duration: 0.5 }}
-        />
-      </div>
+      <div className="grounding__ui">
+        {finished ? (
+          <motion.div
+            className="grounding__completion"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="grounding__completion-star">🌟</div>
+            <h3>Lo lograste</h3>
+            <p>Estás aquí, en este momento. Quince cosas que sí eran reales.</p>
 
-      {/* contenido del paso actual con animación al cambiar */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={stepIndex}
-          className="grounding__step-card"
-          style={{ '--accent': accent } as React.CSSProperties}
-          initial={{ opacity: 0, x: 40 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -40 }}
-          transition={{ duration: 0.3 }}
-        >
-          {/* cabecera del paso */}
-          <div className="grounding__step-header">
-            <span className="grounding__step-icon">{step.icon}</span>
-            <div>
-              <h3 className="grounding__step-label">{step.label}</h3>
-              <p className="grounding__step-desc">{step.description(remaining)}</p>
-            </div>
-            <span className="grounding__step-counter">{current.length}/{step.number}</span>
-          </div>
-
-          {/* barra del paso */}
-          <div className="grounding__step-bar">
-            <motion.div
-              className="grounding__step-fill"
-              animate={{ width: `${(current.length / step.number) * 100}%` }}
-              transition={{ duration: 0.4 }}
-            />
-          </div>
-
-          {/* pills de ítems */}
-          <div className="grounding__pills">
-            <AnimatePresence>
-              {current.map((item, i) => (
-                <motion.div
-                  key={item + i}
-                  className="grounding__pill"
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                >
-                  <span>✓</span> {item}
-                </motion.div>
+            <div className="grounding__summary">
+              {STEPS.map((s, i) => (
+                <div key={s.id} className="grounding__summary-row"
+                  style={{ '--accent': ACCENT_COLORS[i] } as React.CSSProperties}>
+                  <span>{s.icon}</span>
+                  <span>{s.number} {s.label.toLowerCase()}</span>
+                  <span className="grounding__summary-check">✓</span>
+                </div>
               ))}
-            </AnimatePresence>
-          </div>
-
-          {/* input o mensaje de completado */}
-          {!stepDone ? (
-            <div className="grounding__input-row">
-              <input
-                ref={inputRef}
-                className="grounding__input"
-                type="text"
-                placeholder={step.placeholder}
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={handleKey}
-                autoComplete="off"
-              />
-              <button
-                className="grounding__add-btn"
-                onClick={addItem}
-                disabled={!input.trim()}
-                style={{ '--accent': accent } as React.CSSProperties}
-              >
-                ✚ Añadir
-              </button>
             </div>
-          ) : (
-            <motion.div
-              className="grounding__step-done"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-            >
-              <span>✨ ¡Paso completado! ✨</span>
-              {stepIndex < STEPS.length - 1 ? (
-                <button className="btn-primary" onClick={nextStep}>
-                  Siguiente sentido →
-                </button>
-              ) : (
-                <button
-                  className="btn-primary grounding__finish-btn"
-                  onClick={finish}
-                >
-                  🌟 Finalizar grounding
-                </button>
-              )}
-            </motion.div>
-          )}
 
-          {/* feedback inline */}
-          {feedback && !stepDone && (
-            <p className="grounding__feedback">{feedback}</p>
-          )}
-        </motion.div>
-      </AnimatePresence>
+            <button className="grounding__cta" onClick={() => navigate('/games')}>
+              Volver a juegos
+            </button>
+          </motion.div>
+        ) : (
+          <>
+            <div className="grounding__steps-row">
+              {STEPS.map((s, i) => {
+                const done = items[i].length === s.number;
+                const active = i === stepIndex;
+                return (
+                  <div
+                    key={s.id}
+                    className={`grounding__step-dot${active ? ' grounding__step-dot--active' : ''}${done ? ' grounding__step-dot--done' : ''}`}
+                    style={{ '--dot-color': ACCENT_COLORS[i] } as React.CSSProperties}
+                  >
+                    <span className="grounding__step-dot-icon">{s.icon}</span>
+                    <span className="grounding__step-dot-num">{s.number}</span>
+                  </div>
+                );
+              })}
+            </div>
 
-      {/* botón volver */}
-      <div className="grounding__back">
-        <button className="btn-secondary" onClick={() => navigate('/games')}>
-          ← Volver a juegos
-        </button>
+            <div className="grounding__total-bar">
+              <motion.div
+                className="grounding__total-fill"
+                animate={{ width: `${totalPct}%` }}
+                transition={{ duration: 0.5 }}
+              />
+            </div>
+
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={stepIndex}
+                className="grounding__step-card"
+                style={{ '--accent': accent } as React.CSSProperties}
+                initial={{ opacity: 0, x: 30 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -30 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="grounding__step-header">
+                  <span className="grounding__step-icon">{step.icon}</span>
+                  <div className="grounding__step-text">
+                    <h3 className="grounding__step-label">{step.label}</h3>
+                    <p className="grounding__step-desc">{step.description(remaining)}</p>
+                  </div>
+                  <span className="grounding__step-counter">{current.length}/{step.number}</span>
+                </div>
+
+                <div className="grounding__pills">
+                  <AnimatePresence>
+                    {current.map((item, i) => (
+                      <motion.button
+                        key={item + i}
+                        className="grounding__pill"
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0, opacity: 0 }}
+                        transition={{ type: 'spring', stiffness: 400, damping: 22 }}
+                        onClick={() => removeItem(i)}
+                        title="Tocar para quitar"
+                      >
+                        {item} <span className="grounding__pill-x">×</span>
+                      </motion.button>
+                    ))}
+                  </AnimatePresence>
+                </div>
+
+                {!stepDone ? (
+                  <div className="grounding__input-row">
+                    <input
+                      ref={inputRef}
+                      className="grounding__input"
+                      type="text"
+                      placeholder={step.placeholder}
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      onKeyDown={handleKey}
+                      autoComplete="off"
+                      enterKeyHint="done"
+                    />
+                    <button
+                      className="grounding__add-btn"
+                      onClick={addItem}
+                      disabled={!input.trim()}
+                      aria-label="Añadir"
+                    >
+                      ✚
+                    </button>
+                  </div>
+                ) : (
+                  <motion.div
+                    className="grounding__step-done"
+                    initial={{ opacity: 0, scale: 0.94 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                  >
+                    <span>✨ Paso completado</span>
+                    {stepIndex < STEPS.length - 1 ? (
+                      <button className="grounding__cta" onClick={nextStep}>
+                        Siguiente sentido →
+                      </button>
+                    ) : (
+                      <button className="grounding__cta" onClick={finish}>
+                        🌟 Finalizar
+                      </button>
+                    )}
+                  </motion.div>
+                )}
+
+                {feedback && <p className="grounding__feedback">{feedback}</p>}
+              </motion.div>
+            </AnimatePresence>
+          </>
+        )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

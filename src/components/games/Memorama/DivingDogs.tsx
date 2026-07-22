@@ -4,14 +4,14 @@ import { useGLTF, useAnimations } from '@react-three/drei';
 import * as THREE from 'three';
 import type { Group } from 'three';
 import type { DogState } from './types';
-import { TITO_ZONE, LIA_ZONE, DOG_SPEED } from './positions';
+import { DOG_SPEED } from './positions';
 
 type Zone = { xMin: number; xMax: number; yMin: number; yMax: number };
 
-function clampInZone(v: THREE.Vector3, z: Zone) {
+function clampInZone(v: THREE.Vector3, z: Zone, depth: number) {
   v.x = THREE.MathUtils.clamp(v.x, z.xMin, z.xMax);
   v.y = THREE.MathUtils.clamp(v.y, z.yMin, z.yMax);
-  v.z = -1.0;
+  v.z = depth;
 }
 
 function DogEffects({ visible, blink, showMinus }: { visible: boolean; blink: boolean; showMinus: boolean }) {
@@ -57,6 +57,8 @@ interface DogProps {
   path: string;
   scale: number;
   zone: Zone;
+  /** Profundidad a la que nada, calculada según la forma de la pantalla. */
+  depth: number;
   dogState: DogState;
   sharkPos: React.MutableRefObject<THREE.Vector3>;
   worldPos: React.MutableRefObject<THREE.Vector3>;
@@ -64,7 +66,7 @@ interface DogProps {
   isMobile?: boolean;
 }
 
-function DivingDog({ path, scale, zone, dogState, sharkPos, worldPos, initY, isMobile }: DogProps) {
+function DivingDog({ path, scale, zone, depth, dogState, sharkPos, worldPos, initY, isMobile }: DogProps) {
   const gRef = useRef<Group>(null);
   const innerRef = useRef<THREE.Group>(null);
   const malletR = useRef<THREE.Group>(null);
@@ -134,7 +136,7 @@ function DivingDog({ path, scale, zone, dogState, sharkPos, worldPos, initY, isM
       if (minusT.current > 2.0) showMinus.current = false;
     }
 
-    let targetPos = new THREE.Vector3(worldPos.current.x, worldPos.current.y, -1.0);
+    let targetPos = new THREE.Vector3(worldPos.current.x, worldPos.current.y, depth);
 
     switch (dogState) {
       case 'swimming':
@@ -145,13 +147,13 @@ function DivingDog({ path, scale, zone, dogState, sharkPos, worldPos, initY, isM
         const wander = new THREE.Vector3(Math.sin(t * .4 + zone.yMin) * .5, Math.cos(t * .35 + zone.xMin) * .5, 0);
         const dir = fleeDir.add(wander).normalize();
         targetPos = worldPos.current.clone().addScaledVector(dir, DOG_SPEED * dt);
-        clampInZone(targetPos, zone);
+        clampInZone(targetPos, zone, depth);
         break;
       }
       case 'fleeing': {
         const away = worldPos.current.clone().sub(sharkPos.current).normalize();
         targetPos = worldPos.current.clone().addScaledVector(away, DOG_SPEED * 4.0 * dt);
-        clampInZone(targetPos, zone);
+        clampInZone(targetPos, zone, depth);
         break;
       }
       case 'hitting': {
@@ -179,7 +181,7 @@ function DivingDog({ path, scale, zone, dogState, sharkPos, worldPos, initY, isM
   });
 
   return (
-    <group ref={gRef} position={[zone.xMin + 1.5, initY, -1.0]}>
+    <group ref={gRef} position={[(zone.xMin + zone.xMax) / 2, initY, depth]}>
       <group ref={innerRef}>
         <primitive object={scene} scale={finalScale} />
         <mesh position={[0, 0.2, 0]}>
@@ -212,14 +214,25 @@ interface Props {
   sharkPos: React.MutableRefObject<THREE.Vector3>;
   titoWorldPos: React.MutableRefObject<THREE.Vector3>;
   liaWorldPos: React.MutableRefObject<THREE.Vector3>;
+  /** Zonas calculadas desde lo que se ve en pantalla, no rectángulos fijos. */
+  titoZone: Zone;
+  liaZone: Zone;
+  depth: number;
   isMobile?: boolean;
 }
 
-export default function DivingDogs({ titoState, liaState, sharkPos, titoWorldPos, liaWorldPos, isMobile }: Props) {
+export default function DivingDogs({
+  titoState, liaState, sharkPos, titoWorldPos, liaWorldPos,
+  titoZone, liaZone, depth, isMobile,
+}: Props) {
   return (
     <>
-      <DivingDog path="/assets/3D/tito.glb" scale={.55} zone={TITO_ZONE} dogState={titoState} sharkPos={sharkPos} worldPos={titoWorldPos} initY={2.5} isMobile={isMobile} />
-      <DivingDog path="/assets/3D/lia.glb" scale={.50} zone={LIA_ZONE} dogState={liaState} sharkPos={sharkPos} worldPos={liaWorldPos} initY={-2.5} isMobile={isMobile} />
+      <DivingDog path="/assets/3D/tito.glb" scale={.55} zone={titoZone} depth={depth}
+        dogState={titoState} sharkPos={sharkPos} worldPos={titoWorldPos}
+        initY={(titoZone.yMin + titoZone.yMax) / 2} isMobile={isMobile} />
+      <DivingDog path="/assets/3D/lia.glb" scale={.50} zone={liaZone} depth={depth}
+        dogState={liaState} sharkPos={sharkPos} worldPos={liaWorldPos}
+        initY={(liaZone.yMin + liaZone.yMax) / 2} isMobile={isMobile} />
     </>
   );
 }

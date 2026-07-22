@@ -1,0 +1,117 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.carta {
+  @include fullscreen-overlay(#0a0a1f);
+
+  &__canvas {
+    position: absolute;
+    inset: 0;
+  }
+
+  // ── Botón de volver ────────────────────────────────────────────────────────
+  &__back {
+    @include touch-target(44px);
+    @include safe-top(14px);
+    position: absolute;
+    left: 14px;
+    z-index: 30;
+    padding: $space-2 $space-4;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: $border-radius-pill;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(8px);
+    color: rgba(248, 250, 252, 0.85);
+    font-family: inherit;
+    font-size: $font-size-sm;
+    cursor: pointer;
+    transition: background $transition-fast;
+
+    &:hover { background: rgba(15, 23, 42, 0.8); }
+  }
+
+  // ── Invitación inicial ────────────────────────────────────────────────────
+  // Existe para que el audio y la animación arranquen desde un gesto:
+  // los navegadores móviles bloquean el sonido que empieza solo.
+  &__start {
+    @include touch-target(56px);
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 30;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $space-4;
+    padding: $space-6 $space-7;
+    border: 1px solid rgba(232, 121, 249, 0.3);
+    border-radius: $border-radius-lg;
+    background: rgba(15, 10, 35, 0.55);
+    backdrop-filter: blur(10px);
+    color: $color-text-primary;
+    font-family: inherit;
+    @include fluid-text(0.95rem, 1.1rem, 4vw);
+    cursor: pointer;
+    transition: transform $transition-normal, border-color $transition-normal;
+
+    &:hover {
+      transform: translate(-50%, -50%) scale(1.03);
+      border-color: rgba(232, 121, 249, 0.6);
+    }
+  }
+
+  &__start-seal {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #f0abfc, #a21caf);
+    box-shadow: 0 0 26px rgba(232, 121, 249, 0.55);
+    animation: carta-seal-pulse 3s ease-in-out infinite;
+
+    @include motion-reduce { animation: none; }
+  }
+
+  // ── Acciones finales ──────────────────────────────────────────────────────
+  &__actions {
+    @include safe-bottom(20px);
+    position: absolute;
+    left: 50%;
+    z-index: 30;
+    transform: translateX(-50%);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: $space-3;
+    width: min(92vw, 460px);
+  }
+
+  &__action {
+    @include touch-target(48px);
+    flex: 1 1 140px;
+    padding: $space-3 $space-4;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: $border-radius-pill;
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(8px);
+    color: $color-text-primary;
+    font-family: inherit;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    cursor: pointer;
+    transition: transform $transition-fast, background $transition-fast;
+
+    &:hover { transform: translateY(-2px); }
+
+    &--primary {
+      background: linear-gradient(135deg, #e879f9, #a21caf);
+      border-color: transparent;
+      color: #fff;
+    }
+  }
+}
+
+@keyframes carta-seal-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 26px rgba(232, 121, 249, 0.55); }
+  50%      { transform: scale(1.08); box-shadow: 0 0 40px rgba(232, 121, 249, 0.8); }
+}

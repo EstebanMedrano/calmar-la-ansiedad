@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import SplashScreen from './components/common/SplashScreen';
 import { AnxietyProvider } from './components/context/AnxietyContext';
+import { BirthdayProvider } from './components/context/BirthdayContext';
 import Header from './components/common/Header';
 import Footer from './components/common/Footer';
 import Welcome from './components/common/Welcome';
@@ -19,6 +20,7 @@ function App() {
 
   return (
     <AnxietyProvider>
+      <BirthdayProvider>
       <BrowserRouter>
         <div className="app-container">
           <Header />
@@ -33,6 +35,7 @@ function App() {
           <Footer />
         </div>
       </BrowserRouter>
+      </BirthdayProvider>
     </AnxietyProvider>
   );
 }

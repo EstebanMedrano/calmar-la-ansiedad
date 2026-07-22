@@ -52,13 +52,22 @@ export default function Thought({
     group.lookAt(state.camera.position);
     worldPos.current.copy(group.position);
 
+    // Las frases orbitan pasando muy cerca de la cámara, así que al acercarse
+    // ocupaban toda la pantalla y se salían por los lados (sobre todo en
+    // vertical, donde hay menos ancho). Se compensa la distancia para que
+    // conserven más o menos el mismo tamaño en pantalla siempre.
+    const dist = group.position.distanceTo(state.camera.position);
+    const fit = THREE.MathUtils.clamp(dist / 6.5, 0.42, 1.35);
+
     if (isDestroying) {
       currentScale.current = THREE.MathUtils.lerp(currentScale.current, 0, 0.12);
       flashVal.current     = THREE.MathUtils.lerp(flashVal.current, 1, 0.18);
-      group.scale.setScalar(Math.max(0, currentScale.current));
+      group.scale.setScalar(Math.max(0, currentScale.current) * fit);
       if (lightRef.current)
         lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, 0, 0.09);
       if (currentScale.current < 0.02) setDestroyed(true);
+    } else {
+      group.scale.setScalar(fit);
     }
   });
 

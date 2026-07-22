@@ -1,0 +1,119 @@
+// =============================================
+// ESPACIO DE CALMA - Mixins responsivos
+// Mobile-first: se diseña para el móvil y se amplía hacia arriba.
+// =============================================
+
+@use 'sass:map';
+@use 'variables' as *;
+
+$breakpoints: (
+  sm: $breakpoint-sm,  // 640px
+  md: $breakpoint-md,  // 768px
+  lg: $breakpoint-lg,  // 1024px
+);
+
+// ── Breakpoints ──────────────────────────────────────────────────────────────
+
+/// Mobile-first: aplica los estilos a partir de este ancho.
+/// @example @include respond-to(md) { font-size: 1.25rem; }
+@mixin respond-to($bp) {
+  @if not map.has-key($breakpoints, $bp) {
+    @error "respond-to: breakpoint '#{$bp}' no existe. Usa: #{map.keys($breakpoints)}.";
+  }
+  @media (min-width: map.get($breakpoints, $bp)) {
+    @content;
+  }
+}
+
+/// Solo por debajo de este ancho. Úsalo únicamente para excepciones;
+/// por defecto prefiere respond-to() y escribe el estilo base para móvil.
+@mixin respond-below($bp) {
+  @if not map.has-key($breakpoints, $bp) {
+    @error "respond-below: breakpoint '#{$bp}' no existe. Usa: #{map.keys($breakpoints)}.";
+  }
+  @media (max-width: map.get($breakpoints, $bp) - 1px) {
+    @content;
+  }
+}
+
+/// Móvil en horizontal: poca altura. Aquí hay que comprimir los HUD
+/// verticalmente o el contenido no entra.
+@mixin short-screen($max-height: 500px) {
+  @media (max-height: $max-height) and (orientation: landscape) {
+    @content;
+  }
+}
+
+// ── Zonas seguras (notch / Dynamic Island / barra de gestos) ─────────────────
+// Requiere viewport-fit=cover en el <meta viewport> de index.html,
+// si no, env(safe-area-inset-*) siempre vale 0.
+
+@mixin safe-top($extra: 0px) {
+  top: calc(env(safe-area-inset-top, 0px) + #{$extra});
+}
+
+@mixin safe-bottom($extra: 0px) {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + #{$extra});
+}
+
+@mixin safe-padding($extra: 0px) {
+  padding-top: calc(env(safe-area-inset-top, 0px) + #{$extra});
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + #{$extra});
+  padding-left: calc(env(safe-area-inset-left, 0px) + #{$extra});
+  padding-right: calc(env(safe-area-inset-right, 0px) + #{$extra});
+}
+
+// ── Patrones repetidos ───────────────────────────────────────────────────────
+
+/// El contenedor a pantalla completa que usan los juegos con createPortal.
+/// Usa 100dvh (no 100vh) para que la barra del navegador móvil no recorte.
+/// width: 100% en vez de 100vw evita la barra de scroll horizontal en escritorio.
+@mixin fullscreen-overlay($bg: $color-bg-primary) {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  z-index: 1000;
+  overflow: hidden;
+  background: $bg;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+}
+
+/// Objetivo táctil mínimo accesible (44px es el mínimo de Apple/WCAG).
+@mixin touch-target($size: 44px) {
+  min-width: $size;
+  min-height: $size;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/// Tarjeta de cristal, el look base de la app.
+@mixin glass-card($radius: $border-radius-md) {
+  background: $color-glass;
+  backdrop-filter: blur($blur-glass);
+  -webkit-backdrop-filter: blur($blur-glass);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: $radius;
+}
+
+/// Tipografía fluida: crece con la pantalla sin saltos entre breakpoints.
+/// @example @include fluid-text(1rem, 1.5rem);
+@mixin fluid-text($min, $max, $preferred: 4vw) {
+  font-size: clamp(#{$min}, #{$preferred}, #{$max});
+}
+
+/// Respeta a quien tiene activado "reducir movimiento" en su sistema.
+/// Importante en una app para la ansiedad.
+@mixin motion-safe {
+  @media (prefers-reduced-motion: no-preference) {
+    @content;
+  }
+}
+
+@mixin motion-reduce {
+  @media (prefers-reduced-motion: reduce) {
+    @content;
+  }
+}

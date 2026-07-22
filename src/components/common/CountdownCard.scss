@@ -1,0 +1,168 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.countdown-card {
+  @include glass-card($border-radius-lg);
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  margin: $space-6 auto 0;
+  padding: $space-6 $space-5 $space-5;
+  text-align: center;
+  overflow: hidden;
+
+  // Halo cálido que insinúa que hay algo dentro
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -40% -20% auto;
+    height: 180px;
+    background: radial-gradient(ellipse at 50% 0%, rgba(251, 191, 36, 0.18), transparent 70%);
+    pointer-events: none;
+  }
+
+  &--unlocked {
+    border-color: rgba(251, 191, 36, 0.45);
+    box-shadow: 0 0 40px rgba(251, 191, 36, 0.22);
+
+    &::before {
+      background: radial-gradient(ellipse at 50% 0%, rgba(251, 191, 36, 0.38), transparent 70%);
+    }
+  }
+
+  // ── Sobre dibujado en CSS ──────────────────────────────────────────────────
+  &__envelope {
+    position: relative;
+    width: 72px;
+    height: 50px;
+    margin: 0 auto $space-4;
+  }
+
+  &__envelope-body {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(160deg, #fdf6e8, #e8d9bd);
+    border-radius: 6px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+    overflow: hidden;
+  }
+
+  &__envelope-flap {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60%;
+    background: linear-gradient(160deg, #f5ead2, #dcc9a6);
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+    transition: transform $transition-slow;
+    transform-origin: top center;
+  }
+
+  &__envelope-seal {
+    position: absolute;
+    top: 46%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #e0555f, #9b1c26);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+  }
+
+  &__glow {
+    position: absolute;
+    inset: -18px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(251, 191, 36, 0.35), transparent 65%);
+    pointer-events: none;
+  }
+
+  &--unlocked &__envelope-flap {
+    // El sobre se abre cuando llega el día
+    transform: rotateX(165deg);
+  }
+
+  // ── Texto ──────────────────────────────────────────────────────────────────
+  &__title {
+    @include fluid-text(1.05rem, 1.35rem, 5vw);
+    margin: 0 0 $space-1;
+    color: $color-text-primary;
+    font-weight: $font-weight-semibold;
+  }
+
+  &__sub {
+    margin: 0 0 $space-5;
+    color: $color-text-muted;
+    font-size: $font-size-sm;
+  }
+
+  // ── Unidades de la cuenta atrás ───────────────────────────────────────────
+  &__units {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: $space-2;
+  }
+
+  &__cta {
+    @include touch-target(48px);
+    width: 100%;
+    max-width: 260px;
+    padding: $space-3 $space-5;
+    border: none;
+    border-radius: $border-radius-pill;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: #2a1a02;
+    font-family: inherit;
+    font-size: $font-size-base;
+    font-weight: $font-weight-semibold;
+    cursor: pointer;
+    transition: transform $transition-fast, box-shadow $transition-fast;
+    box-shadow: 0 8px 24px rgba(251, 191, 36, 0.3);
+
+    &:hover { transform: translateY(-2px); }
+    &:active { transform: translateY(0); }
+  }
+}
+
+.cd-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 58px;
+  padding: $space-2 $space-1;
+  border-radius: $border-radius-sm;
+  background: rgba(255, 255, 255, 0.05);
+
+  &--muted { opacity: 0.55; }
+
+  &__value {
+    position: relative;
+    // Alto fijo para que la animación de subida de los dígitos no
+    // haga saltar el resto de la tarjeta cada segundo.
+    height: 1.15em;
+    overflow: hidden;
+    @include fluid-text(1.5rem, 2.25rem, 8vw);
+    font-weight: $font-weight-bold;
+    color: $color-text-primary;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.15;
+
+    span { display: block; }
+  }
+
+  &__label {
+    margin-top: 2px;
+    font-size: $font-size-xs;
+    color: $color-text-muted;
+    text-transform: lowercase;
+    letter-spacing: 0.04em;
+  }
+
+  @include respond-to(sm) {
+    min-width: 70px;
+    padding: $space-3 $space-2;
+  }
+}

@@ -1,50 +1,10 @@
 // =============================================
-// VARIABLES DEL TEMA OSCURO
+// ESTILOS GLOBALES
+// Los tokens vienen de _variables.scss. Antes estaban copiados aquí,
+// lo que daba dos fuentes de verdad que podían separarse sin avisar.
 // =============================================
-$color-deep-calm: #0f172a;
-$color-ocean: #1e3a8a;
-$color-mint: #10b981;
-$color-lavender: #8b5cf6;
-$color-peach: #f59e0b;
-$color-cloud: #f8fafc;
-$color-mist: #e2e8f0;
-
-$color-primary: $color-ocean;
-$color-secondary: $color-lavender;
-$color-accent: $color-mint;
-$color-highlight: $color-peach;
-
-$color-bg-primary: $color-deep-calm;
-$color-bg-secondary: #1e293b;
-$color-surface: rgba(255, 255, 255, 0.05);
-$color-surface-hover: rgba(255, 255, 255, 0.1);
-$color-glass: rgba(255, 255, 255, 0.08);
-
-$color-text-primary: $color-cloud;
-$color-text-secondary: rgba(248, 250, 252, 0.8);
-$color-text-muted: rgba(248, 250, 252, 0.5);
-
-$blur-glass: 12px;
-$shadow-colored: 0 20px 40px rgba(139, 92, 246, 0.15), 0 8px 20px rgba(16, 185, 129, 0.1);
-$shadow-glow: 0 0 30px rgba(139, 92, 246, 0.3);
-
-$space-1: 4px; $space-2: 8px; $space-3: 12px;
-$space-4: 16px; $space-5: 20px; $space-6: 24px;
-$space-7: 32px; $space-8: 40px; $space-9: 48px; $space-10: 64px;
-
-$border-radius-sm: 12px; $border-radius-md: 20px;
-$border-radius-lg: 32px; $border-radius-xl: 48px;
-$border-radius-round: 50%; $border-radius-pill: 9999px;
-
-$transition-slow: 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-$transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-$transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-
-$font-family-base: 'Inter', sans-serif;
-$font-size-xs: 0.75rem; $font-size-sm: 0.875rem;
-$font-size-base: 1rem; $font-size-lg: 1.125rem;
-$font-size-xl: 1.25rem; $font-size-2xl: 1.5rem;
-$font-size-3xl: 2rem; $font-size-4xl: 2.5rem;
+@use 'variables' as *;
+@use 'mixins' as *;
 
 // =============================================
 // RESET Y FONDO ANIMADO
@@ -59,12 +19,16 @@ $font-size-3xl: 2rem; $font-size-4xl: 2.5rem;
 
 html {
   font-size: 16px;
+  // Ningún elemento debe provocar scroll lateral: en móvil una barra
+  // horizontal hace que la página "baile" al desplazarse con el dedo.
+  overflow-x: hidden;
 }
 
 body {
   font-family: $font-family-base;
   font-size: $font-size-base;
   line-height: 1.6;
+  overflow-x: hidden;
   background: linear-gradient(
     135deg,
     $color-deep-calm 0%,
@@ -77,23 +41,31 @@ body {
   animation: gradient-shift 20s ease infinite;
   color: $color-text-primary;
   -webkit-font-smoothing: antialiased;
-}
 
-@keyframes gradient-shift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  // El fondo no para de moverse nunca. En una app para la ansiedad,
+  // a quien haya pedido menos movimiento hay que dejarlo quieto.
+  @include motion-reduce {
+    animation: none;
+    background-size: 100% 100%;
+  }
 }
 
 #root {
   position: relative;
   z-index: 1;
+  // dvh en vez de vh: en móvil vh cuenta la barra del navegador aunque
+  // esté oculta, y deja un hueco muerto abajo.
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  padding: $space-4;
+  padding: $space-2;
   max-width: 1200px;
   margin: 0 auto;
+
+  @include respond-to(sm) {
+    padding: $space-4;
+  }
 }
 
 // =============================================
@@ -163,10 +135,62 @@ body {
   background: $color-glass;
   backdrop-filter: blur($blur-glass);
   -webkit-backdrop-filter: blur($blur-glass);
-  border-radius: $border-radius-xl;
-  padding: $space-8;
+  // Radio y relleno menores en móvil: 48px de radio y 40px de relleno
+  // se comen casi un tercio del ancho de un teléfono.
+  border-radius: $border-radius-md;
+  padding: $space-4 $space-3;
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: $shadow-colored;
+
+  @include respond-to(sm) {
+    border-radius: $border-radius-lg;
+    padding: $space-6 $space-5;
+  }
+
+  @include respond-to(md) {
+    border-radius: $border-radius-xl;
+    padding: $space-8;
+  }
+}
+
+// =============================================
+// PANTALLA DE ERROR DE UN JUEGO
+// =============================================
+.game-error {
+  @include fullscreen-overlay(#0f172a);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: $space-3;
+  padding: $space-6;
+  text-align: center;
+
+  &__title {
+    margin: 0;
+    @include fluid-text(1.1rem, 1.35rem, 5vw);
+    font-weight: $font-weight-semibold;
+    color: $color-text-primary;
+  }
+
+  &__body {
+    margin: 0 0 $space-3;
+    font-size: $font-size-sm;
+    color: $color-text-muted;
+  }
+
+  &__btn {
+    @include touch-target(48px);
+    padding: $space-3 $space-6;
+    border: none;
+    border-radius: $border-radius-pill;
+    background: linear-gradient(135deg, $color-ocean, $color-lavender);
+    color: #fff;
+    font-family: inherit;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-semibold;
+    cursor: pointer;
+  }
 }
 
 // =============================================
@@ -177,21 +201,36 @@ body {
   backdrop-filter: blur($blur-glass);
   -webkit-backdrop-filter: blur($blur-glass);
   border-radius: $border-radius-lg;
-  padding: $space-3 $space-6;
-  margin-top: $space-6;
+  padding: $space-3 $space-3;
+  margin-top: $space-4;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: $space-8;
+  // Con gap fijo de 40px y sin wrap, los tres botones se salían
+  // de pantalla en cualquier teléfono estrecho.
+  flex-wrap: wrap;
+  gap: $space-2;
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: $shadow-colored;
+
+  @include respond-to(sm) {
+    padding: $space-3 $space-6;
+    margin-top: $space-6;
+    gap: $space-6;
+  }
 }
 
 .footer-btn {
+  @include touch-target(44px);
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: $space-2;
-  padding: $space-3 $space-5;
+  padding: $space-2 $space-3;
+
+  @include respond-to(sm) {
+    padding: $space-3 $space-5;
+  }
   border-radius: $border-radius-pill;
   font-size: $font-size-sm;
   font-weight: 500;

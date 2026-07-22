@@ -1,0 +1,93 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.letter-text {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $space-4;
+  @include safe-padding($space-4);
+  // Toda la zona es táctil para poder saltar el tecleo desde cualquier punto.
+  cursor: pointer;
+
+  &__paper {
+    position: relative;
+    width: min(92vw, 520px);
+    max-height: 72dvh;
+    display: flex;
+    flex-direction: column;
+    padding: $space-6 $space-5 $space-5;
+    border-radius: $border-radius-md;
+    background:
+      linear-gradient(160deg, rgba(250, 243, 228, 0.97), rgba(238, 226, 203, 0.97));
+    box-shadow:
+      0 24px 60px rgba(0, 0, 0, 0.55),
+      0 0 60px rgba(255, 224, 160, 0.22);
+    // Textura de papel muy sutil
+    background-blend-mode: overlay;
+
+    @include short-screen {
+      max-height: 84dvh;
+      padding: $space-4;
+    }
+  }
+
+  &__scroll {
+    overflow-y: auto;
+    // Inercia en iOS
+    -webkit-overflow-scrolling: touch;
+    // El scroll de la carta no debe arrastrar la página de detrás
+    overscroll-behavior: contain;
+  }
+
+  &__body {
+    margin: 0;
+    // Serif: una carta escrita a mano no se lee en la misma tipografía
+    // que la interfaz.
+    font-family: Georgia, 'Times New Roman', serif;
+    @include fluid-text(1rem, 1.15rem, 4.2vw);
+    line-height: 1.75;
+    color: #3b2f22;
+    // Respeta los saltos de línea de messages.ts tal cual se escribieron.
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  &__caret {
+    display: inline-block;
+    width: 2px;
+    height: 1.05em;
+    margin-left: 2px;
+    vertical-align: text-bottom;
+    border-radius: 1px;
+    animation: letter-caret-blink 1s steps(2, start) infinite;
+
+    @include motion-reduce {
+      animation: none;
+    }
+  }
+
+  &__signature {
+    margin: $space-5 0 0;
+    text-align: right;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: $font-size-lg;
+    font-style: italic;
+  }
+
+  &__hint {
+    margin-top: $space-4;
+    text-align: center;
+    font-size: $font-size-xs;
+    color: rgba(59, 47, 34, 0.45);
+    letter-spacing: 0.03em;
+  }
+}
+
+@keyframes letter-caret-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}

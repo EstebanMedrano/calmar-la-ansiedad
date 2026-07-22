@@ -1,0 +1,209 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.bday {
+  @include fullscreen-overlay(#04060f);
+
+  &__canvas {
+    position: absolute;
+    inset: 0;
+  }
+
+  &__back {
+    @include touch-target(44px);
+    @include safe-top(14px);
+    position: absolute;
+    left: 14px;
+    z-index: 30;
+    padding: $space-2 $space-4;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: $border-radius-pill;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(8px);
+    color: rgba(248, 250, 252, 0.85);
+    font-family: inherit;
+    font-size: $font-size-sm;
+    cursor: pointer;
+
+    &:hover { background: rgba(15, 23, 42, 0.8); }
+  }
+
+  // ── Arranque ──────────────────────────────────────────────────────────────
+  &__start {
+    @include touch-target(56px);
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 30;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $space-3;
+    padding: $space-6 $space-7;
+    border: 1px solid rgba(251, 191, 36, 0.4);
+    border-radius: $border-radius-lg;
+    background: rgba(20, 14, 6, 0.6);
+    backdrop-filter: blur(10px);
+    color: $color-text-primary;
+    font-family: inherit;
+    @include fluid-text(1rem, 1.15rem, 4.2vw);
+    font-weight: $font-weight-medium;
+    cursor: pointer;
+    transition: transform $transition-normal, border-color $transition-normal;
+
+    &:hover {
+      transform: translate(-50%, -50%) scale(1.03);
+      border-color: rgba(251, 191, 36, 0.75);
+    }
+  }
+
+  &__start-icon {
+    font-size: 2.6rem;
+    animation: bday-gift-bob 2.6s ease-in-out infinite;
+
+    @include motion-reduce { animation: none; }
+  }
+
+  // ── Rótulo de la intro ────────────────────────────────────────────────────
+  &__title {
+    position: absolute;
+    left: 50%;
+    top: 16%;
+    z-index: 25;
+    transform: translateX(-50%);
+    margin: 0;
+    width: min(88vw, 520px);
+    text-align: center;
+    @include fluid-text(1.15rem, 1.6rem, 5.5vw);
+    font-weight: $font-weight-semibold;
+    color: $color-text-primary;
+    text-shadow: 0 2px 20px rgba(0, 0, 0, 0.8);
+    pointer-events: none;
+  }
+
+  // ── Acciones finales ──────────────────────────────────────────────────────
+  &__actions {
+    @include safe-bottom(20px);
+    position: absolute;
+    left: 50%;
+    z-index: 30;
+    transform: translateX(-50%);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: $space-3;
+    width: min(92vw, 460px);
+  }
+
+  &__action {
+    @include touch-target(48px);
+    flex: 1 1 140px;
+    padding: $space-3 $space-4;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: $border-radius-pill;
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(8px);
+    color: $color-text-primary;
+    font-family: inherit;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    cursor: pointer;
+    transition: transform $transition-fast;
+
+    &:hover { transform: translateY(-2px); }
+
+    &--primary {
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      border-color: transparent;
+      color: #2a1a02;
+    }
+  }
+}
+
+// ── Controles para soplar ───────────────────────────────────────────────────
+.bday-blow {
+  @include safe-bottom(24px);
+  position: absolute;
+  left: 50%;
+  z-index: 30;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $space-3;
+  width: min(92vw, 420px);
+
+  &__prompt {
+    margin: 0;
+    @include fluid-text(1.05rem, 1.3rem, 5vw);
+    font-weight: $font-weight-semibold;
+    color: $color-text-primary;
+    text-shadow: 0 2px 16px rgba(0, 0, 0, 0.9);
+  }
+
+  &__status {
+    margin: 0;
+    font-size: $font-size-sm;
+    color: rgba(248, 250, 252, 0.75);
+    text-align: center;
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.9);
+  }
+
+  &__mic {
+    @include touch-target(48px);
+    padding: $space-3 $space-5;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: $border-radius-pill;
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(8px);
+    color: $color-text-primary;
+    font-family: inherit;
+    font-size: $font-size-sm;
+    cursor: pointer;
+
+    &:disabled { opacity: 0.6; cursor: default; }
+  }
+
+  // Botón principal: siempre presente, funcione o no el micrófono
+  &__hold {
+    @include touch-target(64px);
+    position: relative;
+    width: 100%;
+    padding: $space-4 $space-5;
+    border: 1px solid rgba(251, 191, 36, 0.45);
+    border-radius: $border-radius-pill;
+    background: rgba(20, 14, 6, 0.7);
+    backdrop-filter: blur(10px);
+    color: $color-text-primary;
+    font-family: inherit;
+    @include fluid-text(0.95rem, 1.05rem, 4vw);
+    font-weight: $font-weight-medium;
+    cursor: pointer;
+    overflow: hidden;
+    // Sin esto, mantener pulsado arrastra la página en móvil
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  // Relleno de progreso mientras se mantiene pulsado
+  &__fill {
+    position: absolute;
+    inset: 0;
+    transform-origin: left center;
+    background: linear-gradient(90deg, rgba(251, 191, 36, 0.55), rgba(245, 158, 11, 0.35));
+    // transform en vez de width: no provoca recálculo de diseño en cada frame
+    transition: transform 0.05s linear;
+  }
+
+  &__label {
+    position: relative;
+    z-index: 1;
+  }
+}
+
+@keyframes bday-gift-bob {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50%      { transform: translateY(-8px) rotate(3deg); }
+}

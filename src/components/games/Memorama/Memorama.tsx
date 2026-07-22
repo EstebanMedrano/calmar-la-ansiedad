@@ -212,6 +212,10 @@ export default function Memorama() {
     return () => { if (revealTimerRef.current) clearTimeout(revealTimerRef.current); };
   }, [pairReveal]);
 
+  // Estable a propósito: una función nueva en cada render anularía el memo
+  // de MemoramaScene y volveríamos a renderizar la escena cada segundo.
+  const handleIntroComplete = useCallback(() => setIsPlaying(true), []);
+
   const handleContinue = useCallback(() => {
     if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
     setPairReveal(null);
@@ -348,7 +352,7 @@ export default function Memorama() {
               liaWorldPos={liaWorldPos} sharkWorldPos={sharkWorldPos}
               onCardClick={handleCardClick}
               onStageChange={setIntroStage}
-              onComplete={() => setIsPlaying(true)}
+              onComplete={handleIntroComplete}
               isMobile={isMobile}
             />
           </Suspense>

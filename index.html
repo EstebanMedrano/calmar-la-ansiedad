@@ -1,10 +1,30 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>refugio-de-lu-v2</title>
+
+    <!-- viewport-fit=cover es lo que hace que env(safe-area-inset-*) deje de valer 0
+         en móviles con notch. Sin esto los botones flotantes de los juegos quedan
+         debajo de la isla dinámica. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="description" content="Un lugar tranquilo hecho para ti." />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- iOS: necesario para que se abra a pantalla completa al añadirla al inicio,
+         y para que las notificaciones sean posibles (iOS 16.4+ solo las permite
+         desde una app instalada en la pantalla de inicio). -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Refugio" />
+    <link rel="apple-touch-icon" href="/assets/icons/180.png" />
+
+    <title>Refugio de Lu</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
   </head>
   <body>

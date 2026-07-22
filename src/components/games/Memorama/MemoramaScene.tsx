@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useRef } from 'react';
+import { Suspense, memo, useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { useTexture } from '@react-three/drei';
 import * as THREE from 'three';
@@ -12,7 +12,7 @@ import type {
   IntroStage, CardState, SharkState, DogTarget, DogState, CardData, BurstData,
 } from './types';
 import {
-  IMG_PATHS, getGridConfig, getCardPos, getCameraConfig,
+  IMG_PATHS, getGridConfig, getCardPos, getCameraConfig, getActorZones,
   PAIR_COLORS,
 } from './positions';
 
@@ -82,6 +82,7 @@ function WithTextures(props: SceneProps) {
   const { size } = useThree();
   const aspect = size.width / size.height;
   const gridCfg = useMemo(() => getGridConfig(aspect), [aspect]);
+  const zones = useMemo(() => getActorZones(aspect), [aspect]);
 
   return (
     <>
@@ -119,6 +120,9 @@ function WithTextures(props: SceneProps) {
               sharkPos={props.sharkWorldPos}
               titoWorldPos={props.titoWorldPos}
               liaWorldPos={props.liaWorldPos}
+              titoZone={zones.tito}
+              liaZone={zones.lia}
+              depth={zones.z}
               isMobile={props.isMobile}
             />
             <Shark
@@ -127,6 +131,8 @@ function WithTextures(props: SceneProps) {
               titoPos={props.titoWorldPos}
               liaPos={props.liaWorldPos}
               worldPos={props.sharkWorldPos}
+              zone={zones.shark}
+              depth={zones.z}
               isMobile={props.isMobile}
             />
           </Suspense>
@@ -136,10 +142,16 @@ function WithTextures(props: SceneProps) {
   );
 }
 
-export default function MemoramaScene(props: SceneProps) {
+/**
+ * memo es importante aquí: el HUD tiene un cronómetro que actualiza el estado
+ * cada segundo, y sin esto toda la escena 3D (24 cartas, los dos perros y el
+ * tiburón) se volvía a renderizar una vez por segundo para siempre, sin que
+ * hubiera cambiado nada de lo que dibuja.
+ */
+export default memo(function MemoramaScene(props: SceneProps) {
   return (
     <Suspense fallback={null}>
       <WithTextures {...props} />
     </Suspense>
   );
-}
+});
