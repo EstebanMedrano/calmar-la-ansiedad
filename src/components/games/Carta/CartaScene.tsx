@@ -52,13 +52,17 @@ export default function CartaScene({
 
   return (
     <>
-      <color attach="background" args={['#0a0a1f']} />
-      <fog attach="fog" args={['#0a0a1f', 8, 34]} />
+      <color attach="background" args={['#14122e']} />
+      <fog attach="fog" args={['#14122e', 10, 40]} />
 
-      <ambientLight intensity={0.22} color="#8ab4ff" />
-      <hemisphereLight args={['#c9a8ff', '#0a0a1f', 0.35]} />
+      <ambientLight intensity={0.5} color="#a9c4ff" />
+      <hemisphereLight args={['#d4b6ff', '#191634', 0.7]} />
+      {/* Luna suave que da relieve al conjunto */}
+      <directionalLight position={[5, 8, 3]} color="#cdd8ff" intensity={0.55} />
       {/* Luz de acento que da volumen al perro cuando cruza */}
-      <pointLight position={[-4, 5, -3]} color="#e879f9" intensity={1.6} distance={22} decay={2} />
+      <pointLight position={[-4, 5, -3]} color="#e879f9" intensity={2.2} distance={26} decay={2} />
+      {/* Relleno cálido delante de la cámara: la carta y el perro llegan con vida */}
+      <pointLight position={[0, 2, 3]} color="#ffd9a8" intensity={1.1} distance={12} decay={2} />
 
       <CustomStars count={isMobile ? 2500 : 6000} opacity={0.85} />
 
@@ -66,7 +70,8 @@ export default function CartaScene({
         <CourierDog
           path={path}
           active={stage === 'approach'}
-          scale={isMobile ? 0.34 : 0.42}
+          duration={4.8}
+          scale={isMobile ? 0.5 : 0.62}
           onRelease={onDogRelease}
         />
       </Suspense>
@@ -74,7 +79,8 @@ export default function CartaScene({
       <LetterPaper
         state={letterStateFor(stage)}
         flightPath={path}
-        flightDuration={1.6}
+        flightDuration={2.3}
+        unfoldDuration={1.6}
         attachToCamera
         // Ver la nota en BirthdayScene: desdoblada ocupa el triple de ancho.
         holdDistance={isMobile ? 1.9 : 1.6}

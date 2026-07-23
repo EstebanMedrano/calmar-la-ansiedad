@@ -5,6 +5,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import { Howl } from 'howler';
 import * as THREE from 'three';
+import { portraitAdjust } from '../../three/responsive';
 import Campfire from './Campfire';
 import ForestScene, { RIGHT_STUMP, STUMP_TOP_Y } from './ForestScene';
 import type { RitualStage } from './RitualActors';
@@ -113,16 +114,23 @@ function CameraRig({ stage }: { stage: RitualStage }) {
     const cam    = camera as THREE.PerspectiveCamera;
     const pose   = CAMERA_POSES[STAGE_CAMERA[stage]];
     const aspect = state.size.width / state.size.height;
-    const pf     = THREE.MathUtils.clamp(1 - aspect, 0, 0.85);
 
     const base = new THREE.Vector3(...pose.position);
     const look = new THREE.Vector3(...pose.lookAt);
-    const adj  = base.clone().addScaledVector(base.clone().sub(look).normalize(), pf * 2.3);
+    // Encuadre robusto para cualquier proporción: en vertical los dos troncos
+    // (x = ±1.65) se quedaban fuera. Preservamos el campo horizontal y, al
+    // topar el fov, alejamos la cámara para que sigan cabiendo.
+    const { fov, dollyBack } = portraitAdjust(aspect, BASE_FOV, {
+      refAspect: 1.5,
+      maxFov: 80,
+      dollyPerRad: 3.5,
+    });
+    const adj  = base.clone().addScaledVector(base.clone().sub(look).normalize(), dollyBack);
 
     curPos.current.lerp(adj, 0.045);
     curLookAt.current.lerp(look, 0.045);
     camera.position.copy(curPos.current);
-    cam.fov = BASE_FOV + pf * 28;
+    cam.fov = fov;
     cam.updateProjectionMatrix();
 
     yaw.current   = THREE.MathUtils.lerp(yaw.current,   -state.pointer.x * THREE.MathUtils.degToRad(8),  0.04);
@@ -241,10 +249,14 @@ export default function RitualFire() {
         dpr={[1, 1.5]}
         camera={{ position: CAMERA_POSES.seat.position, fov: BASE_FOV, near: 0.1, far: 120 }}
       >
-        <color attach="background" args={['#16284d']} />
-        <fog   attach="fog"        args={['#16284d', 14, 38]} />
-        <ambientLight    color="#22305c" intensity={0.28} />
-        <directionalLight color="#8aa0e0" intensity={0.22} position={[4, 10, -3]} />
+        <color attach="background" args={['#1b2f57']} />
+        <fog   attach="fog"        args={['#1b2f57', 16, 42]} />
+        {/* Luz de luna algo más presente para que el bosque no sea una mancha negra */}
+        <ambientLight    color="#33436f" intensity={0.5} />
+        <directionalLight color="#9fb4e6" intensity={0.5} position={[4, 10, -3]} />
+        {/* Relleno cálido del fuego: da color real a Tito y Lia en vez de que
+            el bloom los reviente a blanco. */}
+        <pointLight color="#ffb066" intensity={1.5} distance={9} decay={2} position={[0, 1.1, 0.8]} />
 
         <CustomStars />
 
@@ -270,7 +282,7 @@ export default function RitualFire() {
         <CameraRig stage={stage} />
 
         <EffectComposer>
-          <Bloom intensity={0.5} luminanceThreshold={0.35} luminanceSmoothing={0.25} mipmapBlur />
+          <Bloom intensity={0.42} luminanceThreshold={0.62} luminanceSmoothing={0.3} mipmapBlur />
         </EffectComposer>
       </Canvas>
 

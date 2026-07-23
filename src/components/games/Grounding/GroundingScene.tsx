@@ -52,13 +52,13 @@ function Clearing() {
       {/* Suelo */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <circleGeometry args={[22, 48]} />
-        <meshStandardMaterial color="#151a2e" roughness={0.98} />
+        <meshStandardMaterial color="#2a3350" roughness={0.98} />
       </mesh>
 
       {trees.map((t) => (
         <mesh key={t.key} position={[t.x, t.h / 2, t.z]}>
           <coneGeometry args={[t.w, t.h, 6]} />
-          <meshStandardMaterial color="#0d1120" roughness={1} />
+          <meshStandardMaterial color="#1d2b3f" roughness={1} />
         </mesh>
       ))}
     </group>
@@ -131,22 +131,24 @@ export default function GroundingScene({
       accentRef.current.intensity = finished ? 3.2 : 1.6 + stepIndex * 0.22;
     }
     if (ambientRef.current) {
-      ambientRef.current.intensity = finished ? 0.5 : 0.3;
+      ambientRef.current.intensity = finished ? 0.85 : 0.62;
     }
   });
 
   return (
     <>
-      <color attach="background" args={['#080b16']} />
-      <fog attach="fog" args={['#080b16', 9, 26]} />
+      <color attach="background" args={['#111a30']} />
+      <fog attach="fog" args={['#111a30', 12, 30]} />
 
-      <ambientLight ref={ambientRef} intensity={0.3} color="#8ea6d8" />
-      <hemisphereLight args={['#4a5f9e', '#080b16', 0.35]} />
+      <ambientLight ref={ambientRef} intensity={0.62} color="#9fb4e0" />
+      <hemisphereLight args={['#6d84c4', '#1a2236', 0.7]} />
+      {/* Luna: da relieve a los árboles para que no sean una silueta plana */}
+      <directionalLight color="#aebfe8" intensity={0.6} position={[-6, 9, 4]} />
       {/* Luz del paso actual, en el centro del claro */}
       <pointLight
         ref={accentRef}
         position={[0, 2.2, 0]}
-        distance={16}
+        distance={18}
         decay={2}
         intensity={1.6}
       />

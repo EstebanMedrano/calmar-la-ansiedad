@@ -105,6 +105,30 @@
     }
   }
 
+  // ── Indicador de ciclo (arriba, centrado) ────────────────────────────────
+  // Hermano del HUD, no hijo: así se ancla al borde superior real de la
+  // pantalla y nunca se solapa con el nombre/número de abajo.
+  .breathing-cycle {
+    position: absolute;
+    top: max(70px, calc(env(safe-area-inset-top, 0px) + 58px));
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 16;
+    font-size: .75rem;
+    color: rgba(255, 255, 255, 0.70);
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    pointer-events: none;
+    white-space: nowrap;
+    text-shadow:
+      0 0 16px rgba(0, 0, 0, 0.95),
+      0 0  4px rgba(0, 0, 0, 0.85);
+
+    @media (max-height: 500px) and (orientation: landscape) {
+      top: max(46px, calc(env(safe-area-inset-top, 0px) + 8px));
+    }
+  }
+
   // ── HUD durante el ejercicio ─────────────────────────────────────────────
   .breathing-hud {
     position: absolute;
@@ -126,25 +150,6 @@
     padding: 0 !important;
     border: none !important;
     backdrop-filter: none !important;
-
-    // 🛑 CAMBIO CLAVE: El ciclo se mueve a la parte superior central de la pantalla.
-    &__cycle {
-      position: absolute;
-      top: max(20px, env(safe-area-inset-top) + 40px);
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 16;
-      font-size: .75rem;
-      color: rgba(255, 255, 255, 0.70);
-      text-transform: uppercase;
-      letter-spacing: .12em;
-      pointer-events: none;
-      white-space: nowrap;
-      // Sombra negra profunda para garantizar legibilidad sobre el espacio y las estrellas
-      text-shadow:
-        0 0 16px rgba(0, 0, 0, 0.95),
-        0 0  4px rgba(0, 0, 0, 0.85);
-    }
 
     &__name {
       font-size: 2rem;

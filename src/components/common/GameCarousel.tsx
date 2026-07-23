@@ -21,7 +21,10 @@ interface GameCarouselProps {
 }
 
 /** Tiempo entre rotaciones. Largo a propósito: da tiempo a leer la tarjeta. */
-const AUTO_INTERVAL = 6500;
+const AUTO_INTERVAL = 5200;
+/** Sobre la tarjeta del regalo (bloqueada) el carrusel se demora más para
+ *  poder leer la cuenta atrás, pero NO se detiene: sigue girando. */
+const LOCKED_INTERVAL = 9000;
 /** Cuántas tarjetas se ven a cada lado de la central. */
 const VISIBLE_SIDES = 2;
 
@@ -37,29 +40,34 @@ export default function GameCarousel({ games }: GameCarouselProps) {
   const total = games.length;
 
   // ── auto-rotate ────────────────────────────────────────────────────────────
-  const startAuto = useCallback(() => {
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    intervalRef.current = setInterval(() => {
-      setCurrent(prev => (prev + 1) % total);
-    }, AUTO_INTERVAL);
+  // El intervalo se programa uno a uno (setTimeout encadenado) para poder
+  // demorarse más en la tarjeta bloqueada sin llegar a detenerse: así el
+  // carrusel nunca se "atasca" al final y el giro se siente continuo.
+  const advance = useCallback(() => {
+    setCurrent(prev => (prev + 1) % total);
   }, [total]);
 
   const stopAuto = useCallback(() => {
-    if (intervalRef.current) clearInterval(intervalRef.current);
+    if (intervalRef.current) clearTimeout(intervalRef.current);
     intervalRef.current = null;
   }, []);
 
+  const scheduleNext = useCallback((fromIndex: number) => {
+    if (intervalRef.current) clearTimeout(intervalRef.current);
+    const delay = games[fromIndex]?.locked ? LOCKED_INTERVAL : AUTO_INTERVAL;
+    intervalRef.current = setTimeout(advance, delay);
+  }, [advance, games]);
+
+  const startAuto = useCallback(() => {
+    scheduleNext(current);
+  }, [scheduleNext, current]);
+
   useEffect(() => {
-    // Si la tarjeta centrada está bloqueada, el carrusel se detiene: es
-    // información que hay que poder leer con calma (la cuenta atrás),
-    // no algo que deba pasar de largo.
-    if (games[current]?.locked) {
-      stopAuto();
-      return;
-    }
-    startAuto();
+    // Reprograma el siguiente salto cada vez que cambia la tarjeta centrada.
+    // La bloqueada solo alarga la pausa (LOCKED_INTERVAL); el giro continúa.
+    scheduleNext(current);
     return () => stopAuto();
-  }, [startAuto, stopAuto, current, games]);
+  }, [current, scheduleNext, stopAuto]);
 
   // ── swipe / drag ───────────────────────────────────────────────────────────
   const onPointerDown = (e: React.PointerEvent) => {

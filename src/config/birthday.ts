@@ -13,6 +13,18 @@ export const BIRTHDAY_TARGET = new Date(2026, 7, 1, 0, 0, 0, 0);
 
 export const BIRTHDAY_LABEL = '1 de agosto';
 
+/**
+ * 🔑 INTERRUPTOR PARA PROBAR EL REGALO ANTES DE TIEMPO.
+ *
+ * Ponlo en `true`, guarda y ejecuta: el regalo/carta sorpresa queda
+ * desbloqueado y puedes entrar a verlo como si ya fuera el cumpleaños.
+ * Cuando termines de revisarlo, vuelve a ponerlo en `false`, guarda y sube:
+ * así queda como siempre y solo se abrirá el 1 de agosto.
+ *
+ * (Es lo mismo que abrir la app con ?unlock=1, pero sin tocar la URL.)
+ */
+export const FORCE_UNLOCK = false;
+
 const DEV_UNLOCK_KEY = 'lu_dev_unlock';
 const GIFT_OPENED_KEY = 'lu_gift_opened';
 
@@ -41,6 +53,9 @@ export function getBirthdayTarget(): Date {
  * No aparece en ninguna parte de la interfaz.
  */
 export function isDevUnlocked(): boolean {
+  // Interruptor manual del código: tiene prioridad sobre todo lo demás.
+  if (FORCE_UNLOCK) return true;
+
   if (typeof window === 'undefined') return false;
 
   const param = new URLSearchParams(window.location.search).get('unlock');

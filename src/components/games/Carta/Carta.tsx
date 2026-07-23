@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Canvas } from '@react-three/fiber';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import { useNavigate } from 'react-router-dom';
-import { Howl } from 'howler';
+import { startAmbient } from '../../../audio/ambient';
 import CartaScene from './CartaScene';
 import LetterText from '../../letter/LetterText';
 import { CARTA_MESSAGE, UI_TEXT } from '../../../content/messages';
@@ -28,31 +28,24 @@ export default function Carta() {
 
   useEffect(() => () => { timers.current.forEach(clearTimeout); }, []);
 
-  // Música ambiente. Se crea tras el primer toque (start), nunca al montar:
-  // los navegadores móviles bloquean el audio que no nace de un gesto.
-  const ambientRef = useRef<Howl | null>(null);
-  useEffect(() => () => {
-    ambientRef.current?.stop();
-    ambientRef.current?.unload();
-  }, []);
-
   const start = useCallback(() => {
     if (stage !== 'idle') return;
 
-    ambientRef.current = new Howl({
-      src: ['/assets/sounds/ambient-432hz.mp3'],
-      loop: true,
-      volume: 0,
-    });
-    ambientRef.current.play();
-    ambientRef.current.fade(0, 0.18, 2500);
+    // Antes se creaba aquí un segundo Howl con la MISMA pista 432 Hz que ya
+    // suena de fondo en toda la app → se oía doble y desfasada. Ahora solo nos
+    // aseguramos de que la música compartida esté sonando (idempotente); el
+    // toque de este botón sirve de gesto para desbloquear el audio en móvil.
+    startAmbient();
 
     setStage('approach');
   }, [stage]);
 
   const handleDogRelease = useCallback(() => setStage('handoff'), []);
   const handleLetterArrived = useCallback(() => {
-    addT(() => setStage('unfolding'), 250);
+    // Pausa un poco más larga: la carta cerrada se queda un momento "en las
+    // manos" antes de que salte el lacre. Da respiro y hace la escena menos
+    // atropellada.
+    addT(() => setStage('unfolding'), 750);
   }, [addT]);
   const handleLetterOpened = useCallback(() => setStage('reading'), []);
   const handleReadDone = useCallback(() => setStage('done'), []);
@@ -65,7 +58,8 @@ export default function Carta() {
   }, [addT]);
 
   const leave = useCallback(() => {
-    ambientRef.current?.fade(ambientRef.current.volume(), 0, 400);
+    // La música es la compartida de la app: sobrevive al cambio de pantalla,
+    // así que aquí no se toca.
     navigate('/games');
   }, [navigate]);
 

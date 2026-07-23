@@ -3,6 +3,9 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import type { Phase } from './Puzzle';
+import { portraitAdjust } from '../../three/responsive';
+
+const BASE_FOV = 58;
 
 // FIX 4: Cámara más alejada para que entre toda la habitación en móviles
 const FIXED: Partial<Record<Phase, { pos: THREE.Vector3; look: THREE.Vector3 }>> = {
@@ -21,8 +24,26 @@ interface Props {
 export default function CameraRig({ phase, dogPosRef }: Props) {
   const { camera } = useThree();
   const lookTarget = useRef(new THREE.Vector3(0, 1.4, -1));
+  const dir = useRef(new THREE.Vector3());
+  const adj = useRef(new THREE.Vector3());
 
-  useFrame((_, dt) => {
+  useFrame((state, dt) => {
+    const cam = camera as THREE.PerspectiveCamera;
+    const aspect = state.size.width / state.size.height;
+    // En vertical las fichas sueltas (x = ±2.5) quedaban fuera del encuadre y
+    // el juego era imposible. Ensanchamos el campo y, al topar el fov,
+    // alejamos la cámara para que entren a cualquier proporción.
+    const { fov, dollyBack } = portraitAdjust(aspect, BASE_FOV, {
+      refAspect: 1.5,
+      maxFov: 80,
+      dollyPerRad: 4,
+    });
+    if (Math.abs(cam.fov - fov) > 0.01) {
+      cam.fov = fov;
+      cam.updateProjectionMatrix();
+    }
+
+    // En idle manda OrbitControls la posición; solo aplicamos el fov de arriba.
     if (phase === 'idle') return;
 
     if (phase === 'intro') {
@@ -45,7 +66,9 @@ export default function CameraRig({ phase, dogPosRef }: Props) {
     const cfg = FIXED[phase];
     if (!cfg) return;
     const ease = Math.min(0.09, 3.8 * dt);
-    camera.position.lerp(cfg.pos, ease);
+    dir.current.copy(cfg.pos).sub(cfg.look).normalize();
+    adj.current.copy(cfg.pos).addScaledVector(dir.current, dollyBack);
+    camera.position.lerp(adj.current, ease);
     lookTarget.current.lerp(cfg.look, ease);
     camera.lookAt(lookTarget.current);
   });

@@ -103,9 +103,16 @@ export default function Breathing() {
         </div>
       )}
 
+      {/* El indicador de ciclo va FUERA del HUD de abajo: el HUD tiene un
+          transform, y eso convierte a sus hijos position:fixed en relativos a
+          él, así que el "Ciclo" acababa cayendo encima del nombre y el número.
+          Como hermano de .breathing-wrap se ancla de verdad al borde superior. */}
+      {started && !done && (
+        <div className="breathing-cycle">Ciclo {cycle + 1} / {CYCLES}</div>
+      )}
+
       {started && !done && (
         <div className="breathing-hud">
-          <div className="breathing-hud__cycle">Ciclo {cycle + 1} / {CYCLES}</div>
           <div className="breathing-hud__name" style={{ color: pd.color }}>{pd.name}</div>
           <div className="breathing-hud__hint">{pd.hint}</div>
           <div className="breathing-hud__num"  style={{ color: pd.color }}>{tLeft}</div>
