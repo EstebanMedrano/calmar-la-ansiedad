@@ -23,7 +23,7 @@ export const BIRTHDAY_LABEL = '1 de agosto';
  *
  * (Es lo mismo que abrir la app con ?unlock=1, pero sin tocar la URL.)
  */
-export const FORCE_UNLOCK = false;
+export const FORCE_UNLOCK = true;
 
 const DEV_UNLOCK_KEY = 'lu_dev_unlock';
 const GIFT_OPENED_KEY = 'lu_gift_opened';
