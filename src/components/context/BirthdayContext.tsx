@@ -16,6 +16,8 @@ interface BirthdayState {
   /** true si está desbloqueado por ?unlock=1 y no porque llegó la fecha. */
   isDevUnlock: boolean;
   hasOpenedGift: boolean;
+  /** true si el regalo está disponible pero no fue abierto aún. */
+  hasUnopenedGift: boolean;
   markGiftOpened: () => void;
 }
 
@@ -41,6 +43,7 @@ export function BirthdayProvider({ children }: { children: ReactNode }) {
       isUnlocked: countdown.isPast || devUnlock,
       isDevUnlock: devUnlock && !countdown.isPast,
       hasOpenedGift: giftOpened,
+      hasUnopenedGift: (countdown.isPast || devUnlock) && !giftOpened,
       markGiftOpened,
     }),
     [countdown, devUnlock, giftOpened, markGiftOpened],

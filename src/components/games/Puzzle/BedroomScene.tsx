@@ -6,7 +6,7 @@ import PuzzleFrame, { type PuzzleFrameHandle } from './PuzzleFrame'; // <-- FIX:
 import type { Phase, DogType } from './Puzzle';
 
 export const FRAME_CENTER = new THREE.Vector3(0, 1.58, -4.45);
-export const FRAME_SIZE   = { w: 2.3, h: 1.7 };
+export const FRAME_SIZE   = { w: 2.8, h: 2.1 };
 export const DOOR_POS     = new THREE.Vector3(4.3, 0, 0.8);
 export const WATCH_POS    = new THREE.Vector3(2.2, 0, -3.0);
 export const FLOAT_DEPTH  = FRAME_CENTER.z + 2.8;
@@ -38,21 +38,28 @@ const BedroomScene = forwardRef<BedroomSceneHandle, Props>(({
   return (
     <>
       {/* ── Lights ── */}
-      <hemisphereLight args={['#fdf6ea', '#4a3020', 1.1]} />
-      <ambientLight intensity={0.6} color="#fff8ef" />
+      <hemisphereLight args={['#fdf6ea', '#4a3020', 1.3]} />
+      <ambientLight intensity={0.8} color="#fff8ef" />
       <directionalLight
-        position={[-2.5, 5.5, 1.5]} intensity={2.2} color="#fff5e0"
+        position={[-2.5, 5.5, 1.5]} intensity={2.6} color="#fff5e0"
         castShadow shadow-mapSize={[1024, 1024]}
         shadow-camera-left={-7} shadow-camera-right={7}
         shadow-camera-top={7}  shadow-camera-bottom={-7}
       />
-      <pointLight position={[-2.5, 2.0, -3.0]} intensity={0.6} color="#ffd090" distance={5} />
-      <pointLight position={[2.5,  2.0, -3.0]} intensity={0.35} color="#ffe8c0" distance={4} />
+      <pointLight position={[-2.5, 2.0, -3.0]} intensity={0.9} color="#ffd090" distance={8} />
+      <pointLight position={[2.5,  2.0, -3.0]} intensity={0.7} color="#ffe8c0" distance={6} />
+      <pointLight position={[0, 3.0, -1]} intensity={0.5} color="#ffd9c0" distance={10} />
+      <pointLight position={[-4, 2.0, 2]} intensity={0.4} color="#c8e8ff" distance={8} />
 
       {/* ── Floor ── */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
         <planeGeometry args={[12, 12]} />
-        <meshStandardMaterial color="#c0a06a" roughness={0.9} />
+        <meshStandardMaterial color="#d4b896" roughness={0.85} />
+      </mesh>
+      {/* Floor accent pattern */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.001, 0]}>
+        <circleGeometry args={[8, 64]} />
+        <meshStandardMaterial color="#c99c6f" roughness={0.95} opacity={0.3} transparent />
       </mesh>
 
       {/* ── Ceiling ── */}

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Canvas } from '@react-three/fiber';
 import { Howl } from 'howler'; // ⭐ AÑADIDO: Importación para los audios
+import useIsMobile from '../../../hooks/useIsMobile';
 import { useAnxiety } from '../../context/AnxietyContext';
 import HurricaneScene from './HurricaneScene';
 import './Hurricane.scss';
@@ -32,6 +33,7 @@ export const TARGET_DESTROYED = 10;
 export default function Hurricane() {
   const navigate = useNavigate();
   const { reduceLevel } = useAnxiety();
+  const isMobile = useIsMobile();
 
   const [stage, setStage] = useState<HurricaneStage>('intro');
   const [destroyedCount, setDestroyedCount] = useState(0);
@@ -133,7 +135,7 @@ export default function Hurricane() {
       <Canvas className="hurricane-canvas" dpr={[1, 1.5]}
         camera={{ position: [0, 1.6, 3], fov: 75, near: 0.1, far: 400 }} shadows>
         <Suspense fallback={null}>
-          <HurricaneScene stage={stage} onThoughtDestroyed={handleThoughtDestroyed} />
+          <HurricaneScene stage={stage} isMobile={isMobile} onThoughtDestroyed={handleThoughtDestroyed} />
         </Suspense>
       </Canvas>
 

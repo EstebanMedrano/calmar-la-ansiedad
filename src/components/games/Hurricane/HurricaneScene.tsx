@@ -68,16 +68,17 @@ function Slide() {
   );
 }
 
-function Park() {
+function Park({ isMobile }: { isMobile: boolean }) {
   const treeConfig = useMemo<Array<{pos:[number,number,number];s:number}>>(() => {
     const arr = [];
-    for (let i = 0; i < 36; i++) {
-      const angle = (i/36)*Math.PI*2 + Math.random()*0.5;
+    const treeCount = isMobile ? 18 : 36;
+    for (let i = 0; i < treeCount; i++) {
+      const angle = (i/treeCount)*Math.PI*2 + Math.random()*0.5;
       const r = 18 + Math.random()*32;
       arr.push({ pos:[Math.cos(angle)*r, 0, Math.sin(angle)*r] as [number,number,number], s:0.8+Math.random()*0.65 });
     }
     return arr;
-  }, []);
+  }, [isMobile]);
 
   return (
     <group>
@@ -182,10 +183,11 @@ function CameraRig({ stage }: { stage: HurricaneStage }) {
 
 interface HurricaneSceneProps {
   stage: HurricaneStage;
+  isMobile: boolean;
   onThoughtDestroyed: () => void;
 }
 
-export default function HurricaneScene({ stage, onThoughtDestroyed }: HurricaneSceneProps) {
+export default function HurricaneScene({ stage, isMobile, onThoughtDestroyed }: HurricaneSceneProps) {
   const [destroyedIds, setDestroyedIds] = useState<Set<number>>(new Set());
   const [dogTarget, setDogTarget] = useState<THREE.Vector3 | null>(null);
   const [activeDog, setActiveDog] = useState<'tito'|'lia'>('tito');
@@ -279,7 +281,7 @@ export default function HurricaneScene({ stage, onThoughtDestroyed }: HurricaneS
 
       <Lighting stage={stage}/>
       <CameraRig stage={stage}/>
-      <Park/>
+      <Park isMobile={isMobile}/>
       <Tornado stage={stage}/>
 
       {showThoughts && thoughtData.map(td =>

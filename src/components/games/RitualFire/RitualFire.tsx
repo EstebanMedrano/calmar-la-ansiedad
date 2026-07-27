@@ -6,6 +6,7 @@ import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import { Howl } from 'howler';
 import * as THREE from 'three';
 import { portraitAdjust } from '../../three/responsive';
+import useIsMobile from '../../../hooks/useIsMobile';
 import Campfire from './Campfire';
 import ForestScene, { RIGHT_STUMP, STUMP_TOP_Y } from './ForestScene';
 import type { RitualStage } from './RitualActors';
@@ -149,6 +150,7 @@ function CameraRig({ stage }: { stage: RitualStage }) {
 export default function RitualFire() {
   const navigate       = useNavigate();
   const { reduceLevel } = useAnxiety();
+  const isMobile       = useIsMobile();
 
   const [stage,        setStage]        = useState<RitualStage>('sitting');
   const [letterText,   setLetterText]   = useState('');
@@ -258,7 +260,7 @@ export default function RitualFire() {
             el bloom los reviente a blanco. */}
         <pointLight color="#ffb066" intensity={1.5} distance={9} decay={2} position={[0, 1.1, 0.8]} />
 
-        <CustomStars />
+        <CustomStars count={isMobile ? 2000 : 4500} />
 
         <Suspense fallback={null}>
           <ForestScene lettersOnDesk={lettersOnDesk} />

@@ -12,6 +12,7 @@ import CandleRing from './CandleRing';
 import PartyDogs from './PartyDogs';
 import Tulips from './Tulips';
 import Confetti from './Confetti';
+import Fireworks from './Fireworks';
 import { poseFor, CAKE_POS, CAKE_TOP_WORLD_Y } from './positions';
 import type { BirthdayStage } from './timings';
 
@@ -190,6 +191,7 @@ export default function BirthdayScene({
         onOpened={onLetterOpened}
       />
 
+      <Fireworks active={stage === 'candlesOut'} duration={2.2} />
       <Confetti active={stage === 'finale'} origin={[0, CAKE_TOP_WORLD_Y + 0.7, 1]} />
 
       <ResponsiveRig pose={poseFor(stage)} fovGain={26} dolly={2.2} lerp={0.04} />

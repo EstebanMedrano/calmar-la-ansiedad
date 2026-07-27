@@ -32,10 +32,10 @@ export const LIA_REST: [number, number, number] = [-1.15, 0, 0.85];
 
 /**
  * Ajuste del gorro sobre la cabeza, en fracciones del alto del propio perro.
- * y: 0.95 = casi arriba del todo; z: 0.22 = un poco hacia el hocico.
+ * y: 1.05 = sobre la cabeza; z: 0.12 = centrado en la cabeza.
  * Si queda flotando o hundido, estos son los dos únicos números que tocar.
  */
-export const HAT_HEAD_OFFSET = { y: 0.95, z: 0.22 };
+export const HAT_HEAD_OFFSET = { y: 1.05, z: 0.12 };
 
 /**
  * Poses de cámara por fase.

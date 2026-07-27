@@ -336,8 +336,8 @@ function Piece({ texture, row, col, pieceW, pieceH, target, frameCenter, floatDe
     const onUp = () => {
       dragging.current = false;
       mat.emissive.setHex(0);
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup',   onUp);
+      gl.domElement.removeEventListener('pointermove', onMove);
+      gl.domElement.removeEventListener('pointerup',   onUp);
 
       const dx   = m.position.x - target.x;
       const dy   = m.position.y - target.y;
@@ -357,8 +357,8 @@ function Piece({ texture, row, col, pieceW, pieceH, target, frameCenter, floatDe
       }
     };
 
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup',   onUp);
+    gl.domElement.addEventListener('pointermove', onMove);
+    gl.domElement.addEventListener('pointerup',   onUp);
   }, [phase, gl, camera, target, frameCenter, floatDepth, onSnap, onPlacedChange]);
 
   return (

@@ -5,6 +5,8 @@ import ResponsiveRig from '../../three/ResponsiveRig';
 import LetterPaper from '../../letter/LetterPaper';
 import type { LetterState } from '../../letter/LetterPaper';
 import CourierDog from './CourierDog';
+import CartaEnvironment from './CartaEnvironment';
+import CartaMagicParticles from './CartaMagicParticles';
 import { makeHypnoticPath } from '../../letter/letterPaths';
 import type { CartaStage } from './stages';
 
@@ -66,6 +68,8 @@ export default function CartaScene({
 
       <CustomStars count={isMobile ? 2500 : 6000} opacity={0.85} />
 
+      <CartaEnvironment isMobile={isMobile} />
+
       <Suspense fallback={null}>
         <CourierDog
           path={path}
@@ -88,6 +92,8 @@ export default function CartaScene({
         onFlightComplete={onLetterArrived}
         onOpened={onLetterOpened}
       />
+
+      <CartaMagicParticles active={stage === 'reading' || stage === 'done'} />
 
       <ResponsiveRig pose={CAMERA_POSE} fovGain={26} dolly={1.9} lerp={0.05} />
     </>
