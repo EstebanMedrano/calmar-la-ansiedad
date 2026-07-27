@@ -10,6 +10,7 @@ import { CARTA_MESSAGE, UI_TEXT } from '../../../content/messages';
 import useIsMobile from '../../../hooks/useIsMobile';
 import useReducedMotion from '../../../hooks/useReducedMotion';
 import type { CartaStage } from './stages';
+import { T } from './stages';
 import './Carta.scss';
 
 export default function Carta() {
@@ -40,12 +41,11 @@ export default function Carta() {
     setStage('approach');
   }, [stage]);
 
-  const handleDogRelease = useCallback(() => setStage('handoff'), []);
   const handleLetterArrived = useCallback(() => {
-    // Pausa un poco más larga: la carta cerrada se queda un momento "en las
-    // manos" antes de que salte el lacre. Da respiro y hace la escena menos
-    // atropellada.
-    addT(() => setStage('unfolding'), 750);
+    // La carta cerrada se queda un momento "en las manos" antes de que salte
+    // el lacre. Da respiro y hace la escena menos atropellada.
+    setStage('arrival');
+    addT(() => setStage('unfolding'), T.arrival);
   }, [addT]);
   const handleLetterOpened = useCallback(() => setStage('reading'), []);
   const handleReadDone = useCallback(() => setStage('done'), []);
@@ -73,7 +73,6 @@ export default function Carta() {
         <CartaScene
           stage={stage}
           isMobile={isMobile}
-          onDogRelease={handleDogRelease}
           onLetterArrived={handleLetterArrived}
           onLetterOpened={handleLetterOpened}
         />

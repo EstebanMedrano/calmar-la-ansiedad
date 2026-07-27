@@ -6,7 +6,9 @@ import { SnapSparkle } from './sparkleShader';
 import type { Phase } from './Puzzle';
 
 const GRID        = 4;
-const SNAP_DIST   = 0.28;
+// Algo más generoso que la mitad de una pieza: con el dedo tapando la casilla
+// no se puede afinar como con el ratón.
+const SNAP_DIST   = 0.32;
 const SCATTER_DUR = 1.2;
 const SETTLE_DELAY = 2400;
 
@@ -305,39 +307,62 @@ function Piece({ texture, row, col, pieceW, pieceH, target, frameCenter, floatDe
     const m = meshRef.current;
     if (!m) return;
 
+    const canvas  = gl.domElement;
+    const pointer = e.pointerId;
+
     dragging.current = true;
     const dragZ  = target.z + 0.015;
     m.position.z = dragZ;
 
-    const point = new THREE.Vector3(e.point.x, e.point.y, dragZ);
-    const offset = point.clone().sub(m.position);
+    // Diferencia entre dónde tocó el dedo y el centro de la pieza: sin esto
+    // la pieza salta bajo el dedo en cuanto empieza el arrastre.
+    const grabDX = e.point.x - m.position.x;
+    const grabDY = e.point.y - m.position.y;
 
     const mat = m.material as THREE.MeshStandardMaterial;
     mat.emissive.setHex(0x281400);
 
+    // Objetos reutilizados durante todo el arrastre: crear un Raycaster nuevo
+    // en cada pointermove genera basura a 120 eventos por segundo en móvil.
+    const raycaster = new THREE.Raycaster();
+    const ndc       = new THREE.Vector2();
+    const plane     = new THREE.Plane(new THREE.Vector3(0, 0, 1), -dragZ);
+    const hitPoint  = new THREE.Vector3();
+
+    // El navegador reenvía a este elemento todos los eventos de ESTE dedo,
+    // aunque salga del canvas. Junto con `touch-action: none` en el CSS del
+    // canvas es lo que hace que el arrastre táctil funcione de verdad.
+    try { canvas.setPointerCapture(pointer); } catch { /* navegador sin captura */ }
+
+    const detach = () => {
+      canvas.removeEventListener('pointermove',   onMove);
+      canvas.removeEventListener('pointerup',     onUp);
+      canvas.removeEventListener('pointercancel', onCancel);
+      try { canvas.releasePointerCapture(pointer); } catch { /* ya liberado */ }
+    };
+
     const onMove = (ev: PointerEvent) => {
-      const rect = gl.domElement.getBoundingClientRect();
-      const ndcX = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
-      const ndcY = -((ev.clientY - rect.top) / rect.height) * 2 + 1;
+      if (ev.pointerId !== pointer) return;
+      ev.preventDefault();
 
-      const raycaster = new THREE.Raycaster();
-      raycaster.setFromCamera(new THREE.Vector2(ndcX, ndcY), camera);
-      
-      const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -dragZ);
-      const hitPoint = new THREE.Vector3();
-      raycaster.ray.intersectPlane(plane, hitPoint);
+      const rect = canvas.getBoundingClientRect();
+      ndc.set(
+        ((ev.clientX - rect.left) / rect.width) * 2 - 1,
+        -((ev.clientY - rect.top) / rect.height) * 2 + 1,
+      );
+      raycaster.setFromCamera(ndc, camera);
 
-      if (hitPoint) {
-        m.position.x = hitPoint.x - offset.x;
-        m.position.y = hitPoint.y - offset.y;
+      if (raycaster.ray.intersectPlane(plane, hitPoint)) {
+        m.position.x = hitPoint.x - grabDX;
+        m.position.y = hitPoint.y - grabDY;
       }
     };
 
-    const onUp = () => {
+    const onUp = (ev: PointerEvent) => {
+      if (ev.pointerId !== pointer) return;
       dragging.current = false;
       mat.emissive.setHex(0);
-      gl.domElement.removeEventListener('pointermove', onMove);
-      gl.domElement.removeEventListener('pointerup',   onUp);
+      detach();
 
       const dx   = m.position.x - target.x;
       const dy   = m.position.y - target.y;
@@ -357,8 +382,19 @@ function Piece({ texture, row, col, pieceW, pieceH, target, frameCenter, floatDe
       }
     };
 
-    gl.domElement.addEventListener('pointermove', onMove);
-    gl.domElement.addEventListener('pointerup',   onUp);
+    // Una llamada entrante, un gesto del sistema o un segundo dedo cancelan el
+    // pointer. Sin este handler la pieza se quedaba "pegada" para siempre.
+    const onCancel = (ev: PointerEvent) => {
+      if (ev.pointerId !== pointer) return;
+      dragging.current = false;
+      mat.emissive.setHex(0);
+      detach();
+      m.position.z = floatDepth;
+    };
+
+    canvas.addEventListener('pointermove',   onMove, { passive: false });
+    canvas.addEventListener('pointerup',     onUp);
+    canvas.addEventListener('pointercancel', onCancel);
   }, [phase, gl, camera, target, frameCenter, floatDepth, onSnap, onPlacedChange]);
 
   return (

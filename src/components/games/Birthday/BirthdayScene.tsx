@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { AmbientLight, DirectionalLight, Group } from 'three';
 import CustomStars from '../../three/CustomStars';
+import MeadowEnvironment from '../../three/MeadowEnvironment';
 import ResponsiveRig from '../../three/ResponsiveRig';
 import LetterPaper from '../../letter/LetterPaper';
 import type { LetterState } from '../../letter/LetterPaper';
@@ -13,7 +14,7 @@ import PartyDogs from './PartyDogs';
 import Tulips from './Tulips';
 import Confetti from './Confetti';
 import Fireworks from './Fireworks';
-import { poseFor, CAKE_POS, CAKE_TOP_WORLD_Y } from './positions';
+import { poseFor, CAKE_POS, CAKE_TOP_WORLD_Y, DOG_START_Z } from './positions';
 import type { BirthdayStage } from './timings';
 
 interface BirthdaySceneProps {
@@ -82,21 +83,25 @@ export default function BirthdayScene({
     dimRef.current = THREE.MathUtils.damp(dimRef.current, target, 1.8, delta);
     const d = dimRef.current;
 
-    if (ambientRef.current) ambientRef.current.intensity = 0.55 - d * 0.49;
-    if (dirRef.current) dirRef.current.intensity = 0.45 - d * 0.4;
+    // El apagado ya no llega a negro. Antes bajaba la ambiental a 0.06 y la
+    // pantalla se quedaba en nada: solo se oían los ladridos. Ahora baja a
+    // media luz de anochecer y el pradito (que tiene sus propios orbes) sigue
+    // leyéndose detrás de la torta.
+    if (ambientRef.current) ambientRef.current.intensity = 0.6 - d * 0.32;
+    if (dirRef.current) dirRef.current.intensity = 0.5 - d * 0.26;
 
     if (starsRef.current) {
       const m = starsRef.current.material as THREE.PointsMaterial;
-      m.opacity = 0.12 + d * 0.8;
+      m.opacity = 0.42 + d * 0.5;
     }
 
     const bg = state.scene.background as THREE.Color | null;
-    if (bg) bg.lerpColors(new THREE.Color('#1a1230'), new THREE.Color('#04060f'), d);
+    if (bg) bg.lerpColors(new THREE.Color('#14122e'), new THREE.Color('#0a0a1e'), d);
 
     const fog = state.scene.fog as THREE.Fog | null;
     if (fog) {
-      fog.near = THREE.MathUtils.lerp(6, 2.5, d);
-      fog.far = THREE.MathUtils.lerp(40, 16, d);
+      fog.near = THREE.MathUtils.lerp(9, 6, d);
+      fog.far = THREE.MathUtils.lerp(46, 30, d);
     }
 
     // La torta aparece cuando los perros llegan: sube desde debajo de la mesa
@@ -122,21 +127,29 @@ export default function BirthdayScene({
 
   return (
     <>
-      <color attach="background" args={['#1a1230']} />
-      <fog attach="fog" args={['#1a1230', 6, 40]} />
+      <color attach="background" args={['#14122e']} />
+      <fog attach="fog" args={['#14122e', 9, 46]} />
 
-      <ambientLight ref={ambientRef} intensity={0.55} color="#ffd9c0" />
-      <directionalLight ref={dirRef} position={[3, 6, 4]} intensity={0.45} color="#fff0e0" />
+      <ambientLight ref={ambientRef} intensity={0.6} color="#ffd9c0" />
+      <directionalLight ref={dirRef} position={[3, 6, 4]} intensity={0.5} color="#fff0e0" />
+      {/* Rebote del suelo: es lo que da color al pasto en vez de dejarlo gris */}
+      <hemisphereLight args={['#d4b6ff', '#193a26', 0.65]} />
       {/* Luz de relleno fría, para que las sombras no queden negras del todo */}
       <pointLight position={[-3, 2.5, 3]} color="#7c9dff" intensity={0.35} distance={16} decay={2} />
 
-      <CustomStars ref={starsRef} count={isMobile ? 2500 : 6000} opacity={0.12} />
+      <CustomStars ref={starsRef} count={isMobile ? 2500 : 6000} opacity={0.42} />
 
-      {/* Suelo */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <circleGeometry args={[16, 48]} />
-        <meshStandardMaterial color="#1b1533" roughness={0.95} />
-      </mesh>
+      {/* Pradito con el camino de luces por el que llegan Tito y Lia.
+          Las luces de relleno del pradito van desactivadas: la torta necesita
+          quedarse a oscuras al soplar y esas dos luces son constantes. */}
+      <MeadowEnvironment
+        isMobile={isMobile}
+        radius={20}
+        grassSpread={13}
+        clearRadius={1.05}
+        fillLights={false}
+        orbs={{ kind: 'corridor', fromZ: DOG_START_Z - 0.5, toZ: 2.2, halfWidth: 2.4 }}
+      />
 
       {/* Tulips carga una textura con useTexture, que suspende. Sin este
           Suspense la suspensión llega hasta el Canvas y el EffectComposer

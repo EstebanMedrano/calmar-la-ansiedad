@@ -66,15 +66,22 @@
   }
 
   // ── Rótulo de la intro ────────────────────────────────────────────────────
+  // Centrado con left/right + margin auto, NO con translateX(-50%): este
+  // rótulo es un motion.p y framer-motion escribe su propio `transform`
+  // inline para animar la `y`, que pisaba el translateX y dejaba el texto
+  // empezando en la mitad de la pantalla y cortado por la derecha.
   &__title {
     position: absolute;
-    left: 50%;
+    left: 0;
+    right: 0;
     top: 16%;
     z-index: 25;
-    transform: translateX(-50%);
-    margin: 0;
+    margin: 0 auto;
     width: min(88vw, 520px);
+    max-width: calc(100% - #{$space-8});
     text-align: center;
+    text-wrap: balance;
+    overflow-wrap: break-word;
     @include fluid-text(1.15rem, 1.6rem, 5.5vw);
     font-weight: $font-weight-semibold;
     color: $color-text-primary;

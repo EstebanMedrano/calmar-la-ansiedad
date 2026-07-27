@@ -1,81 +1,99 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { Group } from 'three';
-import useDogModel, { LIA_PATH } from '../../../hooks/useDogModel';
-import { easeInOutCubic } from '../../letter/letterPaths';
+import useDogModel, { TITO_PATH, LIA_PATH } from '../../../hooks/useDogModel';
+import { easeInOutSine } from '../../letter/letterPaths';
 
 interface CourierDogProps {
-  /** Recorrido que sigue, el mismo que después seguirá la carta. */
+  /** Recorrido POR EL SUELO. Se sigue tal cual: ya viene aplanado en y=0. */
   path: THREE.CatmullRomCurve3;
-  active: boolean;
-  duration?: number;
+  /** true desde que arranca la escena; el perro se queda después de llegar. */
+  started: boolean;
+  /** Lo que tarda en recorrerlo, en segundos. */
+  duration: number;
+  /** Cuánto va por detrás de la carta, en fracción del recorrido. */
+  lag?: number;
   scale?: number;
-  /** Fracción del recorrido en la que suelta la carta. */
-  releaseAt?: number;
-  onRelease?: () => void;
+  /** Se llama la primera vez que el perro llega a su sitio. */
+  onArrived?: () => void;
 }
 
 /**
- * Lia trayendo la carta.
+ * Tito o Lia (a cara o cruz) persiguiendo la carta.
  *
- * Recorre la misma curva que después seguirá la carta, la suelta a un 85% del
- * camino y sale del encuadre. La carta continúa sola hasta la cámara.
+ * Antes venía VOLANDO por la misma curva aérea que la carta y la soltaba a
+ * mitad de camino, que es justo lo que se pidió quitar. Ahora corre por el
+ * suelo siguiendo la sombra de esa curva, un poco por detrás, y al llegar se
+ * queda ahí respirando mientras se lee la carta.
  */
 export default function CourierDog({
   path,
-  active,
-  duration = 3.8,
-  scale = 0.42,
-  releaseAt = 0.85,
-  onRelease,
+  started,
+  duration,
+  lag = 0.075,
+  scale = 0.5,
+  onArrived,
 }: CourierDogProps) {
+  // Se elige una sola vez por montaje: useGLTF necesita una ruta estable, y
+  // sortearlo en cada render volvería a suspender el componente sin parar.
+  const [modelPath] = useState(() => (Math.random() < 0.5 ? TITO_PATH : LIA_PATH));
+
   const groupRef = useRef<Group>(null);
-  const { scene, footOffset } = useDogModel(LIA_PATH, groupRef);
+  const { scene, footOffset } = useDogModel(modelPath, groupRef);
 
   const t = useRef(0);
-  const released = useRef(false);
+  const arrived = useRef(false);
   const tmpPos = useRef(new THREE.Vector3());
   const tmpTan = useRef(new THREE.Vector3());
   const lookTarget = useRef(new THREE.Vector3());
 
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
     const g = groupRef.current;
     if (!g) return;
 
-    if (!active) {
+    if (!started) {
       g.visible = false;
       t.current = 0;
-      released.current = false;
+      arrived.current = false;
       return;
     }
 
     g.visible = true;
-    t.current = Math.min(1, t.current + delta / duration);
-    const eased = easeInOutCubic(t.current);
+    g.scale.setScalar(scale);
+
+    // Tarda algo MÁS que la carta en hacer el mismo recorrido, así que en todo
+    // momento va por detrás de ella: eso es lo que se lee como persecución.
+    // Llega a su sitio poco después de que la carta se pare delante.
+    const runFor = duration * (1 + lag);
+    t.current = Math.min(1, t.current + delta / runFor);
+    const eased = easeInOutSine(t.current);
 
     path.getPointAt(eased, tmpPos.current);
-    g.position.copy(tmpPos.current);
+    g.position.set(tmpPos.current.x, 0, tmpPos.current.z);
 
-    // Mira hacia donde vuela
+    // Mira hacia donde corre. El recorrido es plano, así que la tangente ya
+    // es horizontal y el perro no acaba apuntando al cielo.
     path.getTangentAt(eased, tmpTan.current);
-    lookTarget.current.copy(tmpPos.current).add(tmpTan.current);
-    g.lookAt(lookTarget.current);
+    tmpTan.current.y = 0;
+    if (tmpTan.current.lengthSq() > 1e-6) {
+      lookTarget.current.copy(g.position).add(tmpTan.current);
+      g.lookAt(lookTarget.current);
+    }
 
-    // Balanceo de vuelo y trotecillo
-    g.rotateZ(Math.sin(t.current * Math.PI * 4) * 0.16);
-    g.position.y += Math.sin(performance.now() / 180) * 0.05;
-
-    // Se desvanece tras soltar la carta
-    if (t.current > releaseAt) {
-      const fade = (t.current - releaseAt) / (1 - releaseAt);
-      g.scale.setScalar(scale * (1 - fade * 0.7));
-      if (!released.current) {
-        released.current = true;
-        onRelease?.();
-      }
+    const running = t.current < 1;
+    if (running) {
+      // Trotecillo: rebote de las patas y balanceo del cuerpo
+      const clock = state.clock.elapsedTime;
+      g.position.y = Math.abs(Math.sin(clock * 9)) * 0.09;
+      g.rotateZ(Math.sin(clock * 9) * 0.05);
     } else {
-      g.scale.setScalar(scale);
+      // Ya llegó: solo respira
+      g.position.y = Math.sin(state.clock.elapsedTime * 1.1) * 0.012;
+      if (!arrived.current) {
+        arrived.current = true;
+        onArrived?.();
+      }
     }
   });
 
@@ -84,8 +102,8 @@ export default function CourierDog({
       <group position={[0, footOffset, 0]}>
         <primitive object={scene} />
       </group>
-      {/* Estela mágica que la acompaña */}
-      <pointLight color="#e879f9" distance={3.5} decay={2} intensity={1.4} />
+      {/* Halo que lo acompaña: sin él es una silueta negra sobre el pasto */}
+      <pointLight color="#ffd9a8" distance={3.2} decay={2} intensity={1.1} position={[0, 0.6, 0]} />
     </group>
   );
 }

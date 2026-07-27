@@ -17,6 +17,20 @@
     height: 100dvh;
     position: relative;
     display: block;
+
+    // El `style={{touchAction:'none'}}` del <Canvas> de react-three-fiber se
+    // aplica al DIV contenedor, no al <canvas>, y touch-action NO se hereda.
+    // Encima, el <canvas> acaba con un `touch-action: auto` EN LÍNEA, así que
+    // hace falta !important para ganarle. Sin esto el navegador interpreta el
+    // arrastre del dedo como scroll, cancela el pointer y la pieza se queda
+    // pegada al primer toque: ese era el motivo de que el rompecabezas solo
+    // funcionara con ratón.
+    canvas {
+      touch-action: none !important;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
   }
 
   // ── Top bar overlay ────────────────────────────────────────────────────
@@ -83,11 +97,16 @@
   }
 
   // ── Dog selector ───────────────────────────────────────────────────────
+  // Centrado con left/right + margin auto: es un motion.div y el `transform`
+  // inline de framer-motion pisaba cualquier translateX(-50%) del CSS.
   &__dog-select {
     position: absolute;
     bottom: 80px;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    width: fit-content;
+    max-width: calc(100% - 24px);
     text-align: center;
     z-index: 10;
     pointer-events: auto;
@@ -140,11 +159,15 @@
   }
 
   // ── Floating message ───────────────────────────────────────────────────
+  // También motion.div: mismo motivo que en __dog-select.
   &__msg {
     position: absolute;
     bottom: 76px;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    width: fit-content;
+    max-width: calc(100% - 24px);
     background: rgba(12,6,2,0.82);
     backdrop-filter: blur(8px);
     border: 1px solid rgba(245,158,11,0.22);

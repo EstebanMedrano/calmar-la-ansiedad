@@ -6,12 +6,31 @@ import { easeInOutCubic, easeOutCubic } from './letterPaths';
 
 export type LetterState = 'hidden' | 'flying' | 'landing' | 'unfolding' | 'open';
 
+/** Estela de cometa que arrastra la carta mientras vuela. */
+export interface LetterTrail {
+  color?: string;
+  /** Número de segmentos. El primero es la cabeza, sobre la propia carta. */
+  count?: number;
+  /** Separación entre segmentos, en fracción del recorrido. */
+  gap?: number;
+  /** Radio del segmento de cabeza, en unidades de mundo a escala 1. */
+  size?: number;
+}
+
 export interface LetterPaperProps {
   state: LetterState;
   /** Recorrido que sigue durante 'flying'. */
   flightPath?: THREE.CatmullRomCurve3;
   /** Duración del vuelo en segundos. */
   flightDuration?: number;
+  /** Curva de avance del vuelo. Por defecto easeInOutCubic. */
+  flightEase?: (t: number) => number;
+  /** Vueltas completas que da sobre sí misma mientras se acerca. */
+  flightSpin?: number;
+  /** Escala al arrancar el vuelo, en fracción de `scale`. */
+  flightScaleFrom?: number;
+  /** Estela de cometa. null (por defecto) = sin estela. */
+  trail?: LetterTrail | null;
   /** Duración del desdoblado en segundos. */
   unfoldDuration?: number;
   /**
@@ -44,6 +63,10 @@ export default function LetterPaper({
   state,
   flightPath,
   flightDuration = 3.2,
+  flightEase = easeInOutCubic,
+  flightSpin = 0,
+  flightScaleFrom = 0.35,
+  trail = null,
   unfoldDuration = 1.1,
   attachToCamera = false,
   holdDistance = 0.85,
@@ -57,6 +80,12 @@ export default function LetterPaper({
   const rightFoldRef = useRef<Mesh>(null);
   const sealRef = useRef<Mesh>(null);
   const lightRef = useRef<PointLight>(null);
+  const trailRef = useRef<Group>(null);
+
+  const trailCount = trail?.count ?? 20;
+  const trailGap = trail?.gap ?? 0.006;
+  const trailSize = trail?.size ?? 0.07;
+  const trailColor = trail?.color ?? '#ffe3a8';
 
   const flightT = useRef(0);
   const unfoldT = useRef(0);
@@ -66,6 +95,7 @@ export default function LetterPaper({
   // Vectores reutilizados para no generar basura en cada frame
   const tmpPos = useRef(new THREE.Vector3());
   const tmpTangent = useRef(new THREE.Vector3());
+  const tmpTrail = useRef(new THREE.Vector3());
   const camTarget = useRef(new THREE.Vector3());
 
   useEffect(() => {
@@ -82,12 +112,16 @@ export default function LetterPaper({
     if (!g) return;
 
     g.visible = state !== 'hidden';
-    if (state === 'hidden') return;
+    if (state === 'hidden') {
+      if (trailRef.current) trailRef.current.visible = false;
+      return;
+    }
 
     // ── Vuelo ────────────────────────────────────────────────────────────
     if (state === 'flying' && flightPath) {
       flightT.current = Math.min(1, flightT.current + delta / flightDuration);
-      const t = easeInOutCubic(flightT.current);
+      const raw = flightT.current;
+      const t = flightEase(raw);
 
       flightPath.getPointAt(t, tmpPos.current);
       g.position.copy(tmpPos.current);
@@ -95,14 +129,53 @@ export default function LetterPaper({
       // Orienta la carta según hacia dónde va, con un balanceo suave
       flightPath.getTangentAt(t, tmpTangent.current);
       g.lookAt(tmpPos.current.clone().add(tmpTangent.current));
-      g.rotateZ(Math.sin(flightT.current * Math.PI * 3) * 0.28);
 
-      // Crece al acercarse: refuerza la sensación de distancia
-      const s = scale * (0.35 + 0.65 * t);
+      // Giro sobre sí misma: es lo que la lee como un objeto girando en el aire
+      // y no como una textura que crece.
+      //
+      // El ángulo se interpola con easeOutCubic, no linealmente: así el giro
+      // es rápido al principio (cuando es un puntito lejano) y se va frenando
+      // hasta pararse solo. Con una rampa lineal habría que cortarlo de golpe,
+      // y con un factor de apagado el giro se deshacía marcha atrás.
+      if (flightSpin > 0) {
+        const spinT = Math.min(1, raw / 0.92);
+        g.rotateZ(flightSpin * Math.PI * 2 * easeOutCubic(spinT));
+      }
+      g.rotateZ(Math.sin(raw * Math.PI * 3) * 0.22 * (1 - raw));
+
+      // Crece al acercarse. La curva es cuadrática, no lineal: casi todo el
+      // crecimiento ocurre al final, que es como se comporta de verdad algo
+      // que se acerca.
+      const grow = flightScaleFrom + (1 - flightScaleFrom) * raw * raw;
+      const s = scale * grow;
       g.scale.setScalar(s);
 
       if (lightRef.current) {
         lightRef.current.intensity = 0.6 + t * 2.4;
+      }
+
+      // ── Estela ─────────────────────────────────────────────────────────
+      const tail = trailRef.current;
+      if (tail && trail) {
+        tail.visible = true;
+        const n = tail.children.length;
+        for (let i = 0; i < n; i++) {
+          const seg = tail.children[i] as Mesh;
+          const mat = seg.material as THREE.MeshBasicMaterial;
+          const segRaw = raw - i * trailGap;
+          if (segRaw <= 0) {
+            mat.opacity = 0;
+            continue;
+          }
+          flightPath.getPointAt(flightEase(segRaw), tmpTrail.current);
+          seg.position.copy(tmpTrail.current);
+
+          const fade = 1 - i / n;
+          mat.opacity = fade * fade * 0.9;
+          // La cola engorda con la carta: si no, al llegar se ve un hilo fino
+          // pegado a un sobre enorme.
+          seg.scale.setScalar(trailSize * grow * (0.35 + fade * 0.65));
+        }
       }
 
       if (flightT.current >= 1 && !flightDone.current) {
@@ -111,6 +184,8 @@ export default function LetterPaper({
       }
       return;
     }
+
+    if (trailRef.current) trailRef.current.visible = false;
 
     // ── Reposo delante de la cámara ─────────────────────────────────────
     if (attachToCamera) {
@@ -160,7 +235,32 @@ export default function LetterPaper({
   });
 
   return (
-    <group ref={groupRef} visible={false}>
+    <>
+      {/* Estela de cometa. Va FUERA del grupo de la carta a propósito: sus
+          segmentos se quedan atrás en el recorrido, así que necesitan
+          coordenadas de mundo, no las de la carta que ya se movió.
+          fog={false} porque el vuelo arranca más lejos que el alcance de la
+          niebla y con niebla no se vería nada del principio. */}
+      {trail && (
+        <group ref={trailRef} visible={false}>
+          {Array.from({ length: trailCount }, (_, i) => (
+            <mesh key={i}>
+              <sphereGeometry args={[1, 8, 6]} />
+              <meshBasicMaterial
+                color={trailColor}
+                transparent
+                opacity={0}
+                blending={THREE.AdditiveBlending}
+                depthWrite={false}
+                toneMapped={false}
+                fog={false}
+              />
+            </mesh>
+          ))}
+        </group>
+      )}
+
+      <group ref={groupRef} visible={false}>
       {/* Hoja central */}
       <mesh>
         <planeGeometry args={[PAPER_W, PAPER_H]} />
@@ -170,6 +270,7 @@ export default function LetterPaper({
           emissive="#ffe9b0"
           emissiveIntensity={0.35}
           side={THREE.DoubleSide}
+          fog={false}
         />
       </mesh>
 
@@ -187,6 +288,7 @@ export default function LetterPaper({
             emissive="#ffe9b0"
             emissiveIntensity={0.18}
             side={THREE.DoubleSide}
+            fog={false}
           />
         </mesh>
       </mesh>
@@ -201,6 +303,7 @@ export default function LetterPaper({
             emissive="#ffe9b0"
             emissiveIntensity={0.18}
             side={THREE.DoubleSide}
+            fog={false}
           />
         </mesh>
       </mesh>
@@ -209,11 +312,12 @@ export default function LetterPaper({
           para que la cara circular mire hacia fuera de la carta. */}
       <mesh ref={sealRef} position={[0, 0, 0.012]} rotation={[Math.PI / 2, 0, 0]}>
         <cylinderGeometry args={[0.045, 0.045, 0.012, 20]} />
-        <meshStandardMaterial color="#b02a35" roughness={0.4} metalness={0.1} />
+        <meshStandardMaterial color="#b02a35" roughness={0.4} metalness={0.1} fog={false} />
       </mesh>
 
       {/* Resplandor propio: es lo que la hace visible en la oscuridad */}
       <pointLight ref={lightRef} color="#ffe0a0" distance={4.5} decay={2} intensity={1.6} />
-    </group>
+      </group>
+    </>
   );
 }

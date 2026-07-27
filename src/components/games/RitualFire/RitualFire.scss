@@ -63,49 +63,71 @@
   &:disabled { opacity: 0.4; transform: translateX(-50%) scale(1); cursor: default; }
 }
 
-.ritual-hotspot {
+// Barra de acciones del claro.
+//
+// Antes eran tres botones sueltos anclados a las esquinas y al centro con
+// position:fixed. En un móvil de 360px "🪵 Lanzar palo" y "✉️ Escribir carta"
+// se solapaban y el segundo quedaba medio tapado. Ahora es una fila flexible
+// centrada que se parte en varias líneas cuando no cabe.
+.ritual-hotspots {
   position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 22px);
   z-index: 10;
-  padding: 14px 28px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  // El contenedor no debe interceptar toques entre botones: el canvas de
+  // debajo también responde (apuntar el lanzamiento del palo).
+  pointer-events: none;
+}
+
+.ritual-hotspot {
+  pointer-events: auto;
+  flex: 0 1 auto;
+  min-height: 48px;
+  padding: 12px 22px;
   background: rgba(12, 20, 36, 0.55);
   backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 999px;
   color: #f3ead9;
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 0.95rem;
+  white-space: nowrap;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: transform 0.15s ease, border-color 0.15s ease;
   user-select: none;
+  -webkit-tap-highlight-color: transparent;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 
   &:hover { transform: scale(1.03); border-color: rgba(255, 255, 255, 0.2); }
   &:active { transform: scale(0.95); }
+  &:disabled { opacity: 0.45; transform: none; cursor: default; }
 
-  &--right {
-    bottom: 28px;
-    right: 28px;
+  &--write {
     background: rgba(34, 80, 140, 0.6);
     border-color: rgba(100, 180, 255, 0.2);
     &:hover { border-color: rgba(100, 180, 255, 0.4); }
   }
-  &--center {
-    bottom: 28px;
-    left: 50%;
-    transform: translateX(-50%);
+  &--stick {
     background: rgba(60, 50, 30, 0.6);
     border-color: rgba(255, 220, 120, 0.2);
-    &:hover { transform: translateX(-50%) scale(1.03); border-color: rgba(255, 220, 120, 0.4); }
-  }
-  &--left {
-    bottom: 28px;
-    left: 28px;
-    background: rgba(120, 40, 20, 0.5);
-    border-color: rgba(255, 100, 60, 0.2);
-    &:hover { border-color: rgba(255, 100, 60, 0.4); }
+    &:hover { border-color: rgba(255, 220, 120, 0.4); }
   }
   &--burn {
     background: rgba(150, 50, 0, 0.6);
+    border-color: rgba(255, 100, 60, 0.2);
+    &:hover { border-color: rgba(255, 100, 60, 0.4); }
+  }
+
+  @media (max-width: 420px) {
+    padding: 11px 16px;
+    font-size: 0.85rem;
   }
 }
 

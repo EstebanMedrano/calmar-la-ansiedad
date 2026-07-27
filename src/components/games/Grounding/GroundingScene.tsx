@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { AmbientLight, PointLight, Points } from 'three';
 import CustomStars from '../../three/CustomStars';
+import MeadowEnvironment from '../../three/MeadowEnvironment';
 import ResponsiveRig from '../../three/ResponsiveRig';
 import SenseOrbs from './SenseOrbs';
 import type { OrbData } from './SenseOrbs';
@@ -29,19 +30,28 @@ const FINISH_POSE = {
   fov: 52,
 };
 
-/** Siluetas de árboles alrededor del claro. */
-function Clearing() {
+/**
+ * Pinos de tamaño medio rodeando el claro.
+ *
+ * Cierran el hueco entre el pradito (radio 30) y las montañas del horizonte:
+ * sin ellos se ve el salto de una cosa a la otra. Antes eran siluetas planas
+ * casi negras a 9 unidades y se comían el encuadre; ahora son verdes, más
+ * lejos y algo más altos, para que lean como bosque y no como obstáculos.
+ */
+function TreeLine() {
   const trees = useMemo(
     () =>
-      Array.from({ length: 14 }, (_, i) => {
-        const a = (i / 14) * Math.PI * 2 + ((i * 31) % 17) / 30;
-        const r = 9 + ((i * 53) % 19) / 5;
+      Array.from({ length: 18 }, (_, i) => {
+        const a = (i / 18) * Math.PI * 2 + ((i * 31) % 17) / 18;
+        // Lejos y no muy altos: a 13 unidades tapaban por completo la línea de
+        // montañas, que es justo lo que se quería ver al fondo.
+        const r = 17 + ((i * 53) % 19) / 2;
         return {
           key: i,
           x: Math.cos(a) * r,
           z: Math.sin(a) * r,
-          h: 3.2 + ((i * 29) % 13) / 4,
-          w: 0.9 + ((i * 17) % 9) / 18,
+          h: 4.2 + ((i * 29) % 13) / 3.2,
+          w: 1.1 + ((i * 17) % 9) / 12,
         };
       }),
     [],
@@ -49,17 +59,23 @@ function Clearing() {
 
   return (
     <group>
-      {/* Suelo */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <circleGeometry args={[22, 48]} />
-        <meshStandardMaterial color="#2a3350" roughness={0.98} />
-      </mesh>
-
       {trees.map((t) => (
-        <mesh key={t.key} position={[t.x, t.h / 2, t.z]}>
-          <coneGeometry args={[t.w, t.h, 6]} />
-          <meshStandardMaterial color="#1d2b3f" roughness={1} />
-        </mesh>
+        <group key={t.key} position={[t.x, 0, t.z]}>
+          {/* Tronco */}
+          <mesh position={[0, t.h * 0.12, 0]}>
+            <cylinderGeometry args={[t.w * 0.11, t.w * 0.15, t.h * 0.24, 6]} />
+            <meshStandardMaterial color="#33261c" roughness={1} />
+          </mesh>
+          {/* Copa en dos pisos: una sola es un cucurucho, dos ya es un pino */}
+          <mesh position={[0, t.h * 0.5, 0]}>
+            <coneGeometry args={[t.w, t.h * 0.68, 7]} />
+            <meshStandardMaterial color="#1f5c3a" roughness={1} flatShading />
+          </mesh>
+          <mesh position={[0, t.h * 0.78, 0]}>
+            <coneGeometry args={[t.w * 0.72, t.h * 0.5, 7]} />
+            <meshStandardMaterial color="#28734a" roughness={1} flatShading />
+          </mesh>
+        </group>
       ))}
     </group>
   );
@@ -138,10 +154,15 @@ export default function GroundingScene({
   return (
     <>
       <color attach="background" args={['#111a30']} />
-      <fog attach="fog" args={['#111a30', 12, 30]} />
+      {/* Niebla mucho más larga que antes (era 12→30): con el alcance corto se
+          comía el pradito entero y solo quedaban tres conos flotando. El
+          alcance llega justo antes del borde del suelo, así el disco de césped
+          se funde con el fondo en vez de acabar en una línea recta. */}
+      <fog attach="fog" args={['#111a30', 20, 62]} />
 
       <ambientLight ref={ambientRef} intensity={0.62} color="#9fb4e0" />
-      <hemisphereLight args={['#6d84c4', '#1a2236', 0.7]} />
+      {/* El suelo verde es lo que tiñe el rebote: si no, el pasto sale gris */}
+      <hemisphereLight args={['#6d84c4', '#1d4a33', 0.75]} />
       {/* Luna: da relieve a los árboles para que no sean una silueta plana */}
       <directionalLight color="#aebfe8" intensity={0.6} position={[-6, 9, 4]} />
       {/* Luz del paso actual, en el centro del claro */}
@@ -154,7 +175,24 @@ export default function GroundingScene({
       />
 
       <CustomStars count={isMobile ? 2200 : 5000} opacity={0.8} />
-      <Clearing />
+
+      {/* Mismo pradito que la escena de la carta, más las montañas del fondo */}
+      <MeadowEnvironment
+        isMobile={isMobile}
+        radius={64}
+        grassSpread={15}
+        clearRadius={2.4}
+        groundColor="#1b4630"
+        orbs={{ kind: 'ring', radius: 4.6, count: isMobile ? 16 : 26 }}
+        // SenseOrbs ya pone hasta quince pointLight en escritorio: aquí hay que
+        // ser tacaño o el número de luces dinámicas se dispara.
+        maxOrbLights={isMobile ? 4 : 6}
+        mountains
+        mountainDistance={70}
+        mountainColor="#22314f"
+        mountainCapColor="#465c85"
+      />
+      <TreeLine />
       <Motes count={isMobile ? 120 : 260} />
 
       <SenseOrbs orbs={orbs} colors={colors} isMobile={isMobile} />

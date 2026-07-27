@@ -301,26 +301,29 @@ export default function RitualFire() {
       )}
 
       {stage === 'sitting' && !aiming && (
-        <>
-          <button className="ritual-hotspot ritual-hotspot--right" onClick={handleStartWriting}>
-            ✉️ Escribir carta
-          </button>
-          <button
-            className="ritual-hotspot ritual-hotspot--center"
-            onClick={handleThrowStick}
-            disabled={throwActive}
-          >
-            🪵 Lanzar palo
-          </button>
+        // Barra flex en vez de tres botones con position:fixed en las esquinas:
+        // así se reparten el ancho disponible y en un móvil estrecho pasan a
+        // varias filas en vez de montarse unos encima de otros.
+        <div className="ritual-hotspots">
           {savedLetters > 0 && (
             <button
-              className="ritual-hotspot ritual-hotspot--left ritual-hotspot--burn"
+              className="ritual-hotspot ritual-hotspot--burn"
               onClick={handleBurn}
             >
               🔥 Quemar {savedLetters} carta{savedLetters > 1 ? 's' : ''}
             </button>
           )}
-        </>
+          <button
+            className="ritual-hotspot ritual-hotspot--stick"
+            onClick={handleThrowStick}
+            disabled={throwActive}
+          >
+            🪵 Lanzar palo
+          </button>
+          <button className="ritual-hotspot ritual-hotspot--write" onClick={handleStartWriting}>
+            ✉️ Escribir carta
+          </button>
+        </div>
       )}
 
       {aiming && (

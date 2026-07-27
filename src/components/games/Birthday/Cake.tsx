@@ -89,7 +89,14 @@ export default function Cake({ isMobile, dimFactor = 0 }: CakeProps) {
         <meshStandardMaterial color="#e8d5c4" roughness={0.8} />
       </mesh>
 
-      {/* Texto elegante con mejor tipografía */}
+      {/* Texto de la torta.
+          SIN prop `font`: apuntaba a /fonts/georgia.ttf, que no existe en el
+          repositorio. El servidor devolvía el index.html, troika no conseguía
+          parsearlo y —esto es lo grave— al fallar nunca resolvía su promesa de
+          carga. Como <Text> suspende esperándola, el <Suspense> que envuelve
+          toda la escena del regalo no se resolvía jamás: el canvas se quedaba
+          en negro y solo se oían los ladridos. Con la fuente por defecto de
+          drei el texto se ve y la escena se monta. */}
       <Text
         position={[0, CAKE_TOP_Y + 0.002, 0]}
         rotation={[-Math.PI / 2, 0, 0]}
@@ -100,7 +107,6 @@ export default function Cake({ isMobile, dimFactor = 0 }: CakeProps) {
         anchorY="middle"
         lineHeight={1.4}
         color="#2a1810"
-        font="/fonts/georgia.ttf"
       >
         {'Feliz cumpleaños\npara mi querida Lu'}
       </Text>
