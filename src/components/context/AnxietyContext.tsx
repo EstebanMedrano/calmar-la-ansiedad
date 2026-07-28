@@ -1,3 +1,4 @@
+import { Logger } from '../../utils/logger';
 import { createContext, useContext, useState, useCallback } from 'react';
 import type { ReactNode } from 'react';
 
@@ -18,12 +19,16 @@ export function AnxietyProvider({ children }: { children: ReactNode }) {
   const setLevel = useCallback((newLevel: number) => {
     const clampedLevel = Math.min(10, Math.max(0, newLevel));
     setLevelState(clampedLevel);
+    Logger.logSession(clampedLevel);
     localStorage.setItem('calma_last_level', clampedLevel.toString());
   }, []);
 
   const reduceLevel = useCallback(() => {
     setLevelState(prev => {
       const newLevel = Math.max(0, prev - 1);
+      if (newLevel === 0) {
+        Logger.logSessionEnd(0); // ← NUEVO
+      }
       localStorage.setItem('calma_last_level', newLevel.toString());
       return newLevel;
     });

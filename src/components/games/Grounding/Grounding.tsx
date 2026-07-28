@@ -1,3 +1,4 @@
+import { Logger } from '../../../utils/logger';
 import { useState, useRef, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
@@ -93,16 +94,20 @@ export default function Grounding() {
   const addItem = () => {
     const val = input.trim();
     if (!val) return;
-    // Comparación sin distinguir mayúsculas ni espacios: antes "Mi taza" y
-    // "mi taza" contaban como dos cosas distintas.
     if (current.some((it) => it.toLowerCase() === val.toLowerCase())) {
       setFeedback('Ya anotaste eso, intenta con otra cosa');
       addT(() => setFeedback(''), 2000);
       return;
     }
-    setItems((prev) => prev.map((arr, i) => (i === stepIndex ? [...arr, val] : arr)));
+    const newItems = [...current, val];
+    setItems((prev) => prev.map((arr, i) => (i === stepIndex ? newItems : arr)));
     setInput('');
     setFeedback('');
+
+    // Si se completó el paso actual, envía los datos al diario de Lu
+    if (newItems.length === step.number) {
+      Logger.logGrounding(step.label, newItems.join(' | '));
+    }
   };
 
   /** Permite borrar algo mal escrito, que antes no se podía. */

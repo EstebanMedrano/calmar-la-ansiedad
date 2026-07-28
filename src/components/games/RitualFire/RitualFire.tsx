@@ -1,3 +1,4 @@
+import { Logger } from '../../../utils/logger';
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
@@ -194,6 +195,7 @@ export default function RitualFire() {
 
   const handleFinishLetter = () => {
     if (!letterText.trim()) return;
+    Logger.logText('Ritual de Soltar', letterText.trim());
     setStage('sealing');
     addT(() => {
       setSavedLetters(n => n + 1);
