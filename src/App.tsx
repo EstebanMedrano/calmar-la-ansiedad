@@ -21,7 +21,7 @@ function App() {
   return (
     <AnxietyProvider>
       <BirthdayProvider>
-      <BrowserRouter>
+      <BrowserRouter basename={import.meta.env.BASE_URL}>
         <div className="app-container">
           <Header />
           <main className="view-container">
