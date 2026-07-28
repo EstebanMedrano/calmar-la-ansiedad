@@ -4,6 +4,7 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  base: '/calmar-la-ansiedad/',
 
   server: {
     // Necesario para abrir la app desde el móvil en la misma wifi durante el
