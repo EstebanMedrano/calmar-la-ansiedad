@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import type { Group } from 'three';
 import type { DogState } from './types';
 import { DOG_SPEED } from './positions';
+import { assetUrl } from '../../../utils/assetUrl';
 
 type Zone = { xMin: number; xMax: number; yMin: number; yMax: number };
 
@@ -227,15 +228,15 @@ export default function DivingDogs({
 }: Props) {
   return (
     <>
-      <DivingDog path="/assets/3D/tito.glb" scale={.55} zone={titoZone} depth={depth}
+      <DivingDog path={assetUrl('/assets/3D/tito.glb')} scale={.55} zone={titoZone} depth={depth}
         dogState={titoState} sharkPos={sharkPos} worldPos={titoWorldPos}
         initY={(titoZone.yMin + titoZone.yMax) / 2} isMobile={isMobile} />
-      <DivingDog path="/assets/3D/lia.glb" scale={.50} zone={liaZone} depth={depth}
+      <DivingDog path={assetUrl('/assets/3D/lia.glb')} scale={.50} zone={liaZone} depth={depth}
         dogState={liaState} sharkPos={sharkPos} worldPos={liaWorldPos}
         initY={(liaZone.yMin + liaZone.yMax) / 2} isMobile={isMobile} />
     </>
   );
 }
 
-useGLTF.preload('/assets/3D/tito.glb');
-useGLTF.preload('/assets/3D/lia.glb');
+useGLTF.preload(assetUrl('/assets/3D/tito.glb'));
+useGLTF.preload(assetUrl('/assets/3D/lia.glb'));

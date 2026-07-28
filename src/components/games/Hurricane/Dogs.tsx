@@ -4,6 +4,7 @@ import { useGLTF, useAnimations } from '@react-three/drei';
 import * as THREE from 'three';
 import type { Group } from 'three';
 import type { HurricaneStage } from './Hurricane';
+import { assetUrl } from '../../../utils/assetUrl';
 
 function Parachute() {
   return (
@@ -215,7 +216,7 @@ export default function Dogs({ stage, dogTarget, activeDog, tornadoCenter }: Dog
     <group>
       {/* 🛑 AUMENTAMOS EL TAMAÑO DE LOS PERRITOS PARA QUE SE VEAN DESDE LEJOS */}
       <DogModel
-        path="/assets/3D/tito.glb" dogScale={0.75} // Antes 0.50
+        path={assetUrl('/assets/3D/tito.glb')} dogScale={0.75} // Antes 0.50
         baseAngle={0} orbitRadius={4} orbitHeight={2.5} orbitSpeed={0.55}
         runRadius={3.2} runSpeed={0.9} runOffset={0}
         stage={stage} tornadoCenter={tornadoCenter}
@@ -223,7 +224,7 @@ export default function Dogs({ stage, dogTarget, activeDog, tornadoCenter }: Dog
         fetchTarget={dogTarget}
       />
       <DogModel
-        path="/assets/3D/lia.glb" dogScale={0.65} // Antes 0.45
+        path={assetUrl('/assets/3D/lia.glb')} dogScale={0.65} // Antes 0.45
         baseAngle={Math.PI} orbitRadius={5} orbitHeight={3.6} orbitSpeed={0.45}
         runRadius={4.2} runSpeed={-0.72} runOffset={Math.PI / 2}
         stage={stage} tornadoCenter={tornadoCenter}
@@ -234,5 +235,5 @@ export default function Dogs({ stage, dogTarget, activeDog, tornadoCenter }: Dog
   );
 }
 
-useGLTF.preload('/assets/3D/tito.glb');
-useGLTF.preload('/assets/3D/lia.glb');
+useGLTF.preload(assetUrl('/assets/3D/tito.glb'));
+useGLTF.preload(assetUrl('/assets/3D/lia.glb'));

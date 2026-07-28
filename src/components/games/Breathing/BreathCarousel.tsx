@@ -4,6 +4,7 @@ import { useFrame } from '@react-three/fiber';
 import { useGLTF, useAnimations } from '@react-three/drei';
 import * as THREE from 'three';
 import type { Group } from 'three';
+import { assetUrl } from '../../../utils/assetUrl';
 
 const TRACK_COLS = ['#10d4b0', '#9b6df6', '#f5a020'] as const;
 const _tc = new THREE.Color();
@@ -215,13 +216,13 @@ export default function BreathCarousel({
     <group>
       <Track      curve={curve} phaseRef={phaseRef} />
       <TrackRings curve={curve} phaseRef={phaseRef} />
-      <DogCart path="/assets/3D/tito.glb" scale={0.40} startT={0.00}
+      <DogCart path={assetUrl('/assets/3D/tito.glb')} scale={0.40} startT={0.00}
         curve={curve} phaseRef={phaseRef} progRef={progRef} />
-      <DogCart path="/assets/3D/lia.glb"  scale={0.36} startT={0.50}
+      <DogCart path={assetUrl('/assets/3D/lia.glb')}  scale={0.36} startT={0.50}
         curve={curve} phaseRef={phaseRef} progRef={progRef} />
     </group>
   );
 }
 
-useGLTF.preload('/assets/3D/tito.glb');
-useGLTF.preload('/assets/3D/lia.glb');
+useGLTF.preload(assetUrl('/assets/3D/tito.glb'));
+useGLTF.preload(assetUrl('/assets/3D/lia.glb'));

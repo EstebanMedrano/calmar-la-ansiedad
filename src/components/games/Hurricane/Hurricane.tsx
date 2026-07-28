@@ -2,10 +2,11 @@ import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Canvas } from '@react-three/fiber';
-import { Howl } from 'howler'; // ⭐ AÑADIDO: Importación para los audios
+import { Howl } from 'howler';
 import useIsMobile from '../../../hooks/useIsMobile';
 import { useAnxiety } from '../../context/AnxietyContext';
 import HurricaneScene from './HurricaneScene';
+import { assetUrl } from '../../../utils/assetUrl';
 import './Hurricane.scss';
 
 export type ThoughtType = {
@@ -53,12 +54,12 @@ export default function Hurricane() {
   // ⭐ INICIALIZACIÓN DE AUDIOS (Se ejecuta una sola vez al montar el componente)
   useEffect(() => {
     tornadoAudio.current = new Howl({
-      src: ['/assets/sounds/Tornado.mp3'],
+      src: [assetUrl('/assets/sounds/Tornado.mp3')],
       loop: true,      // El tornado suena en bucle mientras dure
       volume: 0.75,
     });
     fireworksAudio.current = new Howl({
-      src: ['/assets/sounds/Artificiales.mp3'],
+      src: [assetUrl('/assets/sounds/Artificiales.mp3')],
       loop: false,     // Suena una vez al explotar los pensamientos en el cielo
       volume: 0.85,
     });

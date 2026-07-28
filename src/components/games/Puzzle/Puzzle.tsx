@@ -8,18 +8,19 @@ import { useAnxiety } from '../../context/AnxietyContext';
 import { Howl } from 'howler';
 import * as THREE from 'three';
 import BedroomScene, { type BedroomSceneHandle } from './BedroomScene';
+import { assetUrl } from '../../../utils/assetUrl';
 import './Puzzle.scss';
 
 export type Phase = 'idle' | 'calling' | 'intro' | 'breaking' | 'puzzle' | 'complete' | 'helping';
 export type DogType = 'tito' | 'lia';
 
 const ALL_PUZZLES = [
-  { name: 'Tu refugio',       src: '/assets/img/refugio-webp/exterior-casa.webp',    message: '🏡 Este es tu lugar seguro' },
-  { name: 'Tulipanes',        src: '/assets/img/refugio-webp/jardin-tulipanes.webp', message: '🌷 Floreces con cada respiración' },
-  { name: 'Noche estrellada', src: '/assets/img/refugio-webp/noche-estrellas.webp',  message: '✨ El universo conspira a tu favor' },
-  { name: 'Patio',            src: '/assets/img/refugio-webp/patio-piscina.webp',    message: '🌊 Fluye con la calma del agua' },
-  { name: 'Fuente mágica',    src: '/assets/img/refugio-webp/fuente-colores.webp',   message: '🌈 La magia está en ti' },
-  { name: 'Interior',         src: '/assets/img/refugio-webp/interior-sala.webp',    message: '🛋️ Tu rincón de paz' },
+  { name: 'Tu refugio',       src: assetUrl('/assets/img/refugio-webp/exterior-casa.webp'),    message: '🏡 Este es tu lugar seguro' },
+  { name: 'Tulipanes',        src: assetUrl('/assets/img/refugio-webp/jardin-tulipanes.webp'), message: '🌷 Floreces con cada respiración' },
+  { name: 'Noche estrellada', src: assetUrl('/assets/img/refugio-webp/noche-estrellas.webp'),  message: '✨ El universo conspira a tu favor' },
+  { name: 'Patio',            src: assetUrl('/assets/img/refugio-webp/patio-piscina.webp'),    message: '🌊 Fluye con la calma del agua' },
+  { name: 'Fuente mágica',    src: assetUrl('/assets/img/refugio-webp/fuente-colores.webp'),   message: '🌈 La magia está en ti' },
+  { name: 'Interior',         src: assetUrl('/assets/img/refugio-webp/interior-sala.webp'),    message: '🛋️ Tu rincón de paz' },
 ];
 const TOTAL = 16;
 
@@ -100,8 +101,8 @@ export default function Puzzle() {
 
   useEffect(() => {
     sfx.current = {
-      bark:    new Howl({ src: ['/assets/sounds/lia-bark.mp3'],     volume: 0.32 }),
-      success: new Howl({ src: ['/assets/sounds/magia-brillo.mp3'], volume: 0.28 }),
+      bark:    new Howl({ src: [assetUrl('/assets/sounds/lia-bark.mp3')],     volume: 0.32 }),
+      success: new Howl({ src: [assetUrl('/assets/sounds/magia-brillo.mp3')], volume: 0.28 }),
     };
     return () => {
       Object.values(sfx.current).forEach(s => s?.unload());

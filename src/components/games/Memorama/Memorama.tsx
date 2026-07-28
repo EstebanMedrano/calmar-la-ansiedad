@@ -12,6 +12,7 @@ import {
   PAIRS, PAIR_COLORS, IMG_PATHS, getGridConfig, getCardPos,
   STUN_DURATION, ATTACK_TIMEOUT, BLINK_DURATION,
 } from './positions';
+import { assetUrl } from '../../../utils/assetUrl';
 import './Memorama.scss';
 
 // ⭐ BARRERA DE SEGURIDAD: Atrapa cualquier error dentro del Canvas y evita la pantalla azul
@@ -100,7 +101,7 @@ export default function Memorama() {
   const navigate = useNavigate();
   const { reduceLevel } = useAnxiety();
   const isMobile = useIsMobile();
-  const texturesReady = useImagePreload(IMG_PATHS);
+  const texturesReady = useImagePreload(IMG_PATHS.map(p => assetUrl(p)));
 
   const [introStage, setIntroStage] = useState<IntroStage>('beach');
   const [isPlaying, setIsPlaying] = useState(false);
@@ -398,7 +399,7 @@ export default function Memorama() {
               )}
             </div>
             <img
-              src={`/assets/img/memorama/${pairReveal.pairId + 1}.png`}
+              src={assetUrl(`/assets/img/memorama/${pairReveal.pairId + 1}.png`)}
               alt="Par encontrado"
               className="mem-reveal-img"
               loading="eager"

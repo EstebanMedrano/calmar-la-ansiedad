@@ -4,8 +4,9 @@ import { Text } from '@react-three/drei';
 import { Howl } from 'howler';
 import * as THREE from 'three';
 import type { HurricaneStage } from './Hurricane';
+import { assetUrl } from '../../../utils/assetUrl';
 
-const barkHowl = new Howl({ src: ['/assets/sounds/lia-bark.mp3'], volume: 0.55 });
+const barkHowl = new Howl({ src: [assetUrl('/assets/sounds/lia-bark.mp3')], volume: 0.55 });
 
 interface ThoughtProps {
   id: number;

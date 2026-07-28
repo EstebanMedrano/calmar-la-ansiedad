@@ -14,6 +14,7 @@ import useIsMobile from '../../../hooks/useIsMobile';
 import useReducedMotion from '../../../hooks/useReducedMotion';
 import type { BirthdayStage } from './timings';
 import { T, CANDLE_COUNT, candlesRisingDuration } from './timings';
+import { assetUrl } from '../../../utils/assetUrl';
 import './Birthday.scss';
 
 export default function Birthday() {
@@ -101,7 +102,7 @@ export default function Birthday() {
   const start = useCallback(() => {
     if (stage !== 'idle') return;
 
-    barkRef.current = new Howl({ src: ['/assets/sounds/lia-bark.mp3'], volume: 0.6 });
+    barkRef.current = new Howl({ src: [assetUrl('/assets/sounds/lia-bark.mp3')], volume: 0.6 });
 
     setStage('intro');
     addT(() => {
@@ -136,7 +137,7 @@ export default function Birthday() {
 
     setBlowLevel(1);
     setStage('candlesOut');
-    fireworksRef.current = new Howl({ src: ['/assets/sounds/Artificiales.mp3'], volume: 0.35 });
+    fireworksRef.current = new Howl({ src: [assetUrl('/assets/sounds/Artificiales.mp3')], volume: 0.35 });
     fireworksRef.current.play();
 
     runSeconds(T.candlesOut, setOutElapsed, () => {

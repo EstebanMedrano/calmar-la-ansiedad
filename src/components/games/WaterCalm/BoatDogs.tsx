@@ -5,6 +5,7 @@ import { Howl } from 'howler';
 import * as THREE from 'three';
 import type { Group } from 'three';
 import { LAKE_Y, LAKE_Z_CENTER } from './Lake';
+import { assetUrl } from '../../../utils/assetUrl';
 
 const TITO_INIT: [number,number,number] = [ 8, LAKE_Y, LAKE_Z_CENTER + 4];
 const LIA_INIT:  [number,number,number] = [-6, LAKE_Y, LAKE_Z_CENTER - 4];
@@ -46,7 +47,7 @@ function BoatDog({ path, initPos, dogScale, boatColor, target, speedMul, side, a
   const { actions } = useAnimations(animations, groupRef);
   const yOffset     = useRef(0);
   
-  const barkSound = useMemo(() => new Howl({ src: ['/assets/sounds/lia-bark.mp3'], volume: 0.3 }), []);
+  const barkSound = useMemo(() => new Howl({ src: [assetUrl('/assets/sounds/lia-bark.mp3')], volume: 0.3 }), []);
   const lastBarkTime = useRef(0);
   const caughtRef = useRef(false);
 
@@ -204,7 +205,7 @@ export default function BoatDogs({ laserTarget, active, isFiring, onCatch, winni
   return (
     <group visible={active || !!winningDog}>
       <BoatDog
-        path="/assets/3D/tito.glb"
+        path={assetUrl('/assets/3D/tito.glb')}
         initPos={TITO_INIT}
         dogScale={TITO_SCALE}
         boatColor="#7a4a20"
@@ -218,7 +219,7 @@ export default function BoatDogs({ laserTarget, active, isFiring, onCatch, winni
         onJumpComplete={onJumpComplete}
       />
       <BoatDog
-        path="/assets/3D/lia.glb"
+        path={assetUrl('/assets/3D/lia.glb')}
         initPos={LIA_INIT}
         dogScale={LIA_SCALE}
         boatColor="#5a3518"
@@ -235,5 +236,5 @@ export default function BoatDogs({ laserTarget, active, isFiring, onCatch, winni
   );
 }
 
-useGLTF.preload('/assets/3D/tito.glb');
-useGLTF.preload('/assets/3D/lia.glb');
+useGLTF.preload(assetUrl('/assets/3D/tito.glb'));
+useGLTF.preload(assetUrl('/assets/3D/lia.glb'));

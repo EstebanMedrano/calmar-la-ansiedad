@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import type { Group } from 'three';
+import { assetUrl } from '../../../utils/assetUrl';
 
 interface TulipsProps {
   count?: number;
@@ -23,7 +24,7 @@ interface TulipsProps {
  * orden de dibujado entre flores que se solapan.
  */
 export default function Tulips({ count = 16, radius = 2.4, dimFactor = 0 }: TulipsProps) {
-  const texture = useTexture('/assets/img/objetos/tulipan2.png');
+  const texture = useTexture(assetUrl('/assets/img/objetos/tulipan2.png'));
   const groupRef = useRef<Group>(null);
   const stemRefs = useRef<(Group | null)[]>([]);
 

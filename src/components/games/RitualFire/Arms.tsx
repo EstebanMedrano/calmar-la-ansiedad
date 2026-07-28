@@ -1,11 +1,12 @@
-import { useRef, useEffect } from 'react'; // <--- ¡AÑADIDO useEffect!
+import { useRef, useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
+import { assetUrl } from '../../../utils/assetUrl';
 
 export default function Arms() {
   const { camera } = useThree();
-  const { scene }  = useGLTF('/assets/3D/arms.glb');
+  const { scene }  = useGLTF(assetUrl('/assets/3D/arms.glb'));
   const groupRef   = useRef<THREE.Group>(null);
 
   useEffect(() => {

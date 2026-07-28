@@ -1,5 +1,7 @@
+import { assetUrl } from '../../../utils/assetUrl';
+
 export const PAIRS = 12;
-export const IMG_PATHS = Array.from({ length: 12 }, (_, i) => `/assets/img/memorama/${i + 1}.png`);
+export const IMG_PATHS = Array.from({ length: 12 }, (_, i) => assetUrl(`/assets/img/memorama/${i + 1}.png`));
 
 /** Tamaño de una carta sin escalar. Debe coincidir con CW/CH de Card3D. */
 export const CARD_W = 0.95;

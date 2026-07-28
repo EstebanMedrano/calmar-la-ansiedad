@@ -4,6 +4,7 @@ import { useGLTF, useAnimations } from '@react-three/drei';
 import { Howl } from 'howler';
 import * as THREE from 'three';
 import type { Group } from 'three';
+import { assetUrl } from '../../../utils/assetUrl';
 
 const TITO_BASE: [number, number, number] = [ 1.1, 0, 1.6];
 const LIA_BASE:  [number, number, number] = [-1.3, 0, 1.0];
@@ -15,7 +16,7 @@ type DogBehavior = 'idle' | 'curious' | 'chasing' | 'fleeing' | 'fetch' | 'retur
 
 let _barkHowl: Howl | null = null;
 function bark() {
-  if (!_barkHowl) _barkHowl = new Howl({ src: ['/assets/sounds/lia-bark.mp3'], volume: 0.65 });
+  if (!_barkHowl) _barkHowl = new Howl({ src: [assetUrl('/assets/sounds/lia-bark.mp3')], volume: 0.65 });
   if (_barkHowl.playing()) _barkHowl.stop();
   _barkHowl.play();
 }
@@ -299,11 +300,11 @@ export default function DogCompanions({ throwActive, stickTarget, onThrowComplet
 
   return (
     <group>
-      <Dog path="/assets/3D/tito.glb" basePos={TITO_BASE} scale={TITO_SCALE} bobOffset={0}
+      <Dog path={assetUrl('/assets/3D/tito.glb')} basePos={TITO_BASE} scale={TITO_SCALE} bobOffset={0}
         fetchActive={fetchingDog === 'tito'} stickTarget={stickTarget}
         posExport={titoPos} otherPos={liaPos}
         onPickedUp={handlePickedUp} onFetchComplete={handleFetchDone} />
-      <Dog path="/assets/3D/lia.glb"  basePos={LIA_BASE}  scale={LIA_SCALE}  bobOffset={1.8}
+      <Dog path={assetUrl('/assets/3D/lia.glb')}  basePos={LIA_BASE}  scale={LIA_SCALE}  bobOffset={1.8}
         fetchActive={fetchingDog === 'lia'}  stickTarget={stickTarget}
         posExport={liaPos} otherPos={titoPos}
         onPickedUp={handlePickedUp} onFetchComplete={handleFetchDone} />
@@ -313,5 +314,5 @@ export default function DogCompanions({ throwActive, stickTarget, onThrowComplet
   );
 }
 
-useGLTF.preload('/assets/3D/tito.glb');
-useGLTF.preload('/assets/3D/lia.glb');
+useGLTF.preload(assetUrl('/assets/3D/tito.glb'));
+useGLTF.preload(assetUrl('/assets/3D/lia.glb'));

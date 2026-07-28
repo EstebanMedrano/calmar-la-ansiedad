@@ -1,4 +1,5 @@
 import { Howl } from 'howler';
+import { assetUrl } from '../utils/assetUrl';
 
 /**
  * Música ambiente compartida por toda la app.
@@ -17,7 +18,7 @@ import { Howl } from 'howler';
  */
 
 const STORAGE_KEY = 'lu_music_enabled';
-const SRC = '/assets/sounds/ambient-432hz.mp3';
+const SRC = assetUrl('/assets/sounds/ambient-432hz.mp3');
 const VOLUME = 0.2;
 
 let howl: Howl | null = null;

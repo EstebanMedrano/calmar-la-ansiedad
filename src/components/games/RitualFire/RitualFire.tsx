@@ -16,6 +16,7 @@ import Comet from './Comet';
 import CustomStars from './CustomStars';
 import DogCompanions from './DogCompanions';
 import { useAnxiety } from '../../context/AnxietyContext';
+import { assetUrl } from '../../../utils/assetUrl';
 import './RitualFire.scss';
 
 const BASE_FOV             = 58;
@@ -174,7 +175,7 @@ export default function RitualFire() {
   useEffect(() => { if (stage === 'writing') captureRef.current?.focus(); }, [stage]);
 
   useEffect(() => {
-    const s = new Howl({ src: ['/assets/sounds/fire-crackling.mp3'], loop: true, volume: 0.28 });
+    const s = new Howl({ src: [assetUrl('/assets/sounds/fire-crackling.mp3')], loop: true, volume: 0.28 });
     s.play();
     return () => { s.stop(); s.unload(); };
   }, []);

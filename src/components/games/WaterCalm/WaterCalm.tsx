@@ -12,6 +12,7 @@ import LaserPointer from './LaserPointer';
 import BoatDogs from './BoatDogs';
 import CustomStars from '../RitualFire/CustomStars';
 import { useAnxiety } from '../../context/AnxietyContext';
+import { assetUrl } from '../../../utils/assetUrl';
 import './WaterCalm.scss';
 
 export const LASER_COLORS = [
@@ -141,7 +142,7 @@ export default function WaterCalm() {
 
   const waterSoundRef = useRef<Howl | null>(null);
   useEffect(() => {
-    waterSoundRef.current = new Howl({ src: ['/assets/sounds/water-drop.mp3'], loop: true, volume: 0.22 });
+    waterSoundRef.current = new Howl({ src: [assetUrl('/assets/sounds/water-drop.mp3')], loop: true, volume: 0.22 });
     return () => { waterSoundRef.current?.unload(); };
   }, []);
 

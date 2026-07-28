@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { useGLTF, useAnimations } from '@react-three/drei';
 import * as THREE from 'three';
 import type { Group } from 'three';
+import { assetUrl } from '../utils/assetUrl';
 
-export const TITO_PATH = '/assets/3D/tito.glb';
-export const LIA_PATH = '/assets/3D/lia.glb';
+export const TITO_PATH = assetUrl('/assets/3D/tito.glb');
+export const LIA_PATH = assetUrl('/assets/3D/lia.glb');
 
 interface UseDogModelOptions {
   /** Reproduce automáticamente el primer clip de animación. Por defecto true. */

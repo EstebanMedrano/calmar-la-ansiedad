@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import type { Group } from 'three';
 import type { GamePhase } from './ReverseText';
 import { TITO_REST, TITO_HIT, TITO_BACK, LIA_REST, LIA_BTN, WORD_POS } from './positions';
+import { assetUrl } from '../../../utils/assetUrl';
 
 // ── Stun Rings ──────────────────────────────────────────────────────────────
 function StunRings({ hostPos }: { hostPos: React.MutableRefObject<THREE.Vector3> }) {
@@ -231,11 +232,11 @@ function Dog({ path, scale, restPos, phase, role, dropletsRef }: DogProps) {
 export default function DogActors({ phase, dropletsRef }: { phase: GamePhase; dropletsRef: React.MutableRefObject<THREE.Vector3[]> }) {
   return (
     <>
-      <Dog path="/assets/3D/tito.glb" scale={0.50} restPos={TITO_REST} phase={phase} role="tito" dropletsRef={dropletsRef} />
-      <Dog path="/assets/3D/lia.glb"  scale={0.46} restPos={LIA_REST} phase={phase} role="lia" dropletsRef={dropletsRef} />
+      <Dog path={assetUrl('/assets/3D/tito.glb')} scale={0.50} restPos={TITO_REST} phase={phase} role="tito" dropletsRef={dropletsRef} />
+      <Dog path={assetUrl('/assets/3D/lia.glb')}  scale={0.46} restPos={LIA_REST} phase={phase} role="lia" dropletsRef={dropletsRef} />
     </>
   );
 }
 
-useGLTF.preload('/assets/3D/tito.glb');
-useGLTF.preload('/assets/3D/lia.glb');
+useGLTF.preload(assetUrl('/assets/3D/tito.glb'));
+useGLTF.preload(assetUrl('/assets/3D/lia.glb'));

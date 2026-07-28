@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { NotifPayload } from './messages';
 import { dueMilestones, markFired, msUntilBirthday } from './scheduler';
 import { BIRTHDAY_NOTIFICATION } from './messages';
+import { assetUrl } from '../utils/assetUrl';
 
 const ASKED_KEY = 'lu_notif_asked';
 
@@ -47,8 +48,8 @@ export function useNotifications(): UseNotificationsResult {
 
     const options: NotificationOptions = {
       body: payload.body,
-      icon: '/assets/icons/icon-192.png',
-      badge: '/assets/icons/icon-96.png',
+      icon: assetUrl('/assets/icons/icon-192.png'),
+      badge: assetUrl('/assets/icons/icon-96.png'),
       // Con la misma etiqueta, un aviso nuevo reemplaza al anterior en vez
       // de apilarse: nadie quiere ver cinco recordatorios seguidos.
       tag: payload.id,

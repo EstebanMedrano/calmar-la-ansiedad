@@ -1,15 +1,16 @@
-import { useRef, useEffect, useMemo } from 'react'; // <-- AÑADIDO useMemo
+import { useRef, useEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RoundedBox, useGLTF, useAnimations } from '@react-three/drei';
 import { Howl } from 'howler';
 import * as THREE from 'three';
 import type { DogType } from './Puzzle';
+import { assetUrl } from '../../../utils/assetUrl';
 
 export const USE_GLTF_MODELS = true;
 
 const PATHS: Record<DogType, string> = {
-  tito: '/assets/3D/tito.glb',
-  lia:  '/assets/3D/lia.glb',
+  tito: assetUrl('/assets/3D/tito.glb'),
+  lia:  assetUrl('/assets/3D/lia.glb'),
 };
 
 const BASE_SCALE: Record<DogType, number> = {
@@ -61,7 +62,7 @@ function GLTFDog({ dogType, callId, doorPos, framePos, watchPos, onImpact, onTim
   
   const barkSound = useMemo(() => {
     return new Howl({
-      src: ['/assets/sounds/lia-bark.mp3'],
+      src: [assetUrl('/assets/sounds/lia-bark.mp3')],
       volume: 0.3,
     });
   }, []);
@@ -277,7 +278,7 @@ function ProceduralDog({ dogType, callId, doorPos, framePos, watchPos, onImpact,
   
   const barkSound = useMemo(() => {
     return new Howl({
-      src: ['/assets/sounds/lia-bark.mp3'],
+      src: [assetUrl('/assets/sounds/lia-bark.mp3')],
       volume: 0.3,
     });
   }, []);

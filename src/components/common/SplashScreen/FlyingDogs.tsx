@@ -3,9 +3,10 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { useGLTF, useAnimations } from '@react-three/drei';
 import * as THREE from 'three';
 import { Howl } from 'howler';
+import { assetUrl } from '../../../utils/assetUrl';
 
-useGLTF.preload('/assets/3D/tito.glb');
-useGLTF.preload('/assets/3D/lia.glb');
+useGLTF.preload(assetUrl('/assets/3D/tito.glb'));
+useGLTF.preload(assetUrl('/assets/3D/lia.glb'));
 
 // ── Perro individual ─────────────────────────────────────
 interface DogModelProps {
@@ -88,7 +89,7 @@ export default function FlyingDogs() {
   useEffect(() => {
     try {
       barkSound.current = new Howl({
-        src: ['/assets/sounds/lia-bark.mp3'],
+        src: [assetUrl('/assets/sounds/lia-bark.mp3')],
         volume: 0.5,
       });
     } catch {
@@ -133,9 +134,9 @@ export default function FlyingDogs() {
       <Cloud />
       <Suspense fallback={null}>
         {/* Tito: derecha de la nube */}
-        <DogModel glbPath="/assets/3D/tito.glb" position={[ 0.19, 0.20, 0]} angleRef={angleRef} />
+        <DogModel glbPath={assetUrl('/assets/3D/tito.glb')} position={[ 0.19, 0.20, 0]} angleRef={angleRef} />
         {/* Lia: izquierda de la nube */}
-        <DogModel glbPath="/assets/3D/lia.glb"  position={[-0.19, 0.20, 0]} angleRef={angleRef} />
+        <DogModel glbPath={assetUrl('/assets/3D/lia.glb')}  position={[-0.19, 0.20, 0]} angleRef={angleRef} />
       </Suspense>
     </group>
   );
