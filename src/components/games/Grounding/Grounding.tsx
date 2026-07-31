@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAnxiety } from '../../context/AnxietyContext';
 import GroundingScene from './GroundingScene';
 import type { OrbData } from './SenseOrbs';
-import useIsMobile from '../../../hooks/useIsMobile';
+import { useCanvasQuality } from '../../three/quality';
 import './Grounding.scss';
 
 interface Step {
@@ -53,7 +53,8 @@ const ACCENT_COLORS = ['#10b981', '#06b6d4', '#8b5cf6', '#f59e0b', '#ef4444'];
 export default function Grounding() {
   const navigate = useNavigate();
   const { reduceLevel } = useAnxiety();
-  const isMobile = useIsMobile();
+  const quality  = useCanvasQuality();
+  const isMobile = quality.isMobile;
 
   const [items, setItems] = useState<string[][]>(() => STEPS.map(() => []));
   const [stepIndex, setStepIndex] = useState(0);
@@ -133,7 +134,9 @@ export default function Grounding() {
     <div className="grounding">
       <Canvas
         className="grounding__canvas"
-        dpr={isMobile ? [1, 1.5] : [1, 2]}
+        dpr={quality.dpr}
+        gl={quality.gl}
+        performance={quality.performance}
         camera={{ position: [0, 1.65, 6.2], fov: 50, near: 0.1, far: 120 }}
       >
         {/* El Suspense va por dentro y el composer por fuera: si la carga de

@@ -12,6 +12,7 @@ import LaserPointer from './LaserPointer';
 import BoatDogs from './BoatDogs';
 import CustomStars from '../RitualFire/CustomStars';
 import { useAnxiety } from '../../context/AnxietyContext';
+import { useCanvasQuality } from '../../three/quality';
 import { assetUrl } from '../../../utils/assetUrl';
 import './WaterCalm.scss';
 
@@ -63,8 +64,14 @@ function ColorController({
 
 // ─── Contador 3D en el bosque ─────────────────────────────────────────────
 function CatchCounter({ count }: { count: number }) {
+  // El rótulo vive en el mundo 3D, así que su tamaño no depende del CSS: en un
+  // móvil vertical el campo horizontal se encoge y "Capturas: 0/10" se salía
+  // por la derecha de la pantalla. Se encoge con la proporción para que quepa.
+  const aspect = useThree(s => s.size.width / s.size.height);
+  const scale = Math.min(1, Math.max(0.42, aspect / 0.72));
+
   return (
-    <group position={[0, LAKE_Y + 3.5, LAKE_Z_CENTER - 14]}>
+    <group position={[0, LAKE_Y + 3.5, LAKE_Z_CENTER - 14]} scale={scale}>
       <Text
         fontSize={1.6}
         color="#f0f8ff"
@@ -126,6 +133,7 @@ function CameraRig({ stage }: { stage: WaterStage }) {
 export default function WaterCalm() {
   const navigate        = useNavigate();
   const { reduceLevel } = useAnxiety();
+  const quality         = useCanvasQuality();
 
   const [stage,        setStage]        = useState<WaterStage>('approaching');
   const [colorIdx,     setColorIdx]     = useState(0);
@@ -223,7 +231,9 @@ export default function WaterCalm() {
 
       <Canvas
         className="watercalm-canvas"
-        dpr={[1, 1.5]}
+        dpr={quality.dpr}
+        gl={quality.gl}
+        performance={quality.performance}
         camera={{ position: CAMERA_POSES.approaching.pos, fov: BASE_FOV, near: 0.1, far: 130 }}
         onPointerDown={handleFireStart}
         onPointerUp={handleFireEnd}
@@ -236,15 +246,20 @@ export default function WaterCalm() {
 
         <CustomStars />
 
+        {/* Escenario y lago son geometría propia: se dibujan ya. Solo BoatDogs
+            carga un .glb, así que es el único que necesita barrera; antes
+            compartían una y el lago no aparecía hasta tener los dos perros. */}
+        <CliffScene />
+        <Lake ref={lakeRef} laserColorRef={laserColorRef} />
+        <LaserPointer
+          visible={stage === 'holdingLaser' || stage === 'shooting'}
+          firing={isFiring && !gameOver}
+          laserColorRef={laserColorRef}
+          onHit={handleHit}
+        />
+        <CatchCounter count={catchCount} />
+
         <Suspense fallback={null}>
-          <CliffScene />
-          <Lake ref={lakeRef} laserColorRef={laserColorRef} />
-          <LaserPointer
-            visible={stage === 'holdingLaser' || stage === 'shooting'}
-            firing={isFiring && !gameOver}
-            laserColorRef={laserColorRef}
-            onHit={handleHit}
-          />
           <BoatDogs
             laserTarget={laserTargetRef}
             active={stage === 'shooting' && !gameOver}
@@ -253,7 +268,6 @@ export default function WaterCalm() {
             winningDog={winningDog}
             onJumpComplete={handleJumpComplete}
           />
-          <CatchCounter count={catchCount} />
         </Suspense>
 
         <ColorController colorIdx={colorIdx} laserColorRef={laserColorRef} />

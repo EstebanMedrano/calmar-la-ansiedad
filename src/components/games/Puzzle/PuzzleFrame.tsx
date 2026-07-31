@@ -23,7 +23,14 @@ interface PuzzleFrameProps {
   onComplete: () => void;
 }
 
-function buildFloatPositions(breakTick: number): { x: number; y: number }[] {
+/**
+ * @param spread Estrecha las columnas laterales en pantallas verticales. Una
+ *   cámara perspectiva conserva el campo vertical, así que en un móvil de pie
+ *   el ancho visible se encoge y las piezas de la columna exterior quedaban
+ *   fuera de pantalla: se veían al fondo del cuadro pero no había forma de
+ *   arrastrarlas.
+ */
+function buildFloatPositions(breakTick: number, spread: number): { x: number; y: number }[] {
   void breakTick;
   const n    = GRID * GRID;
   const half = n / 2;
@@ -31,13 +38,13 @@ function buildFloatPositions(breakTick: number): { x: number; y: number }[] {
 
   for (let i = 0; i < half; i++) {
     pts.push({
-      x: -2.2 + (i % 2) * 0.72 + (Math.random() - 0.5) * 0.16,
+      x: (-2.2 + (i % 2) * 0.72 + (Math.random() - 0.5) * 0.16) * spread,
       y:  0.28 + Math.floor(i / 2) * 0.50 + (Math.random() - 0.5) * 0.12,
     });
   }
   for (let i = 0; i < half; i++) {
     pts.push({
-      x: 1.8 + (i % 2) * 0.72 + (Math.random() - 0.5) * 0.16,
+      x: (1.8 + (i % 2) * 0.72 + (Math.random() - 0.5) * 0.16) * spread,
       y: 0.28 + Math.floor(i / 2) * 0.50 + (Math.random() - 0.5) * 0.12,
     });
   }
@@ -63,8 +70,11 @@ const PuzzleFrame = forwardRef<PuzzleFrameHandle, PuzzleFrameProps>(({
   const snapCountRef = useRef(0);
   const [breakTick, setBreakTick] = useState(0);
 
+  const canvasSize = useThree(s => s.size);
+  const spread = canvasSize.width / canvasSize.height < 0.85 ? 0.9 : 1;
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const floatPositions = useMemo(() => buildFloatPositions(breakTick), [breakTick]);
+  const floatPositions = useMemo(() => buildFloatPositions(breakTick, spread), [breakTick, spread]);
 
   useEffect(() => {
     if (phase !== 'breaking') return;

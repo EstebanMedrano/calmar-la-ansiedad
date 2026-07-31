@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Canvas } from '@react-three/fiber';
 import { Howl } from 'howler';
-import useIsMobile from '../../../hooks/useIsMobile';
+import { useCanvasQuality } from '../../three/quality';
 import { useAnxiety } from '../../context/AnxietyContext';
 import HurricaneScene from './HurricaneScene';
 import { assetUrl } from '../../../utils/assetUrl';
@@ -34,7 +34,8 @@ export const TARGET_DESTROYED = 10;
 export default function Hurricane() {
   const navigate = useNavigate();
   const { reduceLevel } = useAnxiety();
-  const isMobile = useIsMobile();
+  const quality  = useCanvasQuality(false);
+  const isMobile = quality.isMobile;
 
   const [stage, setStage] = useState<HurricaneStage>('intro');
   const [destroyedCount, setDestroyedCount] = useState(0);
@@ -133,7 +134,10 @@ export default function Hurricane() {
     <div className="hurricane-container">
       <button className="hurricane-back-btn" onClick={() => navigate('/games')}>← Volver</button>
 
-      <Canvas className="hurricane-canvas" dpr={[1, 1.5]}
+      <Canvas className="hurricane-canvas"
+        dpr={quality.dpr}
+        gl={quality.gl}
+        performance={quality.performance}
         camera={{ position: [0, 1.6, 3], fov: 75, near: 0.1, far: 400 }} shadows>
         <Suspense fallback={null}>
           <HurricaneScene stage={stage} isMobile={isMobile} onThoughtDestroyed={handleThoughtDestroyed} />

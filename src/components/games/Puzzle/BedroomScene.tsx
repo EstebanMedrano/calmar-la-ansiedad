@@ -18,6 +18,8 @@ interface Props {
   onTimeout: () => void;
   helpTarget: THREE.Vector3 | null;
   onHelpComplete: () => void;
+  /** Lado del mapa de sombras; en móvil basta con la mitad. */
+  shadowMapSize: number;
 }
 
 export interface BedroomSceneHandle {
@@ -25,8 +27,8 @@ export interface BedroomSceneHandle {
 }
 
 const BedroomScene = forwardRef<BedroomSceneHandle, Props>(({ 
-  phase, dogType, callId, texture, onImpact, onSettled, onSnap, onComplete, 
-  onTimeout, helpTarget, onHelpComplete 
+  phase, dogType, callId, texture, onImpact, onSettled, onSnap, onComplete,
+  onTimeout, helpTarget, onHelpComplete, shadowMapSize,
 }, ref) => {
   const dogPosRef = useRef(new THREE.Vector3());
   const puzzleFrameRef = useRef<PuzzleFrameHandle>(null);
@@ -42,7 +44,7 @@ const BedroomScene = forwardRef<BedroomSceneHandle, Props>(({
       <ambientLight intensity={0.8} color="#fff8ef" />
       <directionalLight
         position={[-2.5, 5.5, 1.5]} intensity={2.6} color="#fff5e0"
-        castShadow shadow-mapSize={[1024, 1024]}
+        castShadow shadow-mapSize={[shadowMapSize, shadowMapSize]}
         shadow-camera-left={-7} shadow-camera-right={7}
         shadow-camera-top={7}  shadow-camera-bottom={-7}
       />
@@ -173,14 +175,20 @@ const BedroomScene = forwardRef<BedroomSceneHandle, Props>(({
 
       <CameraRig phase={phase} dogPosRef={dogPosRef} />
 
-      <Dog3D
-        dogType={dogType} callId={callId}
-        doorPos={DOOR_POS} framePos={FRAME_CENTER} watchPos={WATCH_POS}
-        onImpact={onImpact} positionRef={dogPosRef}
-        onTimeout={onTimeout}
-        helpTarget={helpTarget}
-        onHelpArrived={onHelpComplete}
-      />
+      {/* Dog3D carga un .glb y suspende. Sin esta barrera propia, la suspensión
+          subía hasta el <Suspense> de Puzzle.tsx y se llevaba por delante toda
+          la habitación: el cuadro con la foto no aparecía hasta que el modelo
+          del perro terminaba de bajar. */}
+      <Suspense fallback={null}>
+        <Dog3D
+          dogType={dogType} callId={callId}
+          doorPos={DOOR_POS} framePos={FRAME_CENTER} watchPos={WATCH_POS}
+          onImpact={onImpact} positionRef={dogPosRef}
+          onTimeout={onTimeout}
+          helpTarget={helpTarget}
+          onHelpArrived={onHelpComplete}
+        />
+      </Suspense>
 
       <Suspense fallback={null}>
         <PuzzleFrame

@@ -10,7 +10,7 @@ import BlowControls from './BlowControls';
 import LetterText from '../../letter/LetterText';
 import { BIRTHDAY_MESSAGE, UI_TEXT } from '../../../content/messages';
 import { useBirthday } from '../../context/BirthdayContext';
-import useIsMobile from '../../../hooks/useIsMobile';
+import { useCanvasQuality } from '../../three/quality';
 import useReducedMotion from '../../../hooks/useReducedMotion';
 import type { BirthdayStage } from './timings';
 import { T, CANDLE_COUNT, candlesRisingDuration } from './timings';
@@ -19,7 +19,8 @@ import './Birthday.scss';
 
 export default function Birthday() {
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
+  const quality  = useCanvasQuality();
+  const isMobile = quality.isMobile;
   const reducedMotion = useReducedMotion();
   const { markGiftOpened } = useBirthday();
 
@@ -175,7 +176,9 @@ export default function Birthday() {
     <div className="bday">
       <Canvas
         className="bday__canvas"
-        dpr={isMobile ? [1, 1.5] : [1, 2]}
+        dpr={quality.dpr}
+        gl={quality.gl}
+        performance={quality.performance}
         camera={{ position: [0, 1.35, 4.2], fov: 55, near: 0.1, far: 140 }}
       >
         {/* La escena carga fuentes (el texto de la torta) y texturas (los

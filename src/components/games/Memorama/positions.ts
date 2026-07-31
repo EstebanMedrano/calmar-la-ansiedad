@@ -1,7 +1,9 @@
 import { assetUrl } from '../../../utils/assetUrl';
 
 export const PAIRS = 12;
-export const IMG_PATHS = Array.from({ length: 12 }, (_, i) => assetUrl(`/assets/img/memorama/${i + 1}.png`));
+// WebP y no PNG: los originales eran 1024² sin comprimir, 17 MB entre los doce
+// para unas cartas que en pantalla miden 200 px. En WebP son 520 kB en total.
+export const IMG_PATHS = Array.from({ length: 12 }, (_, i) => assetUrl(`/assets/img/memorama/${i + 1}.webp`));
 
 /** Tamaño de una carta sin escalar. Debe coincidir con CW/CH de Card3D. */
 export const CARD_W = 0.95;

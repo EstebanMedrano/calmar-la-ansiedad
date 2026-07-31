@@ -1,9 +1,31 @@
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
+import { copyFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+
+/**
+ * GitHub Pages no sabe nada de rutas de cliente: al entrar directamente en
+ * /calmar-la-ansiedad/game/puzzle busca ese archivo, no lo encuentra y sirve su
+ * propia página de error. Pero sí sirve el 404.html del sitio si existe, y como
+ * este es una copia exacta de index.html, React Router recoge la URL y muestra
+ * la pantalla correcta.
+ *
+ * (public/_redirects hace lo mismo, pero solo lo entiende Netlify.)
+ */
+function spaFallback(): Plugin {
+  return {
+    name: 'spa-404-fallback',
+    apply: 'build',
+    closeBundle() {
+      const dist = resolve(__dirname, 'dist')
+      copyFileSync(resolve(dist, 'index.html'), resolve(dist, '404.html'))
+    },
+  }
+}
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), spaFallback()],
   base: '/calmar-la-ansiedad/',
 
   server: {

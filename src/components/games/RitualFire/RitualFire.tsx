@@ -7,7 +7,7 @@ import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import { Howl } from 'howler';
 import * as THREE from 'three';
 import { portraitAdjust } from '../../three/responsive';
-import useIsMobile from '../../../hooks/useIsMobile';
+import { useCanvasQuality } from '../../three/quality';
 import Campfire from './Campfire';
 import ForestScene, { RIGHT_STUMP, STUMP_TOP_Y } from './ForestScene';
 import type { RitualStage } from './RitualActors';
@@ -152,7 +152,7 @@ function CameraRig({ stage }: { stage: RitualStage }) {
 export default function RitualFire() {
   const navigate       = useNavigate();
   const { reduceLevel } = useAnxiety();
-  const isMobile       = useIsMobile();
+  const quality        = useCanvasQuality();
 
   const [stage,        setStage]        = useState<RitualStage>('sitting');
   const [letterText,   setLetterText]   = useState('');
@@ -251,7 +251,9 @@ export default function RitualFire() {
       <Canvas
         className="ritual-canvas"
         style={{ cursor: aiming ? 'crosshair' : 'default' }}
-        dpr={[1, 1.5]}
+        dpr={quality.dpr}
+        gl={quality.gl}
+        performance={quality.performance}
         camera={{ position: CAMERA_POSES.seat.position, fov: BASE_FOV, near: 0.1, far: 120 }}
       >
         <color attach="background" args={['#1b2f57']} />
@@ -263,24 +265,32 @@ export default function RitualFire() {
             el bloom los reviente a blanco. */}
         <pointLight color="#ffb066" intensity={1.5} distance={9} decay={2} position={[0, 1.1, 0.8]} />
 
-        <CustomStars count={isMobile ? 2000 : 4500} />
+        <CustomStars count={Math.round(4500 * quality.detail)} />
+
+        {/* El bosque y la fogata son geometría pura: se dibujan de inmediato.
+            Antes compartían un único <Suspense> con los perros y los brazos,
+            que sí cargan .glb, así que el escenario entero se quedaba en negro
+            hasta que terminaba de bajar el último modelo. Cada actor lleva
+            ahora su propia barrera y aparece cuando está listo. */}
+        <ForestScene lettersOnDesk={lettersOnDesk} />
+        <Campfire boost={stage === 'burningFire'} />
+        <Comet active={showComet} />
 
         <Suspense fallback={null}>
-          <ForestScene lettersOnDesk={lettersOnDesk} />
-          <Campfire boost={stage === 'burningFire'} />
           <RitualActors
             stage={stage}
             letterText={letterText}
             savedLetters={savedLetters}
             burnThrow={burnThrow}
           />
-          {/* ✅ FIX: Se agregó stickTarget aquí */}
+        </Suspense>
+
+        <Suspense fallback={null}>
           <DogCompanions
             throwActive={throwActive}
             stickTarget={stickTarget}
             onThrowComplete={handleThrowComplete}
           />
-          <Comet active={showComet} />
         </Suspense>
 
         <ThrowAimer active={aiming} onAim={handleAim} />

@@ -8,6 +8,7 @@ import { useAnxiety } from '../../context/AnxietyContext';
 import { Howl } from 'howler';
 import * as THREE from 'three';
 import BedroomScene, { type BedroomSceneHandle } from './BedroomScene';
+import { useCanvasQuality } from '../../three/quality';
 import { assetUrl } from '../../../utils/assetUrl';
 import './Puzzle.scss';
 
@@ -38,39 +39,66 @@ function subtitleFor(phase: Phase, dog: DogType, placed: number): string {
   }
 }
 
-function useSynthSnap() {
+/**
+ * Sonidos sintetizados: el "clac" de encajar una pieza y el arpegio de victoria.
+ *
+ * El arpegio sustituye a magia-brillo.mp3, un archivo que se referenciaba pero
+ * que no existe en public/: cada partida acababa con un 404 y sin sonido.
+ * Generarlo con el oscilador cuesta cero bytes de descarga.
+ */
+function useSynthSfx() {
   const ctxRef = useRef<AudioContext | null>(null);
 
-  const play = useCallback(() => {
-    try {
-      if (!ctxRef.current || ctxRef.current.state === 'closed') {
-        ctxRef.current = new AudioContext();
-      }
-      const ctx = ctxRef.current;
-      if (ctx.state === 'suspended') ctx.resume();
-      const osc  = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(1100, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(340, ctx.currentTime + 0.08);
-      gain.gain.setValueAtTime(0.14, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.1);
-    } catch (e) { /* silencioso */ }
+  const ctx = useCallback(() => {
+    if (!ctxRef.current || ctxRef.current.state === 'closed') {
+      ctxRef.current = new AudioContext();
+    }
+    if (ctxRef.current.state === 'suspended') ctxRef.current.resume();
+    return ctxRef.current;
   }, []);
+
+  const tone = useCallback((
+    c: AudioContext, type: OscillatorType,
+    from: number, to: number, at: number, dur: number, vol: number,
+  ) => {
+    const osc  = c.createOscillator();
+    const gain = c.createGain();
+    osc.connect(gain);
+    gain.connect(c.destination);
+    osc.type = type;
+    osc.frequency.setValueAtTime(from, c.currentTime + at);
+    osc.frequency.exponentialRampToValueAtTime(to, c.currentTime + at + dur);
+    gain.gain.setValueAtTime(vol, c.currentTime + at);
+    gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + at + dur);
+    osc.start(c.currentTime + at);
+    osc.stop(c.currentTime + at + dur);
+  }, []);
+
+  const snap = useCallback(() => {
+    try { tone(ctx(), 'triangle', 1100, 340, 0, 0.1, 0.14); }
+    catch { /* sin audio disponible */ }
+  }, [ctx, tone]);
+
+  const success = useCallback(() => {
+    try {
+      const c = ctx();
+      // Do–Mi–Sol–Do: acorde mayor ascendente, se lee como "lo lograste".
+      [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
+        tone(c, 'sine', f, f * 1.002, i * 0.09, 0.55, 0.11);
+      });
+    } catch { /* sin audio disponible */ }
+  }, [ctx, tone]);
 
   useEffect(() => () => { ctxRef.current?.close(); }, []);
 
-  return play;
+  return { snap, success };
 }
 
 export default function Puzzle() {
   const navigate       = useNavigate();
   const { reduceLevel } = useAnxiety();
-  const playSnap       = useSynthSnap();
+  const sfxSynth       = useSynthSfx();
+  const quality        = useCanvasQuality();
 
   const puzzlesRef = useRef([...ALL_PUZZLES].sort(() => Math.random() - 0.5).slice(0, 3));
 
@@ -96,17 +124,17 @@ export default function Puzzle() {
     }
   }, [phase]);
 
-  const sfx    = useRef<{ bark?: Howl; success?: Howl }>({});
+  const sfx    = useRef<{ bark?: Howl }>({});
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(() => {
     sfx.current = {
-      bark:    new Howl({ src: [assetUrl('/assets/sounds/lia-bark.mp3')],     volume: 0.32 }),
-      success: new Howl({ src: [assetUrl('/assets/sounds/magia-brillo.mp3')], volume: 0.28 }),
+      bark: new Howl({ src: [assetUrl('/assets/sounds/lia-bark.mp3')], volume: 0.32 }),
     };
+    const pending = timers.current;
     return () => {
       Object.values(sfx.current).forEach(s => s?.unload());
-      timers.current.forEach(clearTimeout);
+      pending.forEach(clearTimeout);
     };
   }, []);
 
@@ -148,20 +176,20 @@ export default function Puzzle() {
 
   const handleSnap = useCallback((count: number) => {
     setPlaced(count);
-    playSnap();
+    sfxSynth.snap();
     if (count > 0 && count % 4 === 0 && count < TOTAL) {
       const msgs = ['¡Vas increíble! 🌟', '¡Sigue así! 💪', '¡Casi lo tienes! ✨'];
       showMsg(msgs[Math.floor(Math.random() * msgs.length)]);
     }
-  }, [showMsg, playSnap]);
+  }, [showMsg, sfxSynth]);
 
   const handleComplete = useCallback(() => {
     reduceLevel();
-    sfx.current.success?.play();
+    sfxSynth.success();
     setCompleted(true);
     setPhase('complete');
     showMsg(puzzlesRef.current[puzzleIdx]?.message ?? '', 5000);
-  }, [reduceLevel, puzzleIdx, showMsg]);
+  }, [reduceLevel, puzzleIdx, showMsg, sfxSynth]);
 
   const nextPuzzle = () => {
     if (puzzleIdx >= puzzlesRef.current.length - 1) { setAllDone(true); return; }
@@ -195,13 +223,15 @@ export default function Puzzle() {
         <Canvas
           shadows
           camera={{ position: [0, 1.6, 4.6], fov: 58, near: 0.1, far: 60 }}
-          gl={{ antialias: true }}
-          dpr={[1, 2]}
+          gl={quality.gl}
+          dpr={quality.dpr}
+          performance={quality.performance}
           style={{ width: '100%', height: '100%', touchAction: 'none' }}
         >
           <Suspense fallback={null}>
             <BedroomScene
               ref={puzzleFrameRef}
+              shadowMapSize={quality.shadowMapSize}
               phase={phase} dogType={dogType} callId={callId}
               texture={cur.src}
               onImpact={handleImpact} onSettled={handleSettled}

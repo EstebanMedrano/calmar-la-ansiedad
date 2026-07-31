@@ -1,5 +1,5 @@
 import { Logger } from '../../utils/logger';
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 
 interface AnxietyState {
@@ -32,6 +32,18 @@ export function AnxietyProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('calma_last_level', newLevel.toString());
       return newLevel;
     });
+  }, []);
+
+  // Cierre de la visita. 'pagehide' y no 'beforeunload': en iOS y en Android
+  // el navegador puede matar la pestaña sin disparar beforeunload nunca, y ese
+  // es justo el caso en el que más interesa saber cuánto duró la sesión.
+  const levelRef = useRef(level);
+  useEffect(() => { levelRef.current = level; }, [level]);
+
+  useEffect(() => {
+    const onHide = () => Logger.logVisitEnd(levelRef.current);
+    window.addEventListener('pagehide', onHide);
+    return () => window.removeEventListener('pagehide', onHide);
   }, []);
 
   return (

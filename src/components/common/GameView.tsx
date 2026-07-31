@@ -1,6 +1,7 @@
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect, useRef } from 'react';
 import { useBirthday } from '../context/BirthdayContext';
+import { Logger } from '../../utils/logger';
 import GameErrorBoundary from './GameErrorBoundary';
 
 const ReverseText = lazy(() => import('../games/ReverseText/ReverseText'));
@@ -37,10 +38,43 @@ const FULLSCREEN_GAMES = new Set([
   'water', 'ritual', 'puzzle', 'carta', 'birthday',
 ]);
 
+/**
+ * Nombres para el informe. En la hoja se lee mucho mejor "Rompecabezas" que
+ * el identificador de la ruta.
+ */
+const GAME_LABELS: Record<string, string> = {
+  reverse: 'Texto al Revés',
+  breathing: 'Respiración 4-7-8',
+  grounding: 'Grounding 5-4-3-2-1',
+  memory: 'Memorama Calmante',
+  hurricane: 'Huracán de Pensamientos',
+  water: 'Lago de Calma',
+  ritual: 'Ritual de Soltar',
+  puzzle: 'Rompecabezas',
+  carta: 'Una carta para ti',
+  birthday: 'Tu regalo',
+};
+
 export default function GameView() {
   const { gameName } = useParams<{ gameName: string }>();
   const navigate = useNavigate();
   const { isUnlocked } = useBirthday();
+  const startedAt = useRef(0);
+
+  const known = gameName ? GAME_LABELS[gameName] : undefined;
+
+  // Registra cuánto tiempo pasó en cada juego. Es lo que permite ver en la
+  // hoja si algo se usó de verdad o se abrió y se cerró a los tres segundos.
+  useEffect(() => {
+    if (!known) return;
+    startedAt.current = Date.now();
+    Logger.logGameStart(known);
+    return () => {
+      const ms = Date.now() - startedAt.current;
+      // Menos de cinco segundos es un rebote, no una partida.
+      Logger.logGameEnd(known, ms, ms > 5000);
+    };
+  }, [known]);
 
   // El candado del carrusel no basta: sin esto se llega al regalo
   // escribiendo /game/birthday en la barra de direcciones.

@@ -6,6 +6,7 @@ import { Canvas } from '@react-three/fiber';
 import { useAnxiety } from '../../context/AnxietyContext';
 import BreathingScene from './BreathingScene';
 import './Breathing.scss';
+import { useCanvasQuality } from '../../three/quality';
 
 const PHASES = [
   { name:'Inhala', duration:4, hint:'Llena tus pulmones lentamente...', color:'#10b981' },
@@ -17,6 +18,7 @@ const CYCLES = 3;
 const MemoizedBreathingScene = memo(BreathingScene);
 
 export default function Breathing() {
+  const quality = useCanvasQuality(false);
   const navigate = useNavigate();
   const { reduceLevel } = useAnxiety();
 
@@ -80,7 +82,8 @@ export default function Breathing() {
     <div className="breathing-wrap">
       <button className="breathing-back" onClick={() => { reset(); navigate('/games'); }}>← Volver</button>
 
-      <Canvas className="breathing-canvas" dpr={[1, 1.5]}>
+      <Canvas className="breathing-canvas"
+        dpr={quality.dpr} gl={quality.gl} performance={quality.performance}>
         <Suspense fallback={null}>
           {/* ⭐ Pasamos correctamente los Refs, no hay error de TypeScript aquí */}
           <MemoizedBreathingScene phaseRef={phaseRef} progRef={progRef} />

@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { useAnxiety } from '../../context/AnxietyContext';
 import ReverseScene from './ReverseScene';
 import './ReverseText.scss';
+import { useCanvasQuality } from '../../three/quality';
 
 export type GamePhase =
   | 'idle' | 'fail_run' | 'fail_bounce' | 'fail_stun'
@@ -34,6 +35,7 @@ const T = {
 } as const;
 
 export default function ReverseText() {
+  const quality = useCanvasQuality(false);
   const navigate = useNavigate();
   const { reduceLevel } = useAnxiety();
 
@@ -122,7 +124,10 @@ export default function ReverseText() {
     <div className="reverse-wrap">
       <button className="reverse-back" onClick={() => navigate('/games')}>← Volver</button>
 
-      <Canvas className="reverse-canvas" dpr={[1, 1.5]}
+      <Canvas className="reverse-canvas"
+        dpr={quality.dpr}
+        gl={quality.gl}
+        performance={quality.performance}
         camera={{ position: [0, 2.5, 10.5], fov: 54, near: 0.1, far: 70 }}>
         <Suspense fallback={null}>
           <ReverseScene

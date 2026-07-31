@@ -1,16 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
-import { registerServiceWorker } from './registerSW';
+import { registerServiceWorker, cleanupLegacyServiceWorkers } from './registerSW';
 
-// Desregistra cualquier service worker viejo (de la v1 o versiones anteriores)
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(registrations => {
-    for (const reg of registrations) {
-      reg.unregister();
-    }
-  });
-}
+// Solo los de la v1 (ámbito distinto al nuestro); el propio se conserva.
+cleanupLegacyServiceWorkers();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

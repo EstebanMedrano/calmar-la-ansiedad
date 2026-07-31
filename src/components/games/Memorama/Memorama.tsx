@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useAnxiety } from '../../context/AnxietyContext';
+import { useCanvasQuality } from '../../three/quality';
 import MemoramaScene from './MemoramaScene';
 import type {
   IntroStage, CardState, SharkState, DogTarget, DogState, CardData, BurstData,
@@ -12,7 +13,6 @@ import {
   PAIRS, PAIR_COLORS, IMG_PATHS, getGridConfig, getCardPos,
   STUN_DURATION, ATTACK_TIMEOUT, BLINK_DURATION,
 } from './positions';
-import { assetUrl } from '../../../utils/assetUrl';
 import './Memorama.scss';
 
 // ⭐ BARRERA DE SEGURIDAD: Atrapa cualquier error dentro del Canvas y evita la pantalla azul
@@ -68,18 +68,6 @@ const createDeck = (): CardData[] =>
 
 const fmt = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
 
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(() =>
-    'ontouchstart' in window && window.innerWidth < 1024
-  );
-  useEffect(() => {
-    const onResize = () => setIsMobile('ontouchstart' in window && window.innerWidth < 1024);
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
-  return isMobile;
-}
-
 function useImagePreload(srcs: string[]) {
   const [ready, setReady] = useState(false);
   useEffect(() => {
@@ -100,8 +88,16 @@ function useImagePreload(srcs: string[]) {
 export default function Memorama() {
   const navigate = useNavigate();
   const { reduceLevel } = useAnxiety();
-  const isMobile = useIsMobile();
-  const texturesReady = useImagePreload(IMG_PATHS.map(p => assetUrl(p)));
+  // Copia local de useIsMobile eliminada: solo escuchaba 'resize', que en iOS
+  // no siempre dispara al rotar, así que la rejilla se quedaba con el reparto
+  // de la orientación anterior. El hook compartido usa matchMedia.
+  const quality = useCanvasQuality(false);
+  const isMobile = quality.isMobile;
+  // IMG_PATHS ya viene con la base aplicada. Pasarlo por assetUrl otra vez
+  // duplicaba el prefijo (/calmar-la-ansiedad/calmar-la-ansiedad/...) y las
+  // doce imágenes daban 404; además, al ser un array nuevo en cada render, el
+  // efecto se relanzaba cada segundo con el tic del cronómetro.
+  const texturesReady = useImagePreload(IMG_PATHS);
 
   const [introStage, setIntroStage] = useState<IntroStage>('beach');
   const [isPlaying, setIsPlaying] = useState(false);
@@ -337,7 +333,9 @@ export default function Memorama() {
 
       <Canvas
         className="mem-canvas"
-        dpr={isMobile ? [1, 1.2] : [1, 1.5]}
+        dpr={quality.dpr}
+        gl={quality.gl}
+        performance={quality.performance}
         camera={{ position: [0, 0, 18], fov: 58, near: 0.1, far: 80 }}
       >
         {/* ⭐ ENVOLVEMOS TODO EN LA BARRERA DE SEGURIDAD */}
@@ -399,7 +397,7 @@ export default function Memorama() {
               )}
             </div>
             <img
-              src={assetUrl(`/assets/img/memorama/${pairReveal.pairId + 1}.png`)}
+              src={IMG_PATHS[pairReveal.pairId]}
               alt="Par encontrado"
               className="mem-reveal-img"
               loading="eager"

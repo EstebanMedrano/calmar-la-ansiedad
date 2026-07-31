@@ -5,6 +5,7 @@ import RippleCanvas from './RippleCanvas';
 import SplashScene from './SplashScene';
 import { startAmbient } from '../../../audio/ambient';
 import useReducedMotion from '../../../hooks/useReducedMotion';
+import { useCanvasQuality } from '../../three/quality';
 import './SplashScreen.scss';
 
 interface SplashScreenProps {
@@ -19,6 +20,7 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
   const hasFinished = useRef(false);
   const revealedRef = useRef(false);
   const reducedMotion = useReducedMotion();
+  const quality = useCanvasQuality(false);
 
   // La primera vez merece la pena verla entera. A partir de ahí es una espera
   // cada vez que abre la app, así que se acorta bastante.
@@ -84,8 +86,9 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
         <Canvas
           className="splash-screen__threejs"
           camera={{ position: [0, 0, 5], fov: 50 }}
-          gl={{ alpha: true, antialias: true }}
-          dpr={[1, 2]}
+          gl={{ ...quality.gl, alpha: true }}
+          dpr={quality.dpr}
+          performance={quality.performance}
         >
           <SplashScene />
         </Canvas>

@@ -33,10 +33,14 @@ export default function CameraRig({ phase, dogPosRef }: Props) {
     // En vertical las fichas sueltas (x = ±2.5) quedaban fuera del encuadre y
     // el juego era imposible. Ensanchamos el campo y, al topar el fov,
     // alejamos la cámara para que entren a cualquier proporción.
+    // maxFov 88 y un retroceso algo mayor que antes: con 80 y dollyPerRad 4 las
+    // piezas de las columnas exteriores seguían saliéndose por los lados en un
+    // móvil vertical (medido en 412x870), y ésas son justo las que hay que
+    // arrastrar.
     const { fov, dollyBack } = portraitAdjust(aspect, BASE_FOV, {
       refAspect: 1.5,
-      maxFov: 80,
-      dollyPerRad: 4,
+      maxFov: 88,
+      dollyPerRad: 4.5,
     });
     if (Math.abs(cam.fov - fov) > 0.01) {
       cam.fov = fov;

@@ -7,7 +7,7 @@ import { startAmbient } from '../../../audio/ambient';
 import CartaScene from './CartaScene';
 import LetterText from '../../letter/LetterText';
 import { CARTA_MESSAGE, UI_TEXT } from '../../../content/messages';
-import useIsMobile from '../../../hooks/useIsMobile';
+import { useCanvasQuality } from '../../three/quality';
 import useReducedMotion from '../../../hooks/useReducedMotion';
 import type { CartaStage } from './stages';
 import { T } from './stages';
@@ -15,7 +15,8 @@ import './Carta.scss';
 
 export default function Carta() {
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
+  const quality  = useCanvasQuality();
+  const isMobile = quality.isMobile;
   const reducedMotion = useReducedMotion();
   const [stage, setStage] = useState<CartaStage>('idle');
 
@@ -67,7 +68,9 @@ export default function Carta() {
     <div className="carta">
       <Canvas
         className="carta__canvas"
-        dpr={isMobile ? [1, 1.5] : [1, 2]}
+        dpr={quality.dpr}
+        gl={quality.gl}
+        performance={quality.performance}
         camera={{ position: [0, 1.2, 3.4], fov: 52, near: 0.1, far: 120 }}
       >
         <CartaScene
