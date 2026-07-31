@@ -21,13 +21,15 @@ interface BirthdaySceneProps {
   stage: BirthdayStage;
   isMobile: boolean;
   candleCount: number;
+  /* Valores que cambian en cada fotograma: van por ref para no provocar un
+     render de toda la escena sesenta veces por segundo. Los lee useFrame. */
   /** Segundos desde que empezaron a salir las velas. */
-  risingElapsed: number;
+  risingElapsedRef: React.MutableRefObject<number>;
   /** Segundos desde que empezó el apagado. */
-  outElapsed: number;
-  blowLevel: number;
+  outElapsedRef: React.MutableRefObject<number>;
+  blowLevelRef: React.MutableRefObject<number>;
   /** 0 = perros fuera, 1 = ya llegaron. */
-  dogProgress: number;
+  dogProgressRef: React.MutableRefObject<number>;
   onLetterArrived: () => void;
   onLetterOpened: () => void;
 }
@@ -60,10 +62,10 @@ export default function BirthdayScene({
   stage,
   isMobile,
   candleCount,
-  risingElapsed,
-  outElapsed,
-  blowLevel,
-  dogProgress,
+  risingElapsedRef,
+  outElapsedRef,
+  blowLevelRef,
+  dogProgressRef,
   onLetterArrived,
   onLetterOpened,
 }: BirthdaySceneProps) {
@@ -179,15 +181,15 @@ export default function BirthdayScene({
         <Cake isMobile={isMobile} dimFactor={dimRef.current} />
         <CandleRing
           count={candleCount}
-          risingElapsed={risingElapsed}
+          risingElapsedRef={risingElapsedRef}
           lit={LIT_STAGES.has(stage)}
-          blowLevel={blowLevel}
-          outElapsed={outElapsed}
+          blowLevelRef={blowLevelRef}
+          outElapsedRef={outElapsedRef}
         />
       </group>
 
       <Suspense fallback={null}>
-        <PartyDogs progress={dogProgress} isMobile={isMobile} />
+        <PartyDogs progressRef={dogProgressRef} isMobile={isMobile} />
       </Suspense>
 
       <LetterPaper

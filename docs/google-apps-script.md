@@ -26,9 +26,13 @@ Y estos **tipos de evento**:
 | `text` | Escribe en Ritual de Soltar | `gameName`, `text`, `words`, `chars` |
 | `grounding` | Completa un paso del 5-4-3-2-1 | `step`, `responses` |
 | `visit` | Cierra la app | `finalLevel`, `duration`, `durationSeconds` |
+| `suggestion` | Envía algo por el buzón de ideas | `category`, `text`, `words`, `chars` |
 
-Los eventos `game` y `visit` son nuevos: son los que dicen **qué usó y cuánto
-rato**, que es lo que antes no se veía en ninguna parte.
+Los eventos `game`, `visit` y `suggestion` son nuevos. Los dos primeros dicen
+**qué usó y cuánto rato**, que es lo que antes no se veía en ninguna parte. El
+tercero es el buzón de ideas del pie de página: lo que escriba ahí llega a la
+hoja como una fila más, con su categoría (idea nueva, sobre un juego, algo no
+funciona, cómo me sentí) en la columna `category` y el mensaje en `text`.
 
 ## Cómo se comporta el envío
 
@@ -56,7 +60,7 @@ var COLUMNAS = [
   'timestamp', 'date', 'time', 'type', 'sessionId', 'sessionMinutes',
   'gameName', 'event', 'duration', 'durationSeconds',
   'initialLevel', 'finalLevel', 'outcome',
-  'step', 'responses', 'text', 'words', 'chars',
+  'step', 'responses', 'category', 'text', 'words', 'chars',
   'device', 'os', 'browser', 'installed', 'screen', 'lang'
 ];
 

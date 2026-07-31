@@ -1,12 +1,15 @@
 import { useAnxiety } from '../context/AnxietyContext';
-import { actionIcons } from '../../utils/icons';
 import { Wind } from 'lucide-react';
 
+/**
+ * El botón de menú de la esquina se quitó: no tenía onClick, era un
+ * marcador de posición "para futuras funcionalidades". Es el mismo caso que
+ * "Guía" y "Progreso" en el pie — un botón que no responde al tocarlo se
+ * siente como una app rota. Además medía 31 px, por debajo de lo que se puede
+ * tocar con el dedo sin fallar.
+ */
 export default function Header() {
   const { level } = useAnxiety();
-
-  // Asignamos los iconos que usaremos desde el mapeo centralizado
-  const MenuIcon = actionIcons.menu;
 
   // Lógica para el color de la barra según el nivel
   const getBarColor = () => {
@@ -42,11 +45,6 @@ export default function Header() {
             </div>
           </div>
         )}
-
-        {/* Botón de menú (placeholder para futuras funcionalidades) */}
-        <button className="menu-btn" aria-label="Menú">
-          <MenuIcon size={24} />
-        </button>
       </div>
     </header>
   );

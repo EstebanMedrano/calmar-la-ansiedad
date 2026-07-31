@@ -1,0 +1,185 @@
+@use '../../styles/variables' as *;
+
+.suggestion {
+  position: fixed;
+  inset: 0;
+  // Por encima de los juegos, que se pintan con createPortal sobre el body.
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: $space-4;
+  // El teclado del móvil recorta la ventana: sin esto el panel queda debajo.
+  padding-bottom: max(#{$space-4}, env(safe-area-inset-bottom));
+
+  &__backdrop {
+    position: absolute;
+    inset: 0;
+    border: 0;
+    padding: 0;
+    background: rgba(6, 10, 24, 0.72);
+    backdrop-filter: blur(6px);
+    cursor: pointer;
+  }
+
+  &__panel {
+    position: relative;
+    width: min(520px, 100%);
+    max-height: min(86dvh, 720px);
+    overflow-y: auto;
+    padding: $space-6 $space-5 $space-5;
+    border-radius: $border-radius-md;
+    background: linear-gradient(160deg, #1b2540 0%, #141c33 100%);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+    animation: suggestion-in 0.28s cubic-bezier(0.34, 1.4, 0.64, 1);
+  }
+
+  &__close {
+    position: absolute;
+    top: $space-3;
+    right: $space-3;
+    display: grid;
+    place-items: center;
+    // 44px: mínimo cómodo para el dedo. Más pequeño se falla el toque.
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: $border-radius-round;
+    background: rgba(255, 255, 255, 0.07);
+    color: $color-text-secondary;
+    cursor: pointer;
+    transition: background $transition-fast, color $transition-fast;
+
+    &:hover { background: rgba(255, 255, 255, 0.14); color: $color-text-primary; }
+  }
+
+  &__header { padding-right: 48px; }
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: $space-2;
+    margin: 0 0 $space-2;
+    font-size: 1.15rem;
+    color: $color-text-primary;
+  }
+
+  &__sub {
+    margin: 0 0 $space-5;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: $color-text-muted;
+  }
+
+  &__cats {
+    display: grid;
+    // auto-fit en vez de dos columnas fijas: en pantallas muy estrechas pasan
+    // a una sola columna solas, sin necesidad de otra media query.
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: $space-2;
+    margin-bottom: $space-5;
+  }
+
+  &__cat {
+    padding: $space-3;
+    min-height: 44px;
+    border-radius: $border-radius-sm;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    background: rgba(255, 255, 255, 0.04);
+    color: $color-text-secondary;
+    font-size: 0.86rem;
+    text-align: left;
+    cursor: pointer;
+    transition: all $transition-fast;
+
+    &:hover { background: rgba(255, 255, 255, 0.09); }
+
+    &--on {
+      border-color: rgba(139, 92, 246, 0.7);
+      background: rgba(139, 92, 246, 0.18);
+      color: $color-text-primary;
+    }
+  }
+
+  &__label {
+    display: block;
+    margin-bottom: $space-2;
+    font-size: 0.88rem;
+    color: $color-text-secondary;
+  }
+
+  &__input {
+    width: 100%;
+    padding: $space-3;
+    border-radius: $border-radius-sm;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(0, 0, 0, 0.25);
+    color: $color-text-primary;
+    // 16px exactos: por debajo de eso, Safari en iOS hace zoom al enfocar el
+    // campo y descoloca toda la pantalla.
+    font-size: 16px;
+    font-family: inherit;
+    line-height: 1.5;
+    resize: vertical;
+
+    &:focus {
+      outline: none;
+      border-color: rgba(139, 92, 246, 0.7);
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.18);
+    }
+  }
+
+  &__foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $space-3;
+    margin-top: $space-4;
+  }
+
+  &__count {
+    font-size: 0.78rem;
+    color: $color-text-muted;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__send {
+    padding: $space-3 $space-6;
+    min-height: 44px;
+    border: 0;
+    border-radius: $border-radius-pill;
+    background: linear-gradient(135deg, $color-lavender, $color-ocean);
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform $transition-fast, opacity $transition-fast;
+
+    &:hover:not(:disabled) { transform: translateY(-1px); }
+    &:disabled { opacity: 0.45; cursor: default; }
+  }
+
+  &__done {
+    text-align: center;
+    padding: $space-6 $space-3 $space-4;
+
+    h3 { margin: 0 0 $space-2; color: $color-text-primary; }
+    p  { margin: 0; color: $color-text-muted; line-height: 1.55; }
+  }
+
+  &__done-icon {
+    display: block;
+    font-size: 2.6rem;
+    margin-bottom: $space-3;
+  }
+}
+
+@keyframes suggestion-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .suggestion__panel { animation: none; }
+}

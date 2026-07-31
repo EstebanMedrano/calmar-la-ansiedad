@@ -1,47 +1,79 @@
 // ArcadeEnvironment.tsx - Importaciones limpias (eliminados useEffect y useState)
-import { useRef, useMemo } from 'react'; // ⭐ CORREGIDO: Solo useRef y useMemo
+import { useRef, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { mergeBufferGeometries } from 'three-stdlib';
 import { LIA_BTN } from './positions';
 
+/**
+ * Rejilla de neón del suelo.
+ *
+ * Las 24 líneas eran 24 mallas sueltas, cada una con su material y su llamada
+ * de dibujo. Como todas comparten color y opacidad, se fusionan en una sola
+ * geometría: mismo aspecto, una llamada.
+ */
 function NeonFloor() {
+  const gridGeo = useMemo(() => {
+    const parts: THREE.BufferGeometry[] = [];
+    for (let i = 0; i < 14; i++) {
+      const g = new THREE.PlaneGeometry(0.025, 18);
+      g.rotateX(-Math.PI / 2);
+      g.translate(-6.5 + i, -0.49, 0);
+      parts.push(g);
+    }
+    for (let i = 0; i < 10; i++) {
+      const g = new THREE.PlaneGeometry(24, 0.025);
+      g.rotateX(-Math.PI / 2);
+      g.translate(0, -0.49, -4.5 + i);
+      parts.push(g);
+    }
+    const merged = mergeBufferGeometries(parts);
+    parts.forEach(p => p.dispose());
+    return merged;
+  }, []);
+
+  useEffect(() => () => { gridGeo?.dispose(); }, [gridGeo]);
+
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]}>
         <planeGeometry args={[24, 18]} />
         <meshStandardMaterial color="#555153" roughness={0.7} metalness={0.2} />
       </mesh>
-      {Array.from({ length: 14 }, (_, i) => (
-        <mesh key={`gx${i}`} rotation={[-Math.PI / 2, 0, 0]} position={[-6.5 + i, -0.49, 0]}>
-          <planeGeometry args={[0.025, 18]} />
+      {gridGeo && (
+        <mesh geometry={gridGeo}>
           <meshBasicMaterial color="#00ddff" transparent opacity={0.7} />
         </mesh>
-      ))}
-      {Array.from({ length: 10 }, (_, i) => (
-        <mesh key={`gz${i}`} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.49, -4.5 + i]}>
-          <planeGeometry args={[24, 0.025]} />
-          <meshBasicMaterial color="#00ddff" transparent opacity={0.7} />
-        </mesh>
-      ))}
+      )}
     </group>
   );
 }
 
-function OverheadSpot({ position, color, offset }: {
-  position: [number, number, number]; color: string; offset: number;
+/**
+ * @param withLight Solo dos de los cinco focos llevan luz real.
+ *
+ * Contexto: la escena tenía TRECE pointLight dinámicas. En three.js el número
+ * de luces se compila dentro del shader de cada material, así que cada píxel de
+ * cada superficie recorría las trece. Bajarlas a tres es lo que devuelve la
+ * fluidez; el resto de focos siguen viéndose porque el cono emite luz propia.
+ */
+function OverheadSpot({ position, color, offset, withLight }: {
+  position: [number, number, number]; color: string; offset: number; withLight: boolean;
 }) {
   const lRef = useRef<THREE.PointLight>(null);
   useFrame((state) => {
     if (lRef.current)
-      lRef.current.intensity = 1.5 + Math.sin(state.clock.elapsedTime * 0.9 + offset) * 0.5;
+      lRef.current.intensity = 2.4 + Math.sin(state.clock.elapsedTime * 0.9 + offset) * 0.8;
   });
   return (
     <group position={position}>
       <mesh rotation={[Math.PI, 0, 0]}>
         <coneGeometry args={[0.12, 0.25, 8]} />
-        <meshStandardMaterial color="#9046d4" metalness={0.8} />
+        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={1.6} metalness={0.8} toneMapped={false} />
       </mesh>
-      <pointLight ref={lRef} color={color} intensity={1.5} distance={18} decay={2} position={[0, -0.3, 0]} />
+      {withLight && (
+        <pointLight ref={lRef} color={color} intensity={2.4} distance={22} decay={2} position={[0, -0.3, 0]} />
+      )}
     </group>
   );
 }
@@ -60,11 +92,12 @@ function NeonPillar({ x, color }: { x: number; color: string }) {
         <meshStandardMaterial color="#f399cd" metalness={0.5} roughness={0.5} />
       </mesh>
       <mesh ref={glowRef}>
-        <cylinderGeometry args={[0.065, 0.065, 5.5, 8]} />
-        <meshBasicMaterial color={color} transparent opacity={0.55}
+        <cylinderGeometry args={[0.075, 0.075, 5.5, 8]} />
+        <meshBasicMaterial color={color} transparent opacity={0.65}
           blending={THREE.AdditiveBlending} depthWrite={false} />
       </mesh>
-      <pointLight color={color} intensity={2.5} distance={10} decay={2} position={[0, 0, 0.6]} />
+      {/* Sin pointLight: el cilindro aditivo ya se lee como neón encendido y
+          cuatro luces más no cambiaban la imagen lo bastante como para pagarlas. */}
     </group>
   );
 }
@@ -111,6 +144,55 @@ function SplashImpact({ pos, color, onComplete }: { pos: THREE.Vector3, color: s
   );
 }
 
+/**
+ * Los 54 sillares del brocal de la fuente.
+ *
+ * Eran 54 <mesh> con 54 materiales: 54 llamadas de dibujo para un anillo de
+ * piedra que nunca se mueve. Fusionados en una geometría con color por vértice
+ * son una sola llamada, y el degradado de tonos se conserva igual.
+ */
+function StoneRim() {
+  const geo = useMemo(() => {
+    const parts: THREE.BufferGeometry[] = [];
+    const tones = ['#6b5c55', '#584c45', '#4a3d35'].map(c => new THREE.Color(c));
+    const layers = [
+      { y: 0.08, offset: 0 },
+      { y: 0.24, offset: Math.PI / 18 },
+      { y: 0.40, offset: 0 },
+    ];
+
+    for (const { y, offset } of layers) {
+      for (let i = 0; i < 18; i++) {
+        const angle = (i / 18) * Math.PI * 2 + offset;
+        const g = new THREE.BoxGeometry(0.55, 0.12, 0.30);
+        g.rotateX(Math.PI / 2);
+        g.rotateY(-angle);
+        g.translate(Math.cos(angle) * 2.1, y, Math.sin(angle) * 2.1);
+
+        const tone = tones[i % 3];
+        const colors = new Float32Array(g.attributes.position.count * 3);
+        for (let v = 0; v < g.attributes.position.count; v++) {
+          colors[v * 3] = tone.r; colors[v * 3 + 1] = tone.g; colors[v * 3 + 2] = tone.b;
+        }
+        g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        parts.push(g);
+      }
+    }
+    const merged = mergeBufferGeometries(parts);
+    parts.forEach(p => p.dispose());
+    return merged;
+  }, []);
+
+  useEffect(() => () => { geo?.dispose(); }, [geo]);
+
+  if (!geo) return null;
+  return (
+    <mesh geometry={geo}>
+      <meshStandardMaterial vertexColors roughness={0.95} />
+    </mesh>
+  );
+}
+
 function WaterFountain({ dropletsRef, onDropletImpact }: { dropletsRef: React.MutableRefObject<THREE.Vector3[]>, onDropletImpact: (pos: THREE.Vector3) => void }) {
   const pointsRef     = useRef<THREE.Points>(null);
   const waterBaseRef  = useRef<THREE.Mesh>(null);
@@ -126,6 +208,15 @@ function WaterFountain({ dropletsRef, onDropletImpact }: { dropletsRef: React.Mu
 
   const pPositions  = useRef(new Float32Array(PARTICLE_COUNT * 3));
   const pVelocities = useRef(new Float32Array(PARTICLE_COUNT * 3));
+
+  // Bolsa de Vector3 reutilizables. Antes se creaban ochenta objetos nuevos en
+  // cada fotograma solo para publicar la posición de las gotas: a 60 fps son
+  // 4.800 objetos por segundo que el recolector de basura tiene que limpiar, y
+  // eso se nota como tirones periódicos. Los perros solo leen estos valores.
+  const dropletPool = useRef<THREE.Vector3[]>(
+    Array.from({ length: PARTICLE_COUNT }, () => new THREE.Vector3()),
+  );
+  const impactVec = useRef(new THREE.Vector3());
 
   const waterTexture = useMemo(() => {
     const canvas = document.createElement('canvas');
@@ -190,9 +281,9 @@ function WaterFountain({ dropletsRef, onDropletImpact }: { dropletsRef: React.Mu
       if (waterTexture) waterTexture.offset.y -= dt * 0.4;
     }
 
-    if (dropletsRef) {
-      dropletsRef.current = [];
-    }
+    // Se reutiliza el mismo array y los mismos Vector3 en cada fotograma.
+    if (dropletsRef) dropletsRef.current = dropletPool.current;
+    let liveDroplets = 0;
 
     if (pointsRef.current) {
       const pa  = pointsRef.current.geometry.attributes.position as THREE.BufferAttribute;
@@ -208,12 +299,8 @@ function WaterFountain({ dropletsRef, onDropletImpact }: { dropletsRef: React.Mu
 
         if (pPositions.current[i3 + 1] < -0.2) {
           if (onDropletImpact) {
-            const impactPos = new THREE.Vector3(
-              pPositions.current[i3],
-              -0.2,
-              pPositions.current[i3 + 2]
-            );
-            onDropletImpact(impactPos);
+            impactVec.current.set(pPositions.current[i3], -0.2, pPositions.current[i3 + 2]);
+            onDropletImpact(impactVec.current);
           }
 
           const angle = Math.random() * Math.PI * 2;
@@ -230,9 +317,7 @@ function WaterFountain({ dropletsRef, onDropletImpact }: { dropletsRef: React.Mu
         const py = pPositions.current[i3 + 1];
         const pz = pPositions.current[i3 + 2];
 
-        if (dropletsRef) {
-          dropletsRef.current.push(new THREE.Vector3(px, py, pz));
-        }
+        if (dropletsRef) dropletPool.current[liveDroplets++].set(px, py, pz);
 
         for (let j = 0; j < SEGS_PER; j++) {
           const tA = (j + 1) * DT_TRAIL;
@@ -254,25 +339,7 @@ function WaterFountain({ dropletsRef, onDropletImpact }: { dropletsRef: React.Mu
         <meshStandardMaterial color="#584c45" roughness={0.9} />
       </mesh>
 
-      {Array.from({ length: 3 }).map((_, layerIdx) => {
-        const yPos = layerIdx === 0 ? 0.08 : (layerIdx === 1 ? 0.24 : 0.40);
-        const angleOffset = layerIdx === 0 ? 0 : (layerIdx === 1 ? Math.PI / 18 : 0);
-        return Array.from({ length: 18 }).map((_, i) => {
-          const angle = (i / 18) * Math.PI * 2;
-          const finalAngle = angle + angleOffset;
-          const color = i % 3 === 0 ? "#6b5c55" : (i % 3 === 1 ? "#584c45" : "#4a3d35");
-          return (
-            <mesh
-              key={`${layerIdx}-${i}`}
-              position={[Math.cos(finalAngle) * 2.1, yPos, Math.sin(finalAngle) * 2.1]}
-              rotation={[Math.PI / 2, -finalAngle, 0]}
-            >
-              <boxGeometry args={[0.55, 0.12, 0.30]} />
-              <meshStandardMaterial color={color} roughness={0.95} />
-            </mesh>
-          );
-        });
-      })}
+      <StoneRim />
 
       <mesh
         ref={waterBaseRef}
@@ -292,7 +359,6 @@ function WaterFountain({ dropletsRef, onDropletImpact }: { dropletsRef: React.Mu
         <WaterRipple phase={0.67} />
       </group>
 
-      <pointLight color="#3b767a" intensity={8.0} distance={5} decay={1} position={[0, 1.5, 0]} />
 
       <group ref={conePivotRef} position={[0, -0.15, 0]}>
         <mesh ref={coneMeshRef} position={[0, 0, 0]}>
@@ -313,7 +379,8 @@ function WaterFountain({ dropletsRef, onDropletImpact }: { dropletsRef: React.Mu
         </mesh>
       </group>
 
-      <pointLight color="#66ddff" intensity={6.0} distance={12} decay={2} position={[0, 1.8, 0]} />
+      {/* Una sola luz para toda la fuente, en vez de dos casi superpuestas. */}
+      <pointLight color="#66ddff" intensity={7.5} distance={13} decay={2} position={[0, 1.7, 0]} />
 
       <points ref={pointsRef} geometry={pointsGeom}>
         <pointsMaterial
@@ -346,10 +413,9 @@ function ButtonConsole() {
       </mesh>
       <mesh position={[0, 0.50, 0.15]}>
         <cylinderGeometry args={[0.26, 0.26, 0.1, 20]} />
-        <meshStandardMaterial color="#ff0000" emissive="#050505"
-          emissiveIntensity={2.0} metalness={0.25} roughness={0.3} />
+        <meshStandardMaterial color="#ff0000" emissive="#ff0000"
+          emissiveIntensity={1.4} metalness={0.25} roughness={0.3} toneMapped={false} />
       </mesh>
-      <pointLight color="#ff0000" intensity={4.5} distance={7} decay={2} position={[0, 1.0, 0]} />
     </group>
   );
 }
@@ -373,9 +439,8 @@ function ClawHousing() {
       </mesh>
       <mesh position={[0, -0.28, 0]}>
         <boxGeometry args={[1.9, 0.04, 0.7]} />
-        <meshBasicMaterial color="#cc44ff" />
+        <meshBasicMaterial color="#cc44ff" toneMapped={false} />
       </mesh>
-      <pointLight color="#cc44ff" intensity={3.5} distance={7} decay={2} position={[0, -0.8, 0]} />
     </group>
   );
 }
@@ -387,8 +452,9 @@ const SPOTS: Array<[number, string]> = [
 export default function ArcadeEnvironment({ dropletsRef, splashes, onDropletImpact }: ArcadeEnvironmentProps = {}) {
   return (
     <>
-      <ambientLight color="#88ccff" intensity={0.65} />
-      <directionalLight color="#ffffff" intensity={1.5} position={[5, 10, 5]} />
+      {/* Algo más de luz general para compensar las diez pointLight retiradas. */}
+      <ambientLight color="#88ccff" intensity={1.05} />
+      <directionalLight color="#ffffff" intensity={1.9} position={[5, 10, 5]} />
 
       <NeonFloor />
 
@@ -408,7 +474,8 @@ export default function ArcadeEnvironment({ dropletsRef, splashes, onDropletImpa
       </mesh>
 
       {SPOTS.map(([x, c], i) => (
-        <OverheadSpot key={i} position={[x, 4.6, -3.8]} color={c} offset={i * 1.25} />
+        <OverheadSpot key={i} position={[x, 4.6, -3.8]} color={c} offset={i * 1.25}
+          withLight={i === 0 || i === 4} />
       ))}
 
       <ClawRail />

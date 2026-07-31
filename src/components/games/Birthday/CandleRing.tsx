@@ -8,7 +8,7 @@ import { T } from './timings';
 interface CandleRingProps {
   count: number;
   /** Segundos transcurridos desde que empezaron a salir las velas. */
-  risingElapsed: number;
+  risingElapsedRef: React.MutableRefObject<number>;
   /** true mientras están encendidas. */
   lit: boolean;
   /**
@@ -16,9 +16,9 @@ interface CandleRingProps {
    * Las llamas se inclinan y encogen en proporción, para que se note que
    * el micrófono la está oyendo antes de que se apaguen del todo.
    */
-  blowLevel: number;
+  blowLevelRef: React.MutableRefObject<number>;
   /** Segundos desde que empezó el apagado. */
-  outElapsed: number;
+  outElapsedRef: React.MutableRefObject<number>;
 }
 
 const WAX_H = 0.16;
@@ -38,10 +38,10 @@ const FLAME_PLANES = 3;
  */
 export default function CandleRing({
   count,
-  risingElapsed,
+  risingElapsedRef,
   lit,
-  blowLevel,
-  outElapsed,
+  blowLevelRef,
+  outElapsedRef,
 }: CandleRingProps) {
   const groupRefs = useRef<(Group | null)[]>([]);
   const flameRefs = useRef<(Group | null)[]>([]);
@@ -67,6 +67,10 @@ export default function CandleRing({
 
   useFrame((state, delta) => {
     const now = state.clock.elapsedTime;
+    // Se leen una vez por fotograma, no una vez por vela.
+    const risingElapsed = risingElapsedRef.current;
+    const outElapsed    = outElapsedRef.current;
+    const blowLevel     = blowLevelRef.current;
     let litCount = 0;
 
     for (let i = 0; i < candles.length; i++) {

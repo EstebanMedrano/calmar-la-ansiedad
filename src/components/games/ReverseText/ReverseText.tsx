@@ -21,6 +21,8 @@ const PHRASES = [
   { text: 'soy suficiente',     color: '#ec4899' },
 ];
 
+const SPLASH_COLORS = ['#897dfa', '#ff88ee', '#44aaff', '#ffee00', '#ff4499', '#33ff99', '#ff3366'];
+
 const T = {
   titoRun:    940,
   wordBreak:  740,
@@ -56,7 +58,6 @@ export default function ReverseText() {
   
   // ⭐ ¡ESTA ES LA LÍNEA QUE DEBE TENER EXACTAMENTE EL CAMPO color!
   const [splashes, setSplashes] = useState<{ id: number; pos: THREE.Vector3; color: string }[]>([]);
-  const splashColors = ['#897dfa', '#ff88ee', '#44aaff', '#ffee00', '#ff4499', '#33ff99', '#ff3366'];
 
   const handleSubmit = useCallback(() => {
     if (phase !== 'idle' || !answer.trim()) return;
@@ -103,16 +104,35 @@ export default function ReverseText() {
     window.setTimeout(() => setFeedback(''), 2100);
   }, [phase, answer, phraseIdx, addT, reduceLevel]);
 
-  // ⭐ Manejo de impacto de gota en el suelo (50% de probabilidad)
-  const handleDropletImpact = useCallback((position: THREE.Vector3) => {
-    if (Math.random() > 0.5) return;
+  /**
+   * Salpicadura cuando una gota de la fuente toca el suelo.
+   *
+   * Esto era, con diferencia, lo que más frenaba el juego. La fuente recicla
+   * ochenta partículas continuamente, así que varias tocaban el suelo en CADA
+   * fotograma, y cada una llamaba a setSplashes desde dentro de useFrame: React
+   * volvía a renderizar el juego entero varias veces por fotograma. Y en cada
+   * render, el <Text> de la frase volvía a componer su textura de glifos
+   * (troika llama a sync() en cada render, no solo cuando cambia el texto).
+   *
+   * Ahora hay dos frenos: como mucho una salpicadura cada 140 ms, y como mucho
+   * cinco a la vez. Se ven igual —nadie distingue treinta salpicaduras de
+   * cinco— y el número de renders pasa de decenas por segundo a siete.
+   */
+  const lastSplashAt = useRef(0);
+  const MAX_SPLASHES = 5;
+  const SPLASH_GAP_MS = 140;
 
-    const id = Date.now() + Math.random();
-    const color = splashColors[Math.floor(Math.random() * splashColors.length)];
-    setSplashes(prev => [...prev, { id, pos: position.clone(), color }]);
-    setTimeout(() => {
+  const handleDropletImpact = useCallback((position: THREE.Vector3) => {
+    const now = performance.now();
+    if (now - lastSplashAt.current < SPLASH_GAP_MS) return;
+    lastSplashAt.current = now;
+
+    const id = now + Math.random();
+    const color = SPLASH_COLORS[Math.floor(Math.random() * SPLASH_COLORS.length)];
+    setSplashes(prev => [...prev.slice(-(MAX_SPLASHES - 1)), { id, pos: position.clone(), color }]);
+    window.setTimeout(() => {
       setSplashes(prev => prev.filter(s => s.id !== id));
-    }, 1800);
+    }, 1400);
   }, []);
 
   const current  = PHRASES[phraseIdx];

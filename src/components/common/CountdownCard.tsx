@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { useBirthday } from '../context/BirthdayContext';
+import { useBirthday, useBirthdayCountdown } from '../context/BirthdayContext';
 import { BIRTHDAY_LABEL } from '../../config/birthday';
 import useReducedMotion from '../../hooks/useReducedMotion';
 import NotificationOptIn from './NotificationOptIn';
@@ -45,7 +45,8 @@ function Unit({ value, label, muted }: UnitProps) {
  * brillando con el botón para entrar al regalo.
  */
 export default function CountdownCard() {
-  const { countdown, isUnlocked, hasOpenedGift } = useBirthday();
+  const { isUnlocked, hasOpenedGift } = useBirthday();
+  const countdown = useBirthdayCountdown();
   const reducedMotion = useReducedMotion();
   const navigate = useNavigate();
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Sky } from '@react-three/drei';
 import * as THREE from 'three';
@@ -11,22 +11,42 @@ import Dogs from './Dogs';
 
 // ── Park ──────────────────────────────────────────────────────────────────────
 
-function ParkTree({ position, scale = 1 }: { position: [number,number,number]; scale?: number }) {
+/**
+ * Una capa del arbolado (troncos, o uno de los dos niveles de copa) como
+ * InstancedMesh.
+ *
+ * Con 36 árboles de tres mallas cada uno eran 108 llamadas de dibujo, y todas
+ * proyectando sombra, así que se pagaban dos veces: una para el mapa de sombras
+ * y otra para la imagen. Instanciado son tres llamadas.
+ */
+function TreeLayer({ trees, geometry, color, localY }: {
+  trees: Array<{ pos: [number,number,number]; s: number }>;
+  geometry: THREE.BufferGeometry;
+  color: string;
+  localY: number;
+}) {
+  const ref = useRef<THREE.InstancedMesh>(null);
+
+  useLayoutEffect(() => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    const m = new THREE.Matrix4();
+    const q = new THREE.Quaternion();
+    const p = new THREE.Vector3();
+    const sc = new THREE.Vector3();
+    trees.forEach((t, i) => {
+      p.set(t.pos[0], t.pos[1] + localY * t.s, t.pos[2]);
+      sc.setScalar(t.s);
+      mesh.setMatrixAt(i, m.compose(p, q, sc));
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+    mesh.computeBoundingSphere();
+  }, [trees, localY]);
+
   return (
-    <group position={position} scale={scale}>
-      <mesh position={[0,1.5,0]} castShadow>
-        <cylinderGeometry args={[0.22,0.30,3.0,7]}/>
-        <meshStandardMaterial color="#5c3a1e" roughness={1}/>
-      </mesh>
-      <mesh position={[0,3.8,0]} castShadow>
-        <coneGeometry args={[2.0,3.2,8]}/>
-        <meshStandardMaterial color="#1a4a22" roughness={1}/>
-      </mesh>
-      <mesh position={[0,5.4,0]} castShadow>
-        <coneGeometry args={[1.4,2.4,8]}/>
-        <meshStandardMaterial color="#235a2e" roughness={1}/>
-      </mesh>
-    </group>
+    <instancedMesh ref={ref} args={[geometry, undefined, trees.length]} castShadow frustumCulled={false}>
+      <meshStandardMaterial color={color} roughness={1}/>
+    </instancedMesh>
   );
 }
 
@@ -80,6 +100,14 @@ function Park({ isMobile }: { isMobile: boolean }) {
     return arr;
   }, [isMobile]);
 
+  const treeGeo = useMemo(() => ({
+    trunk: new THREE.CylinderGeometry(0.22, 0.30, 3.0, 7),
+    cone1: new THREE.ConeGeometry(2.0, 3.2, 8),
+    cone2: new THREE.ConeGeometry(1.4, 2.4, 8),
+  }), []);
+
+  useEffect(() => () => Object.values(treeGeo).forEach(g => g.dispose()), [treeGeo]);
+
   return (
     <group>
       <mesh rotation={[-Math.PI/2,0,0]} receiveShadow>
@@ -94,7 +122,9 @@ function Park({ isMobile }: { isMobile: boolean }) {
       </mesh>
       <SwingSet/>
       <Slide/>
-      {treeConfig.map(({pos,s},i) => <ParkTree key={i} position={pos} scale={s}/>)}
+      <TreeLayer trees={treeConfig} geometry={treeGeo.trunk} color="#5c3a1e" localY={1.5}/>
+      <TreeLayer trees={treeConfig} geometry={treeGeo.cone1} color="#1a4a22" localY={3.8}/>
+      <TreeLayer trees={treeConfig} geometry={treeGeo.cone2} color="#235a2e" localY={5.4}/>
       {([[5,0,5],[-5,0,5]] as [number,number,number][]).map((p,i) => (
         <mesh key={i} position={p} castShadow>
           <boxGeometry args={[2.2,0.12,0.55]}/><meshStandardMaterial color="#6b3a1f"/>
@@ -207,12 +237,20 @@ export default function HurricaneScene({ stage, isMobile, onThoughtDestroyed }: 
     }
   }, [stage, camera]);
 
-  const getTornadoCenter = (stage: HurricaneStage) => {
+  /*
+   * useMemo, no una llamada suelta en el cuerpo del render.
+   *
+   * Antes esto creaba un THREE.Vector3 NUEVO en cada render. Como se pasa como
+   * prop a cada pensamiento y a los perros, React los daba todos por cambiados
+   * y los volvía a renderizar; y cada re-render de un pensamiento hacía que
+   * troika recompusiera la textura de su texto. Con veinte frases en pantalla,
+   * eso es lo que producía el tirón al aparecer y al explotarlas.
+   */
+  const tornadoCenter = useMemo(() => {
     if (stage === 'tornado_retreat' || stage === 'parachuting') return new THREE.Vector3(0, 0, -22.5);
     if (stage === 'tornado_ascend' || stage === 'fireworks') return new THREE.Vector3(0, 40, -22.5);
     return new THREE.Vector3(0, 0, 0);
-  };
-  const tornadoCenter = getTornadoCenter(stage);
+  }, [stage]);
 
   const thoughtData = useMemo(() =>
     THOUGHTS.map((text, i) => ({
@@ -251,25 +289,39 @@ export default function HurricaneScene({ stage, isMobile, onThoughtDestroyed }: 
     }
   }, [stage, thoughtData, destroyedIds, tornadoCenter, finalBurstsDone, burstCounter]);
 
+  /*
+   * La versión anterior dependía de destroyedIds y burstCounter, así que
+   * cambiaba de identidad cada vez que se reventaba una frase. Al ser una prop
+   * de los veinte <Thought>, React los volvía a renderizar todos —y con ellos
+   * sus veinte textos de troika— justo en el momento de la explosión.
+   *
+   * Con las lecturas dentro de los setState y la fase en una ref, el callback
+   * es estable y, junto al React.memo de Thought, solo se vuelve a dibujar la
+   * frase que de verdad ha cambiado.
+   */
+  const stageRef = useRef(stage);
+  useEffect(() => { stageRef.current = stage; }, [stage]);
+
   const handleThoughtClick = useCallback((id: number, worldPos: THREE.Vector3) => {
-    if (destroyedIds.has(id) || stage !== 'tornado') return;
+    if (stageRef.current !== 'tornado') return;
+
     setDogTarget(worldPos.clone());
     setActiveDog(Math.random() < 0.5 ? 'tito' : 'lia');
-    
-    const burstId = burstCounter + 1;
-    setBurstCounter(burstId);
-    
+
+    const burstId = Date.now() + Math.random();
+    setBurstCounter(c => c + 1);
+
     window.setTimeout(() => {
-      setDestroyedIds(prev => new Set([...prev, id]));
+      setDestroyedIds(prev => (prev.has(id) ? prev : new Set([...prev, id])));
       setActiveBursts(prev => [...prev, { id: burstId, position: worldPos.clone() }]);
       onThoughtDestroyed();
       setDogTarget(null);
-      
+
       window.setTimeout(() => {
         setActiveBursts(prev => prev.filter(b => b.id !== burstId));
       }, 2500);
     }, 1350);
-  }, [destroyedIds, stage, onThoughtDestroyed, burstCounter]);
+  }, [onThoughtDestroyed]);
 
   const isDay = ['intro','parachuting','complete'].includes(stage);
   const showThoughts = stage === 'tornado' || stage === 'tornado_ascend' || stage === 'tornado_retreat';

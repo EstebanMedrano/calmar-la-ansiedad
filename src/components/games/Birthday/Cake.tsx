@@ -89,26 +89,40 @@ export default function Cake({ isMobile, dimFactor = 0 }: CakeProps) {
         <meshStandardMaterial color="#e8d5c4" roughness={0.8} />
       </mesh>
 
-      {/* Texto de la torta.
-          SIN prop `font`: apuntaba a /fonts/georgia.ttf, que no existe en el
-          repositorio. El servidor devolvía el index.html, troika no conseguía
-          parsearlo y —esto es lo grave— al fallar nunca resolvía su promesa de
-          carga. Como <Text> suspende esperándola, el <Suspense> que envuelve
-          toda la escena del regalo no se resolvía jamás: el canvas se quedaba
-          en negro y solo se oían los ladridos. Con la fuente por defecto de
-          drei el texto se ve y la escena se monta. */}
+      {/*
+        La dedicatoria, en el frente del piso inferior y no tumbada encima.
+
+        Estaba plana sobre la superficie de la torta, y desde donde mira la
+        cámara esa cara se ve casi de canto: el texto quedaba aplastado a unos
+        diez píxeles de alto, en marrón oscuro sobre penumbra y medio tapado por
+        las velas. Era ilegible. Aquí da de frente a la cámara, así que se lee
+        entera, y encima es donde va la dedicatoria en una torta de verdad.
+
+        SIN prop `font`: antes apuntaba a /fonts/georgia.ttf, que no existe en
+        el repositorio. El servidor devolvía el index.html, troika no conseguía
+        parsearlo y al fallar nunca resolvía su promesa de carga. Como <Text>
+        suspende esperándola, el <Suspense> de toda la escena del regalo no se
+        resolvía jamás: el canvas se quedaba en negro y solo se oían los
+        ladridos. Con la fuente por defecto de drei se ve y la escena se monta.
+      */}
       <Text
-        position={[0, CAKE_TOP_Y + 0.002, 0]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        fontSize={isMobile ? 0.065 : 0.058}
-        maxWidth={TIER2_R * 1.8}
+        // Delante de los chorreados de chocolate, no a su misma altura: están
+        // en el mismo radio (TIER1_R) con grosor 0.028, y el que cae justo al
+        // frente cortaba una letra por la mitad.
+        position={[0, TIER1_H / 2 + 0.005, TIER1_R + 0.058]}
+        fontSize={isMobile ? 0.058 : 0.052}
+        maxWidth={0.62}
         textAlign="center"
         anchorX="center"
         anchorY="middle"
-        lineHeight={1.4}
-        color="#2a1810"
+        lineHeight={1.25}
+        color="#fff3d6"
+        // Contorno oscuro: el chocolate de detrás y el texto tienen luminancias
+        // parecidas cuando la escena se atenúa para soplar las velas.
+        outlineWidth={0.006}
+        outlineColor="#2a1810"
       >
-        {'Feliz cumpleaños\npara mi querida Lu'}
+        {'Feliz cumpleaños\nmi querida Lu'}
       </Text>
 
       {/* Plato dorado */}

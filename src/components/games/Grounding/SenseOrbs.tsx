@@ -24,6 +24,8 @@ const RADIUS = 2.5;
 const BASE_Y = 1.9;
 /** Ángulo áureo: reparte bien las luces haya 1 o haya 15. */
 const GOLDEN = Math.PI * (3 - Math.sqrt(5));
+/** Tope de luces dinámicas de los orbes. Ver el comentario de `placed`. */
+const MAX_ORB_LIGHTS = 4;
 
 /**
  * Cada cosa que anota se convierte en una luz que sube y se queda orbitando.
@@ -37,18 +39,31 @@ export default function SenseOrbs({ orbs, colors, isMobile }: SenseOrbsProps) {
 
   // La posición de cada orbe es determinista a partir de su índice: así no
   // se recolocan solas cuando el componente vuelve a renderizarse.
-  const placed = useMemo(
-    () =>
-      orbs.map((o, i) => ({
-        key: `${o.step}-${o.slot}`,
-        angle: i * GOLDEN,
-        y: BASE_Y + o.step * 0.22 + Math.sin(i * 2.3) * 0.3,
-        radius: RADIUS - o.step * 0.1,
-        color: colors[o.step] ?? '#ffffff',
-        seed: i * 1.37,
-      })),
-    [orbs, colors],
-  );
+  /*
+   * Solo los cuatro orbes más recientes llevan una pointLight real.
+   *
+   * En three.js el número de luces se compila dentro del shader de cada
+   * material: con quince luces, cada píxel de la pradera, los árboles y los
+   * perros recorría las quince. Y peor aún, al añadir la número dieciséis
+   * cambia el recuento y three recompila TODOS los shaders de la escena — que
+   * es exactamente lo que se notaba como tirón al anotar cada cosa.
+   *
+   * Los quince orbes se siguen viendo igual: la esfera y el halo son aditivos
+   * y no necesitan luz. Lo único que se pierde es que los orbes viejos dejen de
+   * teñir el suelo a su alrededor, y a esa distancia no se aprecia.
+   */
+  const placed = useMemo(() => {
+    const lastLit = orbs.length - MAX_ORB_LIGHTS;
+    return orbs.map((o, i) => ({
+      key: `${o.step}-${o.slot}`,
+      angle: i * GOLDEN,
+      y: BASE_Y + o.step * 0.22 + Math.sin(i * 2.3) * 0.3,
+      radius: RADIUS - o.step * 0.1,
+      color: colors[o.step] ?? '#ffffff',
+      seed: i * 1.37,
+      lit: i >= lastLit,
+    }));
+  }, [orbs, colors]);
 
   useFrame((state) => {
     // Un único giro lento del grupo entero en vez de mover cada orbe:
@@ -74,6 +89,7 @@ function Orb({
   color,
   seed,
   isMobile,
+  lit,
 }: {
   angle: number;
   y: number;
@@ -81,6 +97,7 @@ function Orb({
   color: string;
   seed: number;
   isMobile: boolean;
+  lit: boolean;
 }) {
   const ref = useRef<Group>(null);
   const born = useRef(0);
@@ -106,8 +123,8 @@ function Orb({
         <sphereGeometry args={[0.11, 12, 10]} />
         <meshBasicMaterial color={color} toneMapped={false} />
       </mesh>
-      {/* Halo. En móvil se omite la luz real: quince pointLight dinámicas
-          hunden el rendimiento de un teléfono de gama media. */}
+      {/* Halo aditivo: es lo que hace que el orbe se lea como una luz, y no
+          cuesta nada. La pointLight real solo la llevan los últimos. */}
       <mesh>
         <sphereGeometry args={[0.2, 10, 8]} />
         <meshBasicMaterial
@@ -119,7 +136,7 @@ function Orb({
           toneMapped={false}
         />
       </mesh>
-      {!isMobile && <pointLight color={color} intensity={0.35} distance={2.4} decay={2} />}
+      {!isMobile && lit && <pointLight color={color} intensity={0.5} distance={2.8} decay={2} />}
     </group>
   );
 }

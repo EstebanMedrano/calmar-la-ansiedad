@@ -228,6 +228,25 @@ export class Logger {
     this.send('grounding', { step, responses });
   }
 
+  /**
+   * Idea o sugerencia enviada desde el buzón.
+   *
+   * Devuelve si se pudo entregar, para poder decírselo al usuario en vez de
+   * fingir que sí. Si no hay conexión queda en la cola y se manda luego.
+   */
+  static async logSuggestion(category: string, text: string): Promise<boolean> {
+    const payload = this.base('suggestion', {
+      category,
+      text,
+      words: text.trim().split(/\s+/).filter(Boolean).length,
+      chars: text.length,
+    });
+    if (!navigator.onLine) { enqueue(payload); return false; }
+    const ok = await post(payload);
+    if (!ok) enqueue(payload);
+    return ok;
+  }
+
   /** Última señal antes de cerrar: cuánto duró la visita en total. */
   static logVisitEnd(level: number) {
     this.beacon('visit', {

@@ -12,12 +12,12 @@ interface PartyDogProps {
   rest: [number, number, number];
   scale: number;
   /** 0 = fuera de plano, 1 = en su sitio. */
-  progress: number;
+  progressRef: React.MutableRefObject<number>;
   hatColor: string;
   bobOffset: number;
 }
 
-function PartyDog({ path, rest, scale, progress, hatColor, bobOffset }: PartyDogProps) {
+function PartyDog({ path, rest, scale, progressRef, hatColor, bobOffset }: PartyDogProps) {
   const groupRef = useRef<Group>(null);
   const { scene, footOffset, modelHeight } = useDogModel(path, groupRef);
 
@@ -25,7 +25,7 @@ function PartyDog({ path, rest, scale, progress, hatColor, bobOffset }: PartyDog
     const g = groupRef.current;
     if (!g) return;
 
-    const t = easeOutCubic(THREE.MathUtils.clamp(progress, 0, 1));
+    const t = easeOutCubic(THREE.MathUtils.clamp(progressRef.current, 0, 1));
     g.position.set(
       rest[0] * t,
       rest[1],
@@ -68,12 +68,12 @@ function PartyDog({ path, rest, scale, progress, hatColor, bobOffset }: PartyDog
 
 interface PartyDogsProps {
   /** 0 = fuera de plano, 1 = ya han llegado. */
-  progress: number;
+  progressRef: React.MutableRefObject<number>;
   isMobile: boolean;
 }
 
 /** Tito y Lia entrando corriendo con sus gorritos. */
-export default function PartyDogs({ progress, isMobile }: PartyDogsProps) {
+export default function PartyDogs({ progressRef, isMobile }: PartyDogsProps) {
   const s = isMobile ? 0.75 : 1;
   return (
     <group>
@@ -81,7 +81,7 @@ export default function PartyDogs({ progress, isMobile }: PartyDogsProps) {
         path={TITO_PATH}
         rest={TITO_REST}
         scale={0.8 * s}
-        progress={progress}
+        progressRef={progressRef}
         hatColor="#60a5fa"
         bobOffset={0}
       />
@@ -89,7 +89,7 @@ export default function PartyDogs({ progress, isMobile }: PartyDogsProps) {
         path={LIA_PATH}
         rest={LIA_REST}
         scale={0.72 * s}
-        progress={progress}
+        progressRef={progressRef}
         hatColor="#e879f9"
         bobOffset={1.7}
       />

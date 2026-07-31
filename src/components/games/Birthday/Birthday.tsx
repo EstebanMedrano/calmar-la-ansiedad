@@ -25,10 +25,21 @@ export default function Birthday() {
   const { markGiftOpened } = useBirthday();
 
   const [stage, setStage] = useState<BirthdayStage>('idle');
-  const [dogProgress, setDogProgress] = useState(0);
-  const [risingElapsed, setRisingElapsed] = useState(0);
-  const [outElapsed, setOutElapsed] = useState(0);
-  const [blowLevel, setBlowLevel] = useState(0);
+
+  /*
+   * Estos cuatro valores cambian en CADA fotograma mientras corre la
+   * coreografía (los perros acercándose, las velas subiendo, el soplido).
+   *
+   * Antes eran useState, así que cada fotograma disparaba un render de Birthday
+   * y, con él, de toda la escena 3D: el <Text> de la torta volvía a componer su
+   * textura de glifos sesenta veces por segundo. Como solo se leen dentro de
+   * useFrame —que ya corre en cada fotograma por su cuenta— van en refs y React
+   * no se entera de nada. La animación se ve exactamente igual.
+   */
+  const dogProgressRef   = useRef(0);
+  const risingElapsedRef = useRef(0);
+  const outElapsedRef    = useRef(0);
+  const blowLevelRef     = useRef(0);
 
   const candleCount = isMobile ? CANDLE_COUNT.mobile : CANDLE_COUNT.desktop;
 
@@ -61,12 +72,12 @@ export default function Birthday() {
 
   /** Avanza un valor de 0 a 1 durante `ms` y llama a onDone al terminar. */
   const animateProgress = useCallback(
-    (ms: number, setter: (v: number) => void, onDone?: () => void) => {
+    (ms: number, target: React.MutableRefObject<number>, onDone?: () => void) => {
       const duration = reducedMotion ? ms * 0.4 : ms;
       const start = performance.now();
       const step = () => {
         const t = Math.min(1, (performance.now() - start) / duration);
-        setter(t);
+        target.current = t;
         if (t < 1) {
           rafRef.current = requestAnimationFrame(step);
         } else {
@@ -81,12 +92,12 @@ export default function Birthday() {
 
   /** Cronómetro en segundos, para las velas. */
   const runSeconds = useCallback(
-    (ms: number, setter: (v: number) => void, onDone?: () => void) => {
+    (ms: number, target: React.MutableRefObject<number>, onDone?: () => void) => {
       const duration = reducedMotion ? ms * 0.4 : ms;
       const start = performance.now();
       const step = () => {
         const el = performance.now() - start;
-        setter(el / 1000);
+        target.current = el / 1000;
         if (el < duration) {
           rafRef.current = requestAnimationFrame(step);
         } else {
@@ -108,13 +119,13 @@ export default function Birthday() {
     setStage('intro');
     addT(() => {
       setStage('dogsRunIn');
-      animateProgress(T.dogsRunIn, setDogProgress, () => {
+      animateProgress(T.dogsRunIn, dogProgressRef, () => {
         setStage('handOff');
         addT(() => {
           setStage('zoomCake');
           addT(() => {
             setStage('candlesRising');
-            runSeconds(candlesRisingDuration(candleCount), setRisingElapsed, () => {
+            runSeconds(candlesRisingDuration(candleCount), risingElapsedRef, () => {
               setStage('ringComplete');
               addT(() => {
                 setStage('dimming');
@@ -133,16 +144,20 @@ export default function Birthday() {
    * Punto único de entrada al apagado.
    * Da igual si vino del micrófono o del botón: a partir de aquí es lo mismo.
    */
+  /* Referencia estable: BlowControls la usa como dependencia de un efecto, y
+     una función nueva en cada render lo relanzaría sin motivo. */
+  const setBlowLevel = useCallback((v: number) => { blowLevelRef.current = v; }, []);
+
   const handleBlow = useCallback(() => {
     if (stage !== 'awaitBlow') return;
 
-    setBlowLevel(1);
+    blowLevelRef.current = 1;
     setStage('candlesOut');
     fireworksRef.current = new Howl({ src: [assetUrl('/assets/sounds/Artificiales.mp3')], volume: 0.35 });
     fireworksRef.current.play();
 
-    runSeconds(T.candlesOut, setOutElapsed, () => {
-      setBlowLevel(0);
+    runSeconds(T.candlesOut, outElapsedRef, () => {
+      blowLevelRef.current = 0;
       setStage('pullBack');
       addT(() => setStage('letterIncoming'), T.pullBack);
     });
@@ -161,10 +176,10 @@ export default function Birthday() {
 
   const replay = useCallback(() => {
     clearTimers();
-    setDogProgress(0);
-    setRisingElapsed(0);
-    setOutElapsed(0);
-    setBlowLevel(0);
+    dogProgressRef.current = 0;
+    risingElapsedRef.current = 0;
+    outElapsedRef.current = 0;
+    blowLevelRef.current = 0;
     setStage('idle');
   }, [clearTimers]);
 
@@ -190,10 +205,10 @@ export default function Birthday() {
             stage={stage}
             isMobile={isMobile}
             candleCount={candleCount}
-            risingElapsed={risingElapsed}
-            outElapsed={outElapsed}
-            blowLevel={blowLevel}
-            dogProgress={dogProgress}
+            risingElapsedRef={risingElapsedRef}
+            outElapsedRef={outElapsedRef}
+            blowLevelRef={blowLevelRef}
+            dogProgressRef={dogProgressRef}
             onLetterArrived={handleLetterArrived}
             onLetterOpened={handleLetterOpened}
           />

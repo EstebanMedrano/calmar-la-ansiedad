@@ -149,21 +149,44 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 7px;
+  // El gap ya no hace falta: cada punto lleva su propia zona táctil con
+  // relleno, así que quedan separados sin dejar huecos muertos entre medias.
+  gap: 0;
   max-width: 90%;
 }
 
+/*
+ * El punto se ve de 7 px, pero se toca en un rectángulo de 28 x 32.
+ *
+ * Antes el botón medía exactamente lo que se veía. Siete píxeles es menos de la
+ * sexta parte de lo que ocupa la yema de un dedo, así que fallar el toque era
+ * lo normal. El relleno agranda el botón —y con él su zona de toque— sin tocar
+ * el tamaño del punto, que ahora lo dibuja ::after.
+ */
 .carousel-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(255, 255, 255, 0.22);
-  cursor: pointer;
+  width: 28px;
+  height: 32px;
   padding: 0;
-  transition: all $transition-normal;
+  border: none;
+  background: none;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  // Sin esto, tocar dos puntos seguidos rápido hace zoom en iOS.
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 
-  &--active {
+  &::after {
+    content: '';
+    display: block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.22);
+    transition: all $transition-normal;
+  }
+
+  &--active::after {
     width: 22px;
     border-radius: 999px;
     background: #8b5cf6;

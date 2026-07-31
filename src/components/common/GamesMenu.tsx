@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import GameCarousel from './GameCarousel';
 import CountdownCard from './CountdownCard';
 import { useNavigate } from 'react-router-dom';
-import { useBirthday } from '../context/BirthdayContext';
+import { useBirthday, useBirthdayCountdown } from '../context/BirthdayContext';
 
 // Nota: 'reverse' y 'breathing' apuntaban a /assets/img/games/*.webp, una
 // carpeta que no existe: las dos tarjetas renderizaban una imagen rota.
@@ -59,7 +59,8 @@ const baseGames = [
 
 export default function GamesMenu() {
   const navigate = useNavigate();
-  const { isUnlocked, countdown } = useBirthday();
+  const { isUnlocked } = useBirthday();
+  const countdown = useBirthdayCountdown();
 
   const games = useMemo(() => [
     ...baseGames,
