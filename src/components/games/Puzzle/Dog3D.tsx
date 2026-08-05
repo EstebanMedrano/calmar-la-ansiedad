@@ -18,7 +18,7 @@ const BASE_SCALE: Record<DogType, number> = {
   lia:  0.85, 
 };
 
-const REBREAK_AFTER = 60;
+const REBREAK_AFTER = 120;
 
 export interface Dog3DProps {
   dogType:     DogType;
